@@ -1,0 +1,19 @@
+import { PropsWithChildren, ReactNode } from "react";
+
+type CardHeaderProps = PropsWithChildren<{
+    title: string;
+    className?: string;
+    headerIcon?: ReactNode;
+}>;
+
+export const CardHeader = ({ title, className, headerIcon, children }: CardHeaderProps) => {
+    return (
+        <div className="sticky top-0 z-20 flex min-h-12 items-center justify-between px-5 py-2 shadow-sm backdrop-blur-lg" role="banner" aria-hidden="false">
+            <span className={`mr-2 flex items-center gap-2 text-md font-semibold ${className}`}>
+                {headerIcon}
+                {title}
+            </span>
+            {children}
+        </div>
+    );
+};
