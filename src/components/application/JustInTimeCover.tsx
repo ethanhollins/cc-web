@@ -33,6 +33,7 @@ export type Ticket = {
 export interface TicketEvent extends Ticket {
     start_date: string; // ISO date string
     end_date: string; // ISO date string
+    all_day?: boolean;
     google_calendar_id: string;
 }
 
@@ -47,6 +48,9 @@ type JustInTimeCoverProps = {
 
 // Helper functions to determine event state
 const isEventActive = (event: TicketEvent, currentTime: Date): boolean => {
+    // Skip all-day events for "currently working on" status
+    if (event.all_day) return false;
+
     const start = new Date(event.start_date);
     const end = new Date(event.end_date);
     return currentTime >= start && currentTime <= end;
@@ -58,7 +62,7 @@ const getActiveEvent = (events: TicketEvent[], currentTime: Date): TicketEvent |
 
 const getNextUpcomingEvent = (events: TicketEvent[], currentTime: Date): TicketEvent | null => {
     const upcomingEvents = events
-        .filter((event) => new Date(event.start_date) > currentTime)
+        .filter((event) => !event.all_day && new Date(event.start_date) > currentTime)
         .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
     return upcomingEvents[0] || null;
