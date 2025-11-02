@@ -42,6 +42,8 @@ export type Ticket = {
     colour?: string;
     google_id?: string;
     scheduled_date?: string; // ISO date string for when ticket is scheduled
+    meeting_url?: string;
+    meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
 };
 
 export interface TicketEvent extends Ticket {
@@ -207,26 +209,12 @@ export const HomeScreen = () => {
                             />
                         </div>
                         <div className="flex flex-col justify-between">
-                            <NextMeetingCard
-                                meetingTitle="Product Planning Session"
-                                startTimeISO={new Date(new Date().getTime() + 6 * 60 * 1000).toISOString()}
-                                durationMinutes={60}
-                                locationLabel="Google Meet"
-                                joinUrl="https://meet.google.com/"
-                                nextUp={[
-                                    { title: "Design Sync", time: "3:00pm", location: "Zoom" },
-                                    { title: "Sprint Planning", time: "4:30pm", location: "Teams" },
-                                    { title: "Client Call", time: "6:00pm", location: "Google Meet" },
-                                    { title: "Retrospective", time: "Tomorrow", location: "Zoom" },
-                                    { title: "Retrospective", time: "Tomorrow", location: "Zoom" },
-                                    { title: "Retrospective", time: "Tomorrow", location: "Zoom" },
-                                ]}
-                            />
+                            <NextMeetingCard events={events} />
                         </div>
                     </div>
                 </div>
             </div>
-            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticketId={openedTicket?.ticket_id || null} />
+            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticketId={openedTicket?.ticket_id || null} events={events} />
         </div>
     );
 };
