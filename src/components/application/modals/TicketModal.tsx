@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Diamond01, Package, Ticket01 } from "@untitledui/icons";
+import { ChevronDown, ChevronRight, Clock, Diamond01, MarkerPin01, Package, Ticket01, VideoRecorder } from "@untitledui/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Project } from "@/app/home-screen";
@@ -34,9 +34,144 @@ type Props = {
     open: boolean;
     ticketId: string | null;
     onClose: () => void;
+    events?: any[]; // Add events prop
 };
 
-export default function TicketModal({ open, ticketId, onClose }: Props) {
+// Helper component for meeting UI in the sidebar
+function MeetingUI({ ticketId, events }: { ticketId: string | null; events?: any[] }) {
+    const [now, setNow] = useState<Date>(new Date());
+    const [meetingEvent, setMeetingEvent] = useState<any>(null);
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(id);
+    }, []);
+
+    // Update meeting event when events or ticketId changes
+    useEffect(() => {
+        if (events && events.length > 0 && ticketId) {
+            const foundMeeting = events.find((event) => {
+                return event.ticket_id === ticketId && event.meeting_url;
+            });
+            setMeetingEvent(foundMeeting || null);
+        } else {
+            setMeetingEvent(null);
+        }
+    }, [events, ticketId]);
+
+    if (!meetingEvent) {
+        return null; // No meeting for this ticket
+    }
+
+    const start = new Date(meetingEvent.start_date);
+    const end = new Date(meetingEvent.end_date);
+    const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60_000);
+
+    const msUntil = start.getTime() - now.getTime();
+    const isOver = now.getTime() > end.getTime();
+    const isOngoing = now >= start && now <= end;
+
+    const formatDuration = (ms: number) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const parts = [];
+
+        if (hours >= 1) {
+            parts.push(`${hours}h`);
+        }
+        if (minutes >= 1) {
+            parts.push(`${minutes}m`);
+        }
+        if (seconds >= 1 || parts.length === 0) {
+            parts.push(`${String(seconds).padStart(2, "0")}s`);
+        }
+
+        return parts.join(" ");
+    };
+
+    const countdown = formatDuration(Math.max(0, msUntil));
+
+    const timeLabel = start.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+    });
+    const durLabel = (() => {
+        if (durationMinutes >= 60) {
+            const hours = Math.floor(durationMinutes / 60);
+            const minutes = durationMinutes % 60;
+            return `(${hours} hour${hours !== 1 ? "s" : ""}${minutes > 0 ? ` ${minutes}m` : ""})`;
+        } else {
+            return `(${durationMinutes}m)`;
+        }
+    })();
+
+    const disableJoin = msUntil > 5 * 60_000; // disable if more than 5 minutes away
+
+    const locationLabel =
+        meetingEvent.meeting_platform === "google_meet"
+            ? "Google Meet"
+            : meetingEvent.meeting_platform === "zoom"
+              ? "Zoom"
+              : meetingEvent.meeting_platform === "teams"
+                ? "Teams"
+                : meetingEvent.meeting_platform || "Meeting";
+
+    return (
+        <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center gap-2">
+                <VideoRecorder className="size-4 text-blue-500" />
+                <span className="text-sm font-semibold text-gray-900">Meeting</span>
+            </div>
+
+            {/* Meeting Info */}
+            <div className="mb-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <Clock className="size-3" />
+                    <span>{timeLabel}</span>
+                    <span className="text-gray-400">{durLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <MarkerPin01 className="size-3" />
+                    <span>{locationLabel}</span>
+                </div>
+            </div>
+
+            {/* Status and Countdown */}
+            <div className="mb-3 rounded-md bg-gray-50 p-3">
+                <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">{isOver ? "Ended" : isOngoing ? "Started" : "Starts in"}</span>
+                    <span className="font-semibold text-gray-900">{isOver ? "—" : isOngoing ? "Now" : countdown}</span>
+                </div>
+            </div>
+
+            {/* Join Button */}
+            {disableJoin || isOver ? (
+                <span
+                    className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-400"
+                    aria-disabled={true}
+                >
+                    <VideoRecorder className="size-4" />
+                    {isOver ? "Meeting Ended" : "Join Meeting"}
+                </span>
+            ) : (
+                <a
+                    href={meetingEvent.meeting_url || "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                >
+                    <VideoRecorder className="size-4" />
+                    Join Meeting
+                </a>
+            )}
+        </div>
+    );
+}
+
+export default function TicketModal({ open, ticketId, onClose, events = [] }: Props) {
     // Fetch ticket data and content from the APIs
     const { data: ticketData, loading: ticketLoading, error: ticketError } = useTicketNotionData(open ? ticketId : null);
     const { content: ticketContent, loading: contentLoading, error: contentError } = useTicketNotionContent(open ? ticketId : null);
@@ -461,6 +596,10 @@ export default function TicketModal({ open, ticketId, onClose }: Props) {
                             <div>Created: {ticketData.created_time ? new Date(ticketData.created_time).toLocaleString() : "-"}</div>
                             <div className="mt-1">Updated: {ticketData.last_edited_time ? new Date(ticketData.last_edited_time).toLocaleString() : "-"}</div>
                         </div>
+
+                        {/* Meeting UI */}
+                        <MeetingUI ticketId={ticketId} events={events} />
+
                         <a
                             href={ticketData.notion_url}
                             target="_blank"
