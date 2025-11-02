@@ -107,7 +107,7 @@ export const HomeScreen = () => {
                 ]}
             />
             <div className="pt-2s ml-[68px] flex min-h-0 flex-1 flex-col px-4 pt-2">
-                <div className="h-[33%] flex-1">
+                <div className="h-[33%]">
                     <JustInTimeCover events={events} />
                 </div>
                 <div className="flex h-[67%] flex-1">
