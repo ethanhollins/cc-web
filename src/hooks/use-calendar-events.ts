@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { TicketEvent } from "@/app/home-screen";
+import { API_BASE_URL } from "@/config/api";
 import { useWebSocketMessages } from "@/hooks/use-websocket";
 import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
 
@@ -89,7 +90,7 @@ export function useCalendarEvents(selectedDate: Date) {
                 }
 
                 console.log("Fetching events from API for week:", startDate, "to", endDate);
-                const url = `https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/events?start_date=${startDate}&end_date=${endDate}`;
+                const url = `${API_BASE_URL}/events?start_date=${startDate}&end_date=${endDate}`;
 
                 const res = await fetch(url, {
                     signal: ac.signal,

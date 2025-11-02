@@ -66,6 +66,24 @@ const PlannerScreen = () => {
         }
     };
 
+    const handleUnscheduleTicketWrapper = (ticketId: string) => {
+        // Update the local ticket state to remove the scheduled date
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+            const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+                ticket.ticket_id === ticketId ? { ...ticket, scheduled_date: undefined } : ticket,
+            );
+            updateTickets(selectedProjectKey, updatedTickets);
+        }
+    };
+
+    const handleCreateTicketWrapper = (createdTicket: Ticket, projectKey: string) => {
+        // Update the local ticket state to add the new ticket from API response
+        if (tickets[projectKey]) {
+            const updatedTickets = [...tickets[projectKey], createdTicket];
+            updateTickets(projectKey, updatedTickets);
+        }
+    };
+
     return (
         <div className="fullscreen flex h-[100%] flex-col">
             <SidebarNavigationSlim
@@ -84,6 +102,7 @@ const PlannerScreen = () => {
                             title: event.title,
                             start: moment(event.start_date).tz("Australia/Sydney").format(),
                             end: moment(event.end_date).tz("Australia/Sydney").format(),
+                            allDay: event.all_day,
                             extendedProps: {
                                 showBand: event.epic !== null && event.epic !== "" && event.epic !== undefined,
                                 bandColor: event.colour,
@@ -105,12 +124,15 @@ const PlannerScreen = () => {
                     onProjectChange={handleProjectChange}
                     onTicketClick={handleTicketClick}
                     onScheduleTicket={handleScheduleTicketWrapper}
+                    onUnscheduleTicket={handleUnscheduleTicketWrapper}
                     onEventDrop={handleEventDropWrapper}
                     onEventChange={handleEventChangeWrapper}
                     onDeleteEvent={handleDeleteEventWrapper}
+                    onCreateTicket={handleCreateTicketWrapper}
+                    onUpdateEvents={updateEvents}
                 />
             </div>
-            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticket={openedTicket} />
+            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticketId={openedTicket?.ticket_id || null} />
         </div>
     );
 };

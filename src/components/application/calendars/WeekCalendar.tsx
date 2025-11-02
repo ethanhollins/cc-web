@@ -3,11 +3,12 @@ import { EventInput } from "@fullcalendar/core/index.js";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import moment from "moment-timezone";
 import { Project, Ticket } from "@/app/home-screen";
 import { CalendarCard } from "@/components/base/calendar";
 import { useCalendarContextMenu, useCalendarDate, useCalendarOutsideClick, useLongPress } from "@/hooks/use-calendar-interactions";
 import "@/styles/calendar.css";
-import { handleScheduleTicket } from "@/utils/calendar-event-handlers";
+import { handleScheduleTicket, handleUnscheduleTicket } from "@/utils/calendar-event-handlers";
 import { calculateScrollTime, formatWeekRange, getWeekEnd, getWeekStart, lightenColor, weekOfMonth } from "@/utils/calendar-utils";
 import { CalendarContextMenu } from "./CalendarContextMenu";
 import { CalendarEventContent } from "./CalendarEventContent";
@@ -24,9 +25,12 @@ interface WeekCalendarProps {
     onProjectChange?: (projectKey: string) => void;
     onTicketClick?: (ticket: Ticket) => void;
     onScheduleTicket?: (ticketId: string, scheduledDate: string) => void;
+    onUnscheduleTicket?: (ticketId: string) => void;
     onEventDrop?: (event: any) => void;
     onEventChange?: (event: any) => void;
     onDeleteEvent?: (eventId: string) => void;
+    onCreateTicket?: (createdTicket: Ticket, projectKey: string) => void;
+    onUpdateEvents?: (updater: (prevEvents: any[]) => any[]) => void;
 }
 
 export default function WeekCalendar({
@@ -40,9 +44,12 @@ export default function WeekCalendar({
     onProjectChange,
     onTicketClick,
     onScheduleTicket,
+    onUnscheduleTicket,
     onEventDrop,
     onEventChange,
     onDeleteEvent,
+    onCreateTicket,
+    onUpdateEvents,
 }: WeekCalendarProps) {
     const calRef = useRef<FullCalendar | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -60,6 +67,20 @@ export default function WeekCalendar({
         x: 0,
         y: 0,
     });
+
+    // Event creation trigger state
+    const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date; projectKey: string } | null>(null);
+
+    // Reset trigger after it's been used
+    useEffect(() => {
+        if (eventCreationTrigger) {
+            // Reset after a short delay to allow TicketsList to consume it
+            const timeout = setTimeout(() => {
+                setEventCreationTrigger(null);
+            }, 100);
+            return () => clearTimeout(timeout);
+        }
+    }, [eventCreationTrigger]);
 
     // Use shared hooks
     const { selectedDate, goToPreviousPeriod, goToNextPeriod, goToToday, handleDatesSet } = useCalendarDate(new Date(), onDateChange);
@@ -87,6 +108,13 @@ export default function WeekCalendar({
             calendarPicker.onSelect(date);
         }
         hideCalendarPicker();
+    };
+
+    // Function to unselect calendar selection
+    const handleUnselectCalendar = () => {
+        if (calRef.current) {
+            calRef.current.getApi().unselect();
+        }
     };
 
     // Handle clicks outside to unselect and close menus
@@ -131,6 +159,19 @@ export default function WeekCalendar({
             }
         } catch (error) {
             console.error("Failed to schedule ticket:", error);
+            // You could add error handling UI here (toast, alert, etc.)
+        }
+    };
+
+    const handleUnscheduleTicketLocal = async (ticketId: string) => {
+        try {
+            await handleUnscheduleTicket(ticketId);
+            // Call the parent callback if provided (for additional handling like state updates)
+            if (onUnscheduleTicket) {
+                onUnscheduleTicket(ticketId);
+            }
+        } catch (error) {
+            console.error("Failed to unschedule ticket:", error);
             // You could add error handling UI here (toast, alert, etc.)
         }
     };
@@ -203,7 +244,7 @@ export default function WeekCalendar({
                             const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
                             return `${weekday}, ${day}/${month}`;
                         }}
-                        allDaySlot={false}
+                        allDaySlot={true}
                         slotDuration="00:30:00"
                         snapDuration="00:05:00"
                         slotMinTime="00:00:00"
@@ -290,7 +331,20 @@ export default function WeekCalendar({
                             info.el.addEventListener("click", handleHeaderClick);
                             info.el.style.cursor = "pointer";
                         }}
-                        select={(info) => console.log("selected", info.start?.toISOString(), info.end?.toISOString())}
+                        select={(info) => {
+                            if (info.start && info.end && selectedProjectKey) {
+                                // Convert dates to moment objects in Australia/Sydney timezone
+                                // FullCalendar provides dates without timezone info, but they are already in Sydney time
+                                const startMoment = moment.tz(info.startStr, "Australia/Sydney");
+                                const endMoment = moment.tz(info.endStr, "Australia/Sydney");
+
+                                setEventCreationTrigger({
+                                    startDate: startMoment.toDate(),
+                                    endDate: endMoment.toDate(),
+                                    projectKey: selectedProjectKey,
+                                });
+                            }
+                        }}
                         eventClick={(info) => {
                             if (editableEventId === info.event.id) {
                                 // Event is in editing mode, allow editing
@@ -347,7 +401,7 @@ export default function WeekCalendar({
                             if (info.draggedEl?.classList?.contains("draggable-ticket")) {
                                 return;
                             }
-                            console.log("THIS ONE?1");
+                            console.log("THIS ONE?1", info);
 
                             const updatedEvent = {
                                 ...info.event.extendedProps,
@@ -372,7 +426,12 @@ export default function WeekCalendar({
                     onProjectChange={onProjectChange}
                     onItemClick={onTicketClick}
                     onScheduleTicket={handleScheduleTicketLocal}
+                    onUnscheduleTicket={handleUnscheduleTicketLocal}
                     onShowCalendarPicker={showCalendarPicker}
+                    onCreateTicket={onCreateTicket}
+                    updateEvents={onUpdateEvents}
+                    createEventTrigger={eventCreationTrigger}
+                    onUnselectCalendar={handleUnselectCalendar}
                 />
             )}
 

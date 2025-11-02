@@ -6,6 +6,7 @@ import {
     Archive,
     BookOpen01,
     CalendarDate,
+    CalendarMinus01,
     CalendarPlus01,
     Check,
     CheckDone02,
@@ -14,19 +15,29 @@ import {
     Clock,
     Diamond01,
     Feather,
+    Image01,
+    Plus,
 } from "@untitledui/icons";
+import moment from "moment-timezone";
 import { Project, Ticket, TicketStatus, TicketType } from "@/app/home-screen";
+import { CalendarCard } from "@/components/base/calendar";
+import { DEFAULT_CALENDAR_ID, handleCreateTicket } from "@/utils/calendar-event-handlers";
 
 type Props = {
     items: Record<string, Ticket[]>;
     projects: Project[];
     selectedProjectKey?: string;
     selectedDay?: Date | null;
-    events?: EventInput[];
+    events?: any[];
     onProjectChange?: (projectKey: string) => void;
     onItemClick?: (ticket: Ticket) => void;
     onScheduleTicket?: (ticketId: string, scheduledDate: string) => void;
+    onUnscheduleTicket?: (ticketId: string) => void;
     onShowCalendarPicker?: (x: number, y: number, onSelect: (date: Date) => void) => void;
+    onCreateTicket?: (createdTicket: Ticket, projectKey: string) => void;
+    updateEvents?: (updater: (prevEvents: any[]) => any[]) => void;
+    createEventTrigger?: { startDate: Date; endDate: Date; projectKey: string } | null;
+    onUnselectCalendar?: () => void;
 };
 
 type TabType = "today" | "unscheduled" | "backlog";
@@ -52,6 +63,8 @@ function typeIcon(t: TicketType) {
             return <Diamond01 className={`${base} text-purple-600`} />;
         case "subtask":
             return <CheckDone02 className={`${base} text-blue-600`} />;
+        case "event":
+            return <CalendarDate className={`${base} text-gray-600`} />;
         default:
             return <CheckSquare className={`${base} text-blue-600`} />; // task
     }
@@ -123,6 +136,24 @@ function ScheduleButton({
     );
 }
 
+// Unschedule Button Component
+function UnscheduleButton({ ticket, onUnschedule }: { ticket: Ticket; onUnschedule: (ticketId: string) => void }) {
+    const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onUnschedule(ticket.ticket_id);
+    };
+
+    return (
+        <button
+            onClick={handleButtonClick}
+            className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-50 text-orange-600 transition-colors hover:bg-orange-100"
+        >
+            <CalendarMinus01 className="size-3" />
+        </button>
+    );
+}
+
 export default function TicketsList({
     items,
     projects,
@@ -132,13 +163,28 @@ export default function TicketsList({
     onProjectChange,
     onItemClick,
     onScheduleTicket,
+    onUnscheduleTicket,
     onShowCalendarPicker,
+    onCreateTicket,
+    updateEvents,
+    createEventTrigger,
+    onUnselectCalendar,
 }: Props) {
     const [projectKey, setProjectKey] = React.useState<string>(selectedProjectKey || (projects[0]?.project_key ?? ""));
     const [activeTab, setActiveTab] = React.useState<TabType>("today");
+    const [showCreateModal, setShowCreateModal] = React.useState<boolean>(false);
+    const [newTicketTitle, setNewTicketTitle] = React.useState<string>("");
+    const [newTicketProject, setNewTicketProject] = React.useState<string>(projectKey);
+    const [newTicketType, setNewTicketType] = React.useState<TicketType>("event");
+    const [newTicketScheduledDate, setNewTicketScheduledDate] = React.useState<string | null>(null);
+    const [newEventDateRange, setNewEventDateRange] = React.useState<{ startDate: Date; endDate: Date } | null>(null);
+    const [showCalendarPicker, setShowCalendarPicker] = React.useState<boolean>(false);
+    const [calendarPickerPosition, setCalendarPickerPosition] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [isCreatingTicket, setIsCreatingTicket] = React.useState<boolean>(false);
     const ticketsListRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const isDraggingRef = useRef<boolean>(false);
+    const createModalRef = useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
         if (selectedProjectKey && selectedProjectKey !== projectKey) {
@@ -152,6 +198,105 @@ export default function TicketsList({
         onProjectChange?.(v);
     };
 
+    // Handle create ticket modal
+    const handleCreateTicketSubmit = async () => {
+        if (!newTicketTitle.trim() || isCreatingTicket) return;
+
+        setIsCreatingTicket(true);
+        try {
+            // Find the selected project to get its ID
+            const selectedProject = projects.find((p) => p.project_key === newTicketProject);
+            if (!selectedProject) {
+                console.error("Selected project not found");
+                return;
+            }
+
+            // Prepare ticket data for API
+            const ticketData = {
+                title: newTicketTitle.trim(),
+                project_id: selectedProject.notion_id,
+                internal_project_id: selectedProject.project_id,
+                type: newTicketType.charAt(0).toUpperCase() + newTicketType.slice(1), // Capitalize first letter
+                scheduled_date: newTicketScheduledDate || undefined,
+                google_calendar_id: DEFAULT_CALENDAR_ID,
+                // Add start and end dates for event types (already in Australia/Sydney timezone from calendar)
+                ...(newTicketType === "event" &&
+                    newEventDateRange && {
+                        start_date: moment.tz(newEventDateRange.startDate, "Australia/Sydney").format(),
+                        end_date: moment.tz(newEventDateRange.endDate, "Australia/Sydney").format(),
+                    }),
+            };
+
+            // Use the calendar event handler
+            const createdTicket = await handleCreateTicket(ticketData, events || [], updateEvents || (() => {}));
+
+            console.log("Ticket created successfully:", createdTicket);
+
+            // Call parent callback if provided (for local state updates in items)
+            if (onCreateTicket) {
+                onCreateTicket(createdTicket, newTicketProject);
+            }
+
+            // Reset form
+            setNewTicketTitle("");
+            setNewTicketProject(projectKey);
+            setNewTicketType("event");
+            setNewTicketScheduledDate(null);
+            setNewEventDateRange(null);
+            setShowCalendarPicker(false);
+            setShowCreateModal(false);
+
+            // Unselect calendar after successful ticket creation
+            if (onUnselectCalendar) {
+                onUnselectCalendar();
+            }
+        } catch (error) {
+            console.error("Error creating ticket:", error);
+            // Show user-friendly error message
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+            alert(`Failed to create ticket: ${errorMessage}`);
+        } finally {
+            setIsCreatingTicket(false);
+        }
+    };
+
+    const handleCloseCreateModal = () => {
+        setShowCreateModal(false);
+        setNewTicketTitle("");
+        setNewTicketProject(projectKey);
+        setNewTicketType("event");
+        setNewTicketScheduledDate(null);
+        setNewEventDateRange(null);
+        setShowCalendarPicker(false);
+        setIsCreatingTicket(false);
+
+        // Unselect calendar when modal is closed
+        if (onUnselectCalendar) {
+            onUnselectCalendar();
+        }
+    };
+
+    // Update new ticket project when main project changes
+    useEffect(() => {
+        setNewTicketProject(projectKey);
+        setNewTicketType("task"); // Reset to default type when project changes
+    }, [projectKey]);
+
+    // Handle external event creation trigger
+    useEffect(() => {
+        if (createEventTrigger) {
+            setNewEventDateRange({
+                startDate: createEventTrigger.startDate,
+                endDate: createEventTrigger.endDate,
+            });
+            setNewTicketType("event");
+            setNewTicketProject(createEventTrigger.projectKey);
+            setNewTicketTitle("");
+            setNewTicketScheduledDate(null);
+            setShowCreateModal(true);
+        }
+    }, [createEventTrigger]);
+
     const handleTicketClick = (ticket: Ticket) => {
         // Only trigger click if we're not in the middle of a drag operation
         if (!isDraggingRef.current) {
@@ -163,7 +308,9 @@ export default function TicketsList({
         const allTickets = items[projectKey] || [];
 
         // Base filter: exclude epics and removed tickets, but keep done tickets for special handling
-        let filtered = allTickets.filter((ticket) => ticket.ticket_type.toLowerCase() !== "epic" && !["removed"].includes(ticket.ticket_status.toLowerCase()));
+        let filtered = allTickets.filter(
+            (ticket) => !["epic"].includes(ticket.ticket_type.toLowerCase()) && !["removed"].includes(ticket.ticket_status.toLowerCase()),
+        );
 
         // If no selected day, show all filtered tickets in the appropriate tabs (excluding done)
         if (!selectedDay) {
@@ -307,18 +454,41 @@ export default function TicketsList({
         // Filter based on selected day and events
         switch (activeTab) {
             case "today":
-                // Show tickets that have events on/after selected day OR are scheduled for selected day or earlier
+                // Show tickets based on their status and relationships to events/scheduled dates
                 return filtered.filter((ticket) => {
-                    return hasEventOnSelectedDay(ticket) || hasEventForToday(ticket) || isScheduledForTodayOrEarlier(ticket);
+                    const isDone = ticket.ticket_status.toLowerCase() === "done";
+
+                    if (isDone) {
+                        // Done tickets: only show if they have events and selected day is within event range
+                        // OR if they have no events but have a scheduled date and selected day matches scheduled date
+                        const eventRange = getTicketEventDateRange(ticket);
+                        if (eventRange) {
+                            // Has events - show only if selected day is within the event range
+                            return hasEventForToday(ticket);
+                        } else if (ticket.scheduled_date) {
+                            // No events but has scheduled date - show only on scheduled date
+                            const scheduledDate = new Date(ticket.scheduled_date);
+                            scheduledDate.setHours(0, 0, 0, 0);
+                            const selectedDayStart = new Date(selectedDay);
+                            selectedDayStart.setHours(0, 0, 0, 0);
+                            return scheduledDate.getTime() === selectedDayStart.getTime();
+                        } else {
+                            // No events and no scheduled date - never show
+                            return false;
+                        }
+                    } else {
+                        // Non-done tickets: show if they have events on/after selected day OR are scheduled for selected day or earlier
+                        return hasEventOnSelectedDay(ticket) || hasEventForToday(ticket) || isScheduledForTodayOrEarlier(ticket);
+                    }
                 });
 
             case "unscheduled":
-                // Show tickets that don't have events on the selected day, don't have events for today, are not scheduled for today or earlier, and are not in backlog or done
+                // Show tickets that have no scheduled_date at all, don't have events on the selected day, don't have events for today, and are not in backlog or done
                 return filtered.filter(
                     (ticket) =>
+                        !ticket.scheduled_date && // Must have no scheduled date
                         !hasEventOnSelectedDay(ticket) &&
                         !hasEventForToday(ticket) &&
-                        !isScheduledForTodayOrEarlier(ticket) &&
                         !["backlog", "blocked", "done"].includes(ticket.ticket_status.toLowerCase()),
                 );
 
@@ -340,6 +510,47 @@ export default function TicketsList({
                 return filtered.filter((ticket) => !["done"].includes(ticket.ticket_status.toLowerCase()));
         }
     }, [items, projectKey, activeTab, selectedDay, events]);
+
+    // Helper function to check if a ticket has an active event right now
+    const hasActiveEvent = React.useCallback(
+        (ticket: Ticket) => {
+            if (!events.length) return false;
+
+            const now = new Date();
+
+            // Helper function to safely convert DateInput to Date
+            const toDate = (dateInput: any): Date | null => {
+                if (!dateInput) return null;
+                if (dateInput instanceof Date) return dateInput;
+                if (typeof dateInput === "string" || typeof dateInput === "number") {
+                    return new Date(dateInput);
+                }
+                return null;
+            };
+
+            return events.some((event) => {
+                // Check if event is associated with this ticket
+                const isTicketEvent = event.extendedProps?.ticket_id === ticket.ticket_id || event.extendedProps?.ticket_key === ticket.ticket_key;
+
+                if (!isTicketEvent) return false;
+
+                const eventStart = toDate(event.start);
+                const eventEnd = toDate(event.end);
+
+                if (!eventStart) return false;
+
+                // If no end time, consider it active for the next hour
+                if (!eventEnd) {
+                    const eventEndDefault = new Date(eventStart.getTime() + 60 * 60 * 1000); // 1 hour
+                    return now >= eventStart && now <= eventEndDefault;
+                }
+
+                // Check if current time is within the event's time range
+                return now >= eventStart && now <= eventEnd;
+            });
+        },
+        [events],
+    );
 
     const sorted = [...projectTickets].sort((a, b) => {
         const ar = statusRank[a.ticket_status] ?? 99;
@@ -467,6 +678,7 @@ export default function TicketsList({
                     >
                         {projects
                             .filter((p) => p.project_status.toLowerCase() === "in progress")
+                            .sort((a, b) => a.project_key.localeCompare(b.project_key))
                             .map((p) => (
                                 <option key={p.project_key} value={p.project_key}>
                                     {p.project_key} — {p.title}
@@ -478,31 +690,42 @@ export default function TicketsList({
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="mt-3 flex items-center justify-end gap-1">
+                <div className="mt-3 flex items-center justify-between">
+                    {/* Create ticket button */}
                     <button
-                        onClick={() => setActiveTab("today")}
-                        className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                            activeTab === "today" ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                        }`}
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md bg-green-50 text-green-600 transition-colors hover:bg-green-100"
                     >
-                        <CalendarDate className="size-4" />
+                        <Plus className="size-4" />
                     </button>
-                    <button
-                        onClick={() => setActiveTab("unscheduled")}
-                        className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                            activeTab === "unscheduled" ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                        }`}
-                    >
-                        <Clock className="size-4" />
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("backlog")}
-                        className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                            activeTab === "backlog" ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                        }`}
-                    >
-                        <Archive className="size-4" />
-                    </button>
+
+                    {/* Tab buttons */}
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setActiveTab("today")}
+                            className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+                                activeTab === "today" ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                            }`}
+                        >
+                            <CalendarDate className="size-4" />
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("unscheduled")}
+                            className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+                                activeTab === "unscheduled" ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                            }`}
+                        >
+                            <Clock className="size-4" />
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("backlog")}
+                            className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+                                activeTab === "backlog" ? "bg-violet-100 text-violet-700" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                            }`}
+                        >
+                            <Archive className="size-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -514,12 +737,17 @@ export default function TicketsList({
                     <div className="space-y-2 p-2">
                         {sorted.map((ticket) => {
                             const isDone = ticket.ticket_status.toLowerCase() === "done";
+                            const isActive = hasActiveEvent(ticket);
                             return (
                                 <div
                                     key={ticket.ticket_id}
                                     data-ticket-id={ticket.ticket_id}
                                     className={`draggable-ticket cursor-grab rounded-lg border p-3 shadow-sm active:cursor-grabbing ${
-                                        isDone ? "border-gray-100 bg-gray-50 opacity-75" : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
+                                        isDone
+                                            ? "border-gray-100 bg-gray-50 opacity-75"
+                                            : isActive
+                                              ? "border-amber-200 bg-white shadow-lg shadow-amber-200/50 hover:border-amber-300 hover:shadow-md"
+                                              : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
                                     }`}
                                     onClick={() => handleTicketClick(ticket)}
                                     style={{
@@ -555,17 +783,19 @@ export default function TicketsList({
                                     </p>
                                     {/* Epic, Scheduled Date, and Schedule Button Row */}
                                     <div className="flex items-center justify-between">
-                                        {/* Epic */}
-                                        {ticket.epic && (
-                                            <div className="flex min-w-0 flex-shrink items-center gap-2">
-                                                <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
-                                                    <Diamond01 className={`size-3 ${isDone ? "text-gray-400" : "text-purple-600"}`} />
-                                                </span>
-                                                <span className={`truncate text-xs ${isDone ? "text-gray-400" : "text-gray-600"}`}>{ticket.epic}</span>
-                                            </div>
-                                        )}
+                                        {/* Epic - takes up left side when present */}
+                                        <div className="flex min-w-0 flex-shrink items-center gap-2">
+                                            {ticket.epic && (
+                                                <>
+                                                    <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
+                                                        <Diamond01 className={`size-3 ${isDone ? "text-gray-400" : "text-purple-600"}`} />
+                                                    </span>
+                                                    <span className={`truncate text-xs ${isDone ? "text-gray-400" : "text-gray-600"}`}>{ticket.epic}</span>
+                                                </>
+                                            )}
+                                        </div>
 
-                                        {/* Scheduled date and Schedule button */}
+                                        {/* Scheduled date and Schedule/Unschedule buttons - always on the right */}
                                         <div className="flex items-center gap-2">
                                             {/* Scheduled date for scheduled tickets */}
                                             {ticket.scheduled_date && !isDone && (
@@ -575,6 +805,11 @@ export default function TicketsList({
                                                         day: "numeric",
                                                     })}
                                                 </span>
+                                            )}
+
+                                            {/* Unschedule button - only show if ticket has scheduled_date */}
+                                            {!isDone && ticket.scheduled_date && onUnscheduleTicket && (
+                                                <UnscheduleButton ticket={ticket} onUnschedule={onUnscheduleTicket} />
                                             )}
 
                                             {/* Schedule button for both unscheduled and scheduled tickets */}
@@ -593,6 +828,209 @@ export default function TicketsList({
                     </div>
                 )}
             </div>
+
+            {/* Create Ticket Modal */}
+            {showCreateModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+                    onClick={(e) => {
+                        // Only close if clicking on the background, not on modal content or calendar
+                        if (e.target === e.currentTarget) {
+                            handleCloseCreateModal();
+                        }
+                    }}
+                >
+                    <div ref={createModalRef} className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                        {/* Quick Action Section */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700">Ticket Title</label>
+                                <input
+                                    type="text"
+                                    value={newTicketTitle}
+                                    onChange={(e) => setNewTicketTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            handleCreateTicketSubmit();
+                                        } else if (e.key === "Escape") {
+                                            handleCloseCreateModal();
+                                        }
+                                    }}
+                                    placeholder="Enter ticket title..."
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Project and Type selectors */}
+                            <div className="flex items-center gap-4">
+                                {/* Project selector */}
+                                <div className="flex items-center gap-1 text-xs text-gray-600">
+                                    <Feather className="size-3" />
+                                    <select
+                                        value={newTicketProject}
+                                        onChange={(e) => setNewTicketProject(e.target.value)}
+                                        className="cursor-pointer appearance-none border-none bg-transparent outline-none hover:text-gray-800 focus:text-gray-800"
+                                    >
+                                        {projects.map((project) => (
+                                            <option key={project.project_key} value={project.project_key}>
+                                                {project.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="size-3" />
+                                </div>
+
+                                {/* Ticket Type selector */}
+                                <div className="flex items-center gap-1 text-xs text-gray-600">
+                                    {typeIcon(newTicketType)}
+                                    <select
+                                        value={newTicketType}
+                                        onChange={(e) => setNewTicketType(e.target.value as TicketType)}
+                                        className="cursor-pointer appearance-none border-none bg-transparent outline-none hover:text-gray-800 focus:text-gray-800"
+                                    >
+                                        <option value="task">Task</option>
+                                        <option value="story">Story</option>
+                                        <option value="bug">Bug</option>
+                                        <option value="event">Event</option>
+                                    </select>
+                                    <ChevronDown className="size-3" />
+                                </div>
+                            </div>
+
+                            {/* Schedule section - now below dropdowns */}
+                            <div className="flex items-center justify-end gap-2">
+                                {/* Show scheduled date for non-event types */}
+                                {newTicketScheduledDate && newTicketType !== "event" && (
+                                    <button
+                                        onClick={() => setNewTicketScheduledDate(null)}
+                                        className="cursor-pointer text-xs font-medium text-violet-600 hover:text-violet-800"
+                                        title="Click to remove scheduled date"
+                                    >
+                                        {new Date(newTicketScheduledDate).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                    </button>
+                                )}
+
+                                {/* Show date range for event types */}
+                                {newEventDateRange && newTicketType === "event" && (
+                                    <button
+                                        onClick={() => setNewEventDateRange(null)}
+                                        className="cursor-pointer text-xs font-medium text-violet-600 hover:text-violet-800"
+                                        title="Click to remove date range"
+                                    >
+                                        {newEventDateRange.startDate.toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                        {newEventDateRange.startDate.toDateString() !== newEventDateRange.endDate.toDateString() &&
+                                            ` - ${newEventDateRange.endDate.toLocaleDateString("en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                            })}`}
+                                    </button>
+                                )}
+
+                                {/* Schedule button - toggle (only for non-event types) */}
+                                {newTicketType !== "event" && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+
+                                            if (showCalendarPicker) {
+                                                setShowCalendarPicker(false);
+                                            } else {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const calendarWidth = 288;
+                                                const calendarHeight = 320;
+
+                                                let x = rect.right - calendarWidth;
+                                                let y = rect.bottom + 4;
+
+                                                if (x < 8) x = 8;
+                                                if (x + calendarWidth > window.innerWidth - 8) {
+                                                    x = window.innerWidth - calendarWidth - 8;
+                                                }
+                                                if (y + calendarHeight > window.innerHeight - 8) {
+                                                    y = rect.top - calendarHeight - 4;
+                                                }
+
+                                                setCalendarPickerPosition({ x, y });
+                                                setShowCalendarPicker(true);
+                                            }
+                                        }}
+                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                                            showCalendarPicker || newTicketScheduledDate
+                                                ? "bg-violet-100 text-violet-700"
+                                                : "bg-violet-50 text-violet-600 hover:bg-violet-100"
+                                        }`}
+                                    >
+                                        <CalendarPlus01 className="size-3" />
+                                    </button>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => handleCreateTicketSubmit()}
+                                disabled={!newTicketTitle.trim() || isCreatingTicket}
+                                className="w-full rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                            >
+                                {isCreatingTicket ? "Creating..." : "Create Ticket"}
+                            </button>
+                        </div>
+
+                        {/* Divider with "or" */}
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200" />
+                            </div>
+                            <div className="relative flex justify-center">
+                                <span className="bg-white px-2 text-xs text-gray-500">or</span>
+                            </div>
+                        </div>
+
+                        {/* Create from image section */}
+                        <button
+                            onClick={() => {
+                                // TODO: Add image-to-ticket functionality
+                                console.log("Create from image");
+                            }}
+                            className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                        >
+                            <Image01 className="size-4" />
+                            Create from Image
+                        </button>
+                    </div>
+
+                    {/* Custom Calendar Picker */}
+                    {showCalendarPicker && (
+                        <div
+                            className="fixed z-60"
+                            style={{
+                                left: `${calendarPickerPosition.x}px`,
+                                top: `${calendarPickerPosition.y}px`,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <CalendarCard
+                                initialDate={new Date()}
+                                minDate={new Date()}
+                                onSelect={(date: Date) => {
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                                    const day = String(date.getDate()).padStart(2, "0");
+                                    const selectedDate = `${year}-${month}-${day}`;
+                                    setNewTicketScheduledDate(selectedDate);
+                                    setShowCalendarPicker(false);
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Project, Ticket } from "@/app/home-screen";
+import { API_BASE_URL } from "@/config/api";
 
 /**
  * Hook for managing project tickets with caching
@@ -23,7 +24,7 @@ export function useTickets(selectedProjectKey: string | undefined, projects: Pro
                 const project = projects.find((p) => p.project_key === selectedProjectKey);
                 if (!project) return;
 
-                const res = await fetch(`https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/projects/${project.project_id}/tickets`, {
+                const res = await fetch(`${API_BASE_URL}/projects/${project.project_id}/tickets`, {
                     signal: ac.signal,
                 });
                 if (!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`);

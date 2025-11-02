@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Project } from "@/app/home-screen";
+import { API_BASE_URL } from "@/config/api";
 
 /**
  * Hook for managing projects data with caching
@@ -18,7 +19,7 @@ export function useProjects() {
                 setLoading(true);
                 setError(null);
 
-                const res = await fetch("https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/projects", {
+                const res = await fetch(`${API_BASE_URL}/projects`, {
                     signal: ac.signal,
                 });
                 if (!res.ok) throw new Error(`Failed to fetch projects: ${res.status}`);

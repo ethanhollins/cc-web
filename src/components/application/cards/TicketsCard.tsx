@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, BookOpen01, CheckDone02, CheckSquare, ChevronDown, Diamond01, Feather } from "@untitledui/icons";
+import { AlertCircle, BookOpen01, CalendarDate, CheckDone02, CheckSquare, ChevronDown, Diamond01, Feather } from "@untitledui/icons";
 import { Project, Ticket, TicketStatus, TicketType } from "@/app/home-screen";
 import { Card } from "./Card";
 import { CardHeader } from "./CardHeader";
@@ -35,6 +35,8 @@ function typeIcon(t: TicketType) {
             return <Diamond01 className={`${base} text-purple-600`} />;
         case "subtask":
             return <CheckDone02 className={`${base} text-blue-600`} />;
+        case "event":
+            return <CalendarDate className={`${base} text-gray-600`} />;
         default:
             return <CheckSquare className={`${base} text-blue-600`} />; // task
     }
@@ -86,11 +88,13 @@ export default function TicketsCard({ items, projects, selectedProjectKey, onPro
                         onChange={handleChange}
                         className="max-w-[200px] appearance-none truncate rounded-lg border border-gray-300 bg-white py-2 pr-9 pl-3 text-sm font-medium whitespace-nowrap text-gray-900 shadow-sm focus:ring-2 focus:ring-gray-300 focus:outline-none"
                     >
-                        {projects.map((p) => (
-                            <option key={p.project_key} value={p.project_key}>
-                                {p.project_key} — {p.title}
-                            </option>
-                        ))}
+                        {projects
+                            .sort((a, b) => a.project_key.localeCompare(b.project_key))
+                            .map((p) => (
+                                <option key={p.project_key} value={p.project_key}>
+                                    {p.project_key} — {p.title}
+                                </option>
+                            ))}
                         {projects.length === 0 && <option value="">No projects</option>}
                     </select>
                     <ChevronDown className="pointer-events-none absolute top-1/2 right-2 size-4 -translate-y-1/2 text-gray-500" />

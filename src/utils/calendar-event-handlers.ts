@@ -1,7 +1,8 @@
 import moment from "moment-timezone";
 import { Ticket, TicketEvent } from "@/app/home-screen";
+import { API_BASE_URL } from "@/config/api";
 
-const DEFAULT_CALENDAR_ID = "ethanjohol@gmail.com";
+export const DEFAULT_CALENDAR_ID = "ethanjohol@gmail.com";
 
 /**
  * Handle event drop (ticket dragged onto calendar)
@@ -35,7 +36,7 @@ export async function handleEventDrop(dropInfo: any, updateEvents: (updater: (pr
     };
 
     try {
-        const response = await fetch("https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/events", {
+        const response = await fetch(`${API_BASE_URL}/events`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -78,7 +79,7 @@ export async function handleEventChange(resizeInfo: any, updateEvents: (updater:
     console.log("Sydney Start Date:", sydneyStartDate, "Sydney End Date:", sydneyEndDate);
 
     try {
-        const response = await fetch(`https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/events/${resizeInfo.eventId}`, {
+        const response = await fetch(`${API_BASE_URL}/events/${resizeInfo.eventId}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -121,7 +122,7 @@ export async function handleScheduleTicket(ticketId: string, scheduledDate: stri
     console.log("Scheduling ticket:", ticketId, "for date:", scheduledDate);
 
     try {
-        const response = await fetch(`https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/tickets/${ticketId}`, {
+        const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -145,8 +146,82 @@ export async function handleScheduleTicket(ticketId: string, scheduledDate: stri
 }
 
 /**
+ * Handle ticket unscheduling - removes the scheduled_date from a ticket
+ */
+export async function handleUnscheduleTicket(ticketId: string) {
+    console.log("Unscheduling ticket:", ticketId);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                scheduled_date: null,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to unschedule ticket");
+        }
+
+        const result = await response.json();
+        console.log("Successfully unscheduled ticket:", result);
+        return result;
+    } catch (error) {
+        console.error("Error unscheduling ticket:", error);
+        throw error;
+    }
+}
+
+/**
  * Handle event deletion
  */
+export async function handleCreateTicket(
+    ticketData: {
+        title: string;
+        description?: string;
+        priority?: string;
+        project_id: string;
+        status?: string;
+        scheduled_date?: string;
+        start_date?: string;
+        end_date?: string;
+    },
+    events: TicketEvent[],
+    updateEvents: (updater: (prevEvents: TicketEvent[]) => TicketEvent[]) => void,
+) {
+    console.log("Creating new ticket:", ticketData);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/tickets`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(ticketData),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to create ticket: ${response.statusText}`);
+        }
+
+        const newTicket = await response.json();
+        console.log("Created ticket:", newTicket);
+
+        // Add the new ticket to the events list if it has event dates
+        if (newTicket.start_date && newTicket.end_date) {
+            updateEvents((prev) => [...prev, newTicket]);
+        }
+
+        return newTicket;
+    } catch (error) {
+        console.error("Error creating ticket:", error);
+        throw error;
+    }
+}
+
 export async function handleDeleteEvent(eventId: string, events: TicketEvent[], updateEvents: (updater: (prevEvents: TicketEvent[]) => TicketEvent[]) => void) {
     console.log("Delete event requested for:", eventId);
 
@@ -155,7 +230,7 @@ export async function handleDeleteEvent(eventId: string, events: TicketEvent[], 
     if (!event?.google_id) return;
 
     try {
-        const response = await fetch(`https://iwuzz82ao4.execute-api.ap-southeast-2.amazonaws.com/events/${event.google_id}`, {
+        const response = await fetch(`${API_BASE_URL}/events/${event.google_id}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",

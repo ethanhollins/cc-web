@@ -1,29 +1,111 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Sun, Ticket01 } from "@untitledui/icons";
+import { Clock, Sun, Ticket01 } from "@untitledui/icons";
 
-type Status = "In Progress" | "Blocked" | "Done" | string;
+export type Project = {
+    project_id: string;
+    project_key: string;
+    project_status: string;
+    title: string;
+    colour?: string;
+};
+
+export type TicketType = "task" | "story" | "bug" | "epic" | "subtask" | "event";
+
+export type TicketStatus = "Backlog" | "Todo" | "In Progress" | "In Review" | "Blocked" | "Done" | "Removed";
+
+export type Ticket = {
+    ticket_id: string;
+    ticket_key: string;
+    ticket_type: TicketType;
+    title: string;
+    ticket_status: TicketStatus;
+    epic?: string;
+    project_id?: string;
+    project?: Project;
+    notion_url?: string;
+    colour?: string;
+    google_id?: string;
+    scheduled_date?: string; // ISO date string for when ticket is scheduled
+};
+
+export interface TicketEvent extends Ticket {
+    start_date: string; // ISO date string
+    end_date: string; // ISO date string
+    google_calendar_id: string;
+}
 
 type JustInTimeCoverProps = {
     imageUrl?: string;
     temperature?: number | string; // e.g., 22 or "72°F"
     unit?: "C" | "F" | "raw"; // raw = don't append unit if temperature is already a string w/ unit
     condition?: string; // e.g., "sunny"
-    projectTitle?: string;
-    ticketKey?: string; // e.g., PROJ-1234
-    status?: Status;
+    events?: TicketEvent[]; // Array of events for the current day
     className?: string;
 };
 
+// Helper functions to determine event state
+const isEventActive = (event: TicketEvent, currentTime: Date): boolean => {
+    const start = new Date(event.start_date);
+    const end = new Date(event.end_date);
+    return currentTime >= start && currentTime <= end;
+};
+
+const getActiveEvent = (events: TicketEvent[], currentTime: Date): TicketEvent | null => {
+    return events.find((event) => isEventActive(event, currentTime)) || null;
+};
+
+const getNextUpcomingEvent = (events: TicketEvent[], currentTime: Date): TicketEvent | null => {
+    const upcomingEvents = events
+        .filter((event) => new Date(event.start_date) > currentTime)
+        .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+    return upcomingEvents[0] || null;
+};
+
+const formatTimeUntil = (eventStart: string, currentTime: Date): string => {
+    const start = new Date(eventStart);
+    const diffMs = start.getTime() - currentTime.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+    if (diffMinutes < 60) {
+        return `in ${diffMinutes} minutes`;
+    } else {
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        return `in ${hours}h ${minutes}m`;
+    }
+};
+
+const formatEventTime = (eventStart: string): string => {
+    return new Date(eventStart).toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+// Generate a daily seed for consistent background throughout the day
+const getDailySeed = (): string => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}${month}${day}`;
+};
+
+// Generate Lorem Picsum URL with daily seed
+const generateDailyBackgroundUrl = (width: number = 1200, height: number = 400): string => {
+    const seed = getDailySeed();
+    return `https://picsum.photos/seed/${seed}/${width}/${height}`;
+};
+
 export default function JustInTimeCover({
-    imageUrl = "https://images.unsplash.com/photo-1627817783271-1b8d21266a74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdW5ueSUyMHdlYXRoZXIlMjBza3l8ZW58MXx8fHwxNzU5NjM0ODMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    imageUrl = generateDailyBackgroundUrl(),
     temperature = 22,
     unit = "C",
     condition = "sunny",
-    projectTitle = "Implement dashboard analytics",
-    ticketKey = "PROJ-1234",
-    status = "In Progress",
+    events = [],
     className = "",
 }: JustInTimeCoverProps) {
     const [now, setNow] = useState(() => new Date());
@@ -61,9 +143,25 @@ export default function JustInTimeCover({
         return `${temperature}\u00B0C`;
     }, [temperature, unit]);
 
+    // Determine current event state
+    const { activeEvent, upcomingEvent, isDoneForDay } = useMemo(() => {
+        const active = getActiveEvent(events, now);
+        const upcoming = active ? null : getNextUpcomingEvent(events, now);
+        const done = !active && !upcoming;
+
+        return {
+            activeEvent: active,
+            upcomingEvent: upcoming,
+            isDoneForDay: done,
+        };
+    }, [events, now]);
+
     const statusClass = useMemo(() => {
         const base =
             "inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-[color,box-shadow] overflow-hidden";
+
+        const status = activeEvent?.ticket_status || upcomingEvent?.ticket_status || "";
+
         switch (status.toLowerCase()) {
             case "done":
                 return `${base} bg-emerald-500/80 text-white`;
@@ -73,7 +171,7 @@ export default function JustInTimeCover({
             default:
                 return `${base} bg-blue-500/80 text-white`;
         }
-    }, [status]);
+    }, [activeEvent, upcomingEvent]);
 
     return (
         <div className={`relative h-full overflow-hidden rounded-lg ${className}`}>
@@ -102,17 +200,46 @@ export default function JustInTimeCover({
 
                 {/* Bottom Card */}
                 <div className="flex items-center gap-3 rounded-lg border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
-                    <Ticket01 className="size-4" aria-hidden />
-                    <div className="flex-1">
-                        <div className="text-sm opacity-75">Currently Working On</div>
-                        <h3 className="mt-1 leading-tight font-medium">{projectTitle}</h3>
-                        <div className="mt-2 flex items-center gap-2">
-                            <span className="text-sm">{ticketKey}</span>
-                            <span data-slot="badge" className={statusClass}>
-                                {status}
-                            </span>
-                        </div>
-                    </div>
+                    {activeEvent ? (
+                        <>
+                            <Ticket01 className="size-4" aria-hidden />
+                            <div className="flex-1">
+                                <div className="text-sm opacity-75">Currently Working On</div>
+                                <h3 className="mt-1 leading-tight font-medium">{activeEvent.title}</h3>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-sm">{activeEvent.ticket_key}</span>
+                                    <span data-slot="badge" className={statusClass}>
+                                        {activeEvent.ticket_status}
+                                    </span>
+                                </div>
+                            </div>
+                        </>
+                    ) : upcomingEvent ? (
+                        <>
+                            <Clock className="size-4" aria-hidden />
+                            <div className="flex-1">
+                                <div className="text-sm opacity-75">
+                                    Up Next - {formatEventTime(upcomingEvent.start_date)} ({formatTimeUntil(upcomingEvent.start_date, now)})
+                                </div>
+                                <h3 className="mt-1 leading-tight font-medium">{upcomingEvent.title}</h3>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-sm">{upcomingEvent.ticket_key}</span>
+                                    <span data-slot="badge" className={statusClass}>
+                                        {upcomingEvent.ticket_status}
+                                    </span>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <Sun className="size-4" aria-hidden />
+                            <div className="flex-1">
+                                <div className="text-sm opacity-75">Great Job!</div>
+                                <h3 className="mt-1 leading-tight font-medium">You're all done for the day</h3>
+                                <div className="mt-2 text-sm opacity-90">No more scheduled tasks today. Time to relax! 🎉</div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

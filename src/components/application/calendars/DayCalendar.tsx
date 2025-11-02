@@ -113,7 +113,7 @@ export default function DayCalendar({ events = [], onDateChange, onEventClick, o
                         height="100%"
                         expandRows
                         dayHeaders={false}
-                        allDaySlot={false}
+                        allDaySlot={true}
                         slotDuration="00:30:00"
                         snapDuration="00:05:00"
                         slotMinTime="00:00:00"

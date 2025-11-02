@@ -20,11 +20,12 @@ export type Project = {
     project_id: string;
     project_key: string;
     project_status: string;
+    notion_id: string;
     title: string;
     colour?: string;
 };
 
-export type TicketType = "task" | "story" | "bug" | "epic" | "subtask";
+export type TicketType = "task" | "story" | "bug" | "epic" | "subtask" | "event";
 
 export type TicketStatus = "Backlog" | "Todo" | "In Progress" | "In Review" | "Blocked" | "Done" | "Removed";
 
@@ -46,6 +47,7 @@ export type Ticket = {
 export interface TicketEvent extends Ticket {
     start_date: string; // ISO date string
     end_date: string; // ISO date string
+    all_day?: boolean;
     google_calendar_id: string;
 }
 
@@ -104,7 +106,7 @@ export const HomeScreen = () => {
             />
             <div className="pt-2s ml-[68px] flex min-h-0 flex-1 flex-col px-4 pt-2">
                 <div className="h-[33%] flex-1">
-                    <JustInTimeCover />
+                    <JustInTimeCover events={events} />
                 </div>
                 <div className="flex h-[67%] flex-1">
                     <DayCalendar
@@ -114,6 +116,7 @@ export const HomeScreen = () => {
                                 title: event.title,
                                 start: moment(event.start_date).tz("Australia/Sydney").format(),
                                 end: moment(event.end_date).tz("Australia/Sydney").format(),
+                                allDay: event.all_day,
                                 extendedProps: {
                                     showBand: event.epic !== null && event.epic !== "" && event.epic !== undefined,
                                     bandColor: event.colour,
@@ -223,7 +226,7 @@ export const HomeScreen = () => {
                     </div>
                 </div>
             </div>
-            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticket={openedTicket} />
+            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticketId={openedTicket?.ticket_id || null} />
         </div>
     );
 };

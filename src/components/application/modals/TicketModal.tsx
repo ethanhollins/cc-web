@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { ChevronDown, ChevronRight, Diamond01, Package, Ticket01 } from "@untitledui/icons";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Project } from "@/app/home-screen";
+import { useTicketDocuments, useTicketNotionContent, useTicketNotionData } from "@/hooks/use-ticket-notion-data";
+import { DescriptionContentSkeleton, SidebarSkeleton, TicketDataSkeleton } from "./LoadingComponents";
 
 export type TicketDetail = {
     ticket_id: string;
@@ -27,16 +32,29 @@ export type TicketDetail = {
 
 type Props = {
     open: boolean;
-    ticket: TicketDetail | null;
+    ticketId: string | null;
     onClose: () => void;
 };
 
-export default function TicketModal({ open, ticket, onClose }: Props) {
-    const [local, setLocal] = useState<TicketDetail | null>(null);
+export default function TicketModal({ open, ticketId, onClose }: Props) {
+    // Fetch ticket data and content from the APIs
+    const { data: ticketData, loading: ticketLoading, error: ticketError } = useTicketNotionData(open ? ticketId : null);
+    const { content: ticketContent, loading: contentLoading, error: contentError } = useTicketNotionContent(open ? ticketId : null);
+    const { documents: ticketDocuments, loading: documentsLoading, error: documentsError } = useTicketDocuments(open ? ticketId : null);
 
-    useEffect(() => {
-        setLocal(ticket ? { ...ticket } : null);
-    }, [ticket]);
+    // State for collapsible sections
+    const [expandedSections, setExpandedSections] = useState({
+        project: true,
+        epic: true,
+        ticket: true,
+    });
+
+    const toggleSection = (section: "project" | "epic" | "ticket") => {
+        setExpandedSections((prev) => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    };
 
     // helper to render initials and avatar circle
     const initials = (name?: string) =>
@@ -72,7 +90,43 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
         };
     }, [open, onClose]);
 
-    if (!open || !local) return null;
+    if (!open) return null;
+
+    // Show loading skeleton if still loading initial data
+    if (ticketLoading || !ticketData) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+                <div className="relative z-10 mx-4 flex max-h-[92vh] w-[920px] max-w-full transform flex-row overflow-hidden rounded-xl bg-white shadow-2xl">
+                    <div className="flex min-w-0 flex-1 flex-col overflow-auto p-6">
+                        <TicketDataSkeleton />
+                    </div>
+                    <aside className="flex w-80 flex-shrink-0 flex-col border-l border-gray-100 bg-gray-50 p-4">
+                        <SidebarSkeleton />
+                    </aside>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (ticketError) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+                <div className="relative z-10 mx-4 flex max-h-[92vh] w-[920px] max-w-full transform flex-row overflow-hidden rounded-xl bg-white shadow-2xl">
+                    <div className="flex min-w-0 flex-1 flex-col overflow-auto p-6">
+                        <div className="text-center text-red-600">
+                            <p>Error loading ticket data: {ticketError}</p>
+                            <button onClick={onClose} className="mt-4 rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
@@ -88,7 +142,7 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                 <div className="flex min-w-0 flex-1 flex-col overflow-auto p-6">
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                         {(() => {
-                            const t = (local.ticket_type ?? "task") as string;
+                            const t = (ticketData.ticket_type ?? "task") as string;
                             const map: Record<string, string> = {
                                 task: "bg-blue-100 text-blue-600",
                                 story: "bg-emerald-100 text-emerald-700",
@@ -100,14 +154,14 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                             return <span className={`inline-flex h-6 items-center justify-center rounded-md px-2 text-xs font-semibold ${cls}`}>{t}</span>;
                         })()}
                         <span className="inline-flex h-6 flex-shrink-0 items-center justify-center rounded-sm bg-gray-100 px-2 text-xs font-semibold text-gray-700">
-                            {local.ticket_key}
+                            {ticketData.ticket_key}
                         </span>
                     </div>
                     {/* Header */}
                     <div className="mb-4 flex items-start justify-between gap-4">
                         <div className="min-w-0">
                             <div className="flex items-center gap-3">
-                                <h2 className="min-w-0 text-lg font-semibold text-gray-900">{local.title}</h2>
+                                <h2 className="min-w-0 text-xl font-semibold text-gray-900">{ticketData.title}</h2>
                             </div>
                         </div>
                     </div>
@@ -116,8 +170,14 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                     <div className="mb-4">
                         <h4 className="mb-2 text-md font-semibold text-gray-600">Description</h4>
 
-                        {local.description ? (
-                            <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-800">{local.description}</div>
+                        {contentLoading ? (
+                            <DescriptionContentSkeleton />
+                        ) : contentError ? (
+                            <div className="text-sm text-red-600">Error loading description: {contentError}</div>
+                        ) : ticketContent ? (
+                            <div className="prose prose-sm max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{ticketContent}</ReactMarkdown>
+                            </div>
                         ) : (
                             <div className="text-sm text-gray-400">No description</div>
                         )}
@@ -126,20 +186,12 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                     {/* Subtasks */}
                     <div className="mb-4">
                         <h4 className="mb-2 text-md font-semibold text-gray-600">Subtasks</h4>
-                        {local.subtasks && local.subtasks.length > 0 ? (
+                        {ticketData.subtasks && ticketData.subtasks.length > 0 ? (
                             <ul className="space-y-2">
-                                {local.subtasks.map((st) => (
-                                    <li key={st.ticket_id} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
+                                {ticketData.subtasks.map((subtask, index) => (
+                                    <li key={index} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
                                         <div className="min-w-0">
-                                            <a
-                                                href={st.notion_url ?? "#"}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="truncate font-medium text-gray-900 hover:underline"
-                                            >
-                                                {st.ticket_key} — {st.title}
-                                            </a>
-                                            <div className="text-xs text-gray-500">{st.ticket_status ?? ""}</div>
+                                            <span className="truncate font-medium text-gray-900">{subtask}</span>
                                         </div>
                                     </li>
                                 ))}
@@ -152,20 +204,12 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                     {/* Linked Tickets */}
                     <div className="mb-4">
                         <h4 className="mb-2 text-md font-semibold text-gray-600">Linked tickets</h4>
-                        {local.linkedTickets && local.linkedTickets.length > 0 ? (
+                        {ticketData.linked_tickets && ticketData.linked_tickets.length > 0 ? (
                             <ul className="space-y-2">
-                                {local.linkedTickets.map((lt) => (
-                                    <li key={lt.ticket_id} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
+                                {ticketData.linked_tickets.map((linkedTicket, index) => (
+                                    <li key={index} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
                                         <div className="min-w-0">
-                                            <a
-                                                href={lt.notion_url ?? "#"}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="truncate font-medium text-gray-900 hover:underline"
-                                            >
-                                                {lt.ticket_key} — {lt.title}
-                                            </a>
-                                            <div className="text-xs text-gray-500">{lt.relation ?? ""}</div>
+                                            <span className="truncate font-medium text-gray-900">{linkedTicket}</span>
                                         </div>
                                     </li>
                                 ))}
@@ -175,38 +219,177 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                         )}
                     </div>
 
-                    {/* Activity (comments) - moved here from the sidebar */}
+                    {/* Documents Hierarchy */}
                     <div className="mb-4">
-                        <h5 className="text-md font-semibold text-gray-600">Comments</h5>
-                        <div className="mt-2 max-h-[220px] overflow-auto pr-1 text-sm">
-                            {(local.comments ?? []).length === 0 ? (
-                                <div className="text-xs text-gray-400">No comments yet</div>
-                            ) : (
-                                (local.comments ?? [])
-                                    .slice()
-                                    .reverse()
-                                    .map((c) => (
-                                        <div key={c.id} className="mb-3">
-                                            <div className="flex items-start gap-3">
-                                                {/* avatar */}
-                                                <div className="flex-shrink-0">
-                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-700">
-                                                        {initials(c.author)}
-                                                    </div>
-                                                </div>
-
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="truncate text-sm font-medium text-gray-800">{c.author}</div>
-                                                        <div className="flex-shrink-0 text-xs text-gray-400">{new Date(c.timeISO).toLocaleString()}</div>
-                                                    </div>
-                                                    <div className="mt-1 text-sm whitespace-pre-wrap text-gray-700">{c.text}</div>
-                                                </div>
+                        <h4 className="mb-2 text-md font-semibold text-gray-600">Related documents</h4>
+                        {documentsLoading ? (
+                            <div className="space-y-2">
+                                <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200"></div>
+                                <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200"></div>
+                                <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200"></div>
+                            </div>
+                        ) : documentsError ? (
+                            <div className="text-sm text-red-600">Error loading documents: {documentsError}</div>
+                        ) : ticketDocuments && (ticketDocuments.project.length > 0 || ticketDocuments.epic.length > 0 || ticketDocuments.ticket.length > 0) ? (
+                            <div className="space-y-2">
+                                {/* Project Documents */}
+                                {ticketDocuments.project.length > 0 && (
+                                    <div>
+                                        <button
+                                            onClick={() => toggleSection("project")}
+                                            className="mb-2 flex w-full items-center gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-gray-50"
+                                        >
+                                            {expandedSections.project ? (
+                                                <ChevronDown className="h-3 w-3 text-gray-400" />
+                                            ) : (
+                                                <ChevronRight className="h-3 w-3 text-gray-400" />
+                                            )}
+                                            <Package className="h-3 w-3 text-purple-500" />
+                                            <span className="truncate text-xs font-semibold text-gray-700" title={ticketData.project_title}>
+                                                {ticketData.project_title || "Project"}
+                                            </span>
+                                            <span className="ml-auto text-xs text-gray-400">({ticketDocuments.project.length})</span>
+                                        </button>
+                                        {expandedSections.project && (
+                                            <div className="ml-4 space-y-1">
+                                                {ticketDocuments.project.map((doc, index) => (
+                                                    <a
+                                                        key={index}
+                                                        href={doc.notion_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                                    >
+                                                        <svg
+                                                            className="h-4 w-4 text-gray-400 group-hover:text-blue-500"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={1.5}
+                                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                            />
+                                                        </svg>
+                                                        <span className="truncate font-medium text-gray-900 group-hover:text-blue-700" title={doc.title}>
+                                                            {doc.title}
+                                                        </span>
+                                                    </a>
+                                                ))}
                                             </div>
-                                        </div>
-                                    ))
-                            )}
-                        </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Epic Documents */}
+                                {ticketDocuments.epic.length > 0 && (
+                                    <div>
+                                        <button
+                                            onClick={() => toggleSection("epic")}
+                                            className="mb-2 flex w-full items-center gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-gray-50"
+                                        >
+                                            <div className="ml-4"></div>
+                                            {expandedSections.epic ? (
+                                                <ChevronDown className="h-3 w-3 text-gray-400" />
+                                            ) : (
+                                                <ChevronRight className="h-3 w-3 text-gray-400" />
+                                            )}
+                                            <Diamond01 className="h-3 w-3 text-indigo-500" />
+                                            <span className="truncate text-xs font-semibold text-gray-700" title={ticketData.epic}>
+                                                {ticketData.epic || "Epic"}
+                                            </span>
+                                            <span className="ml-auto text-xs text-gray-400">({ticketDocuments.epic.length})</span>
+                                        </button>
+                                        {expandedSections.epic && (
+                                            <div className="ml-8 space-y-1">
+                                                {ticketDocuments.epic.map((doc, index) => (
+                                                    <a
+                                                        key={index}
+                                                        href={doc.notion_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                                    >
+                                                        <svg
+                                                            className="h-4 w-4 text-gray-400 group-hover:text-blue-500"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={1.5}
+                                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                            />
+                                                        </svg>
+                                                        <span className="truncate font-medium text-gray-900 group-hover:text-blue-700" title={doc.title}>
+                                                            {doc.title}
+                                                        </span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Ticket Documents */}
+                                {ticketDocuments.ticket.length > 0 && (
+                                    <div>
+                                        <button
+                                            onClick={() => toggleSection("ticket")}
+                                            className="mb-2 flex w-full items-center gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-gray-50"
+                                        >
+                                            <div className="ml-8"></div>
+                                            {expandedSections.ticket ? (
+                                                <ChevronDown className="h-3 w-3 text-gray-400" />
+                                            ) : (
+                                                <ChevronRight className="h-3 w-3 text-gray-400" />
+                                            )}
+                                            <Ticket01 className="h-3 w-3 text-blue-500" />
+                                            <span className="truncate text-xs font-semibold text-gray-700" title={ticketData.title}>
+                                                {ticketData.title}
+                                            </span>
+                                            <span className="ml-auto text-xs text-gray-400">({ticketDocuments.ticket.length})</span>
+                                        </button>
+                                        {expandedSections.ticket && (
+                                            <div className="ml-12 space-y-1">
+                                                {ticketDocuments.ticket.map((doc, index) => (
+                                                    <a
+                                                        key={index}
+                                                        href={doc.notion_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                                    >
+                                                        <svg
+                                                            className="h-4 w-4 text-gray-400 group-hover:text-blue-500"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={1.5}
+                                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                            />
+                                                        </svg>
+                                                        <span className="truncate font-medium text-gray-900 group-hover:text-blue-700" title={doc.title}>
+                                                            {doc.title}
+                                                        </span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-sm text-gray-400">No related documents</div>
+                        )}
                     </div>
                 </div>
 
@@ -215,7 +398,7 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                     {/* Status box at top of sidebar */}
                     <div className="mb-4">
                         {(() => {
-                            const s = local.ticket_status ?? "Unknown";
+                            const s = ticketData.ticket_status ?? "Unknown";
                             // colour mapping aligned with TicketsCard.tsx
                             const map: Record<string, string> = {
                                 Backlog: "bg-gray-100 text-gray-700",
@@ -245,11 +428,11 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                         <div className="flex items-center gap-3">
                             <div className="flex-shrink-0">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-700">
-                                    {initials(local.assignee)}
+                                    {initials(ticketData.assignee)}
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm font-medium text-gray-900">{local.assignee ?? "Unassigned"}</div>
+                                <div className="text-sm font-medium text-gray-900">{ticketData.assignee ?? "Unassigned"}</div>
                                 <div className="text-xs text-gray-500">Assignee</div>
                             </div>
                         </div>
@@ -257,33 +440,29 @@ export default function TicketModal({ open, ticket, onClose }: Props) {
                         <div className="mt-3 flex min-w-0 flex-col gap-2">
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className="flex-shrink-0 text-xs text-gray-500">Project:</span>
-                                <span className="min-w-0 truncate font-medium text-gray-900">{local.project?.title ?? local.project?.project_key ?? "-"}</span>
-                                {local.project?.project_key && local.project?.title && (
-                                    <span className="ml-2 flex-shrink-0 text-xs text-gray-500">({local.project?.project_key})</span>
-                                )}
+                                <span className="min-w-0 truncate font-medium text-gray-900">{ticketData.project_title ?? "-"}</span>
                             </div>
 
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className="flex-shrink-0 text-xs text-gray-500">Epic:</span>
-                                <span className="min-w-0 truncate font-medium text-gray-900">{local.epic ?? "-"}</span>
+                                <span className="min-w-0 truncate font-medium text-gray-900">{ticketData.epic ?? "-"}</span>
                             </div>
 
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className="flex-shrink-0 text-xs text-gray-500">Priority:</span>
-                                <span className="min-w-0 truncate font-medium text-gray-900">{local.priority ?? "-"}</span>
+                                <span className="min-w-0 truncate font-medium text-gray-900">{ticketData.priority ?? "-"}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Go to Notion button at bottom */}
-
                     <div className="mt-auto">
                         <div className="mt-3 mb-4 text-xs text-gray-500">
-                            <div>Created: {local.createdAtISO ? new Date(local.createdAtISO).toLocaleString() : "-"}</div>
-                            <div className="mt-1">Updated: {local.updatedAtISO ? new Date(local.updatedAtISO).toLocaleString() : "-"}</div>
+                            <div>Created: {ticketData.created_time ? new Date(ticketData.created_time).toLocaleString() : "-"}</div>
+                            <div className="mt-1">Updated: {ticketData.last_edited_time ? new Date(ticketData.last_edited_time).toLocaleString() : "-"}</div>
                         </div>
                         <a
-                            href={local.notion_url}
+                            href={ticketData.notion_url}
                             target="_blank"
                             rel="noreferrer"
                             aria-label="Go to Notion"
