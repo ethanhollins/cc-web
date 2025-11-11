@@ -15,6 +15,7 @@ import { Ticket } from "../home-screen";
 
 const PlannerScreen = () => {
     const [openedTicket, setOpenedTicket] = useState<Ticket | null>(null);
+    const [openedEventId, setOpenedEventId] = useState<string | null>(null);
 
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -32,8 +33,9 @@ const PlannerScreen = () => {
 
     const handleEventClick = (eventId: string) => {
         console.log("Event clicked:", eventId);
-        const ticket = eventId ? events.find((e) => e.ticket_id === eventId) : null;
-        setOpenedTicket(ticket || null);
+        const event = eventId ? events.find((e) => e.google_id === eventId) : null;
+        setOpenedTicket(event || null);
+        setOpenedEventId(eventId); // Store the google_id that was passed in
     };
 
     const handleProjectChange = (projectKey: string) => {
@@ -42,6 +44,7 @@ const PlannerScreen = () => {
 
     const handleTicketClick = (ticket: Ticket) => {
         setOpenedTicket(ticket);
+        setOpenedEventId(null); // Clear event ID when opening from ticket list (not from calendar event)
     };
 
     const handleEventDropWrapper = (dropInfo: any) => {
@@ -110,6 +113,7 @@ const PlannerScreen = () => {
                                 ticket_key: event.ticket_key,
                                 ticket_status: event.ticket_status,
                                 google_calendar_id: event.google_calendar_id,
+                                completed: event.completed || false,
                                 project: event.project || projects.find((p) => p.project_id === event.project_id),
                             },
                         };
@@ -132,7 +136,17 @@ const PlannerScreen = () => {
                     onUpdateEvents={updateEvents}
                 />
             </div>
-            <TicketModal open={openedTicket !== null} onClose={() => setOpenedTicket(null)} ticketId={openedTicket?.ticket_id || null} />
+            <TicketModal
+                open={openedTicket !== null}
+                onClose={() => {
+                    setOpenedTicket(null);
+                    setOpenedEventId(null);
+                }}
+                ticketId={openedTicket?.ticket_id || null}
+                eventId={openedEventId}
+                events={events}
+                onEventUpdate={updateEvents}
+            />
         </div>
     );
 };

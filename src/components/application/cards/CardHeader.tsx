@@ -8,7 +8,7 @@ type CardHeaderProps = PropsWithChildren<{
 
 export const CardHeader = ({ title, className, headerIcon, children }: CardHeaderProps) => {
     return (
-        <div className="sticky top-0 z-20 flex min-h-12 items-center justify-between px-5 py-2 shadow-sm backdrop-blur-lg" role="banner" aria-hidden="false">
+        <div className="sticky top-0 z-20 flex min-h-12 items-center justify-between bg-white px-5 py-3" role="banner" aria-hidden="false">
             <span className={`mr-2 flex items-center gap-2 text-md font-semibold ${className}`}>
                 {headerIcon}
                 {title}

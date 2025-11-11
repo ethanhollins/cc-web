@@ -13,7 +13,7 @@ export type Project = {
 
 export type TicketType = "task" | "story" | "bug" | "epic" | "subtask" | "event";
 
-export type TicketStatus = "Backlog" | "Todo" | "In Progress" | "In Review" | "Blocked" | "Done" | "Removed";
+export type TicketStatus = "Backlog" | "Todo" | "In Progress" | "In Review" | "Blocked" | "Ongoing" | "Done" | "Removed";
 
 export type Ticket = {
     ticket_id: string;
@@ -33,8 +33,9 @@ export type Ticket = {
 export interface TicketEvent extends Ticket {
     start_date: string; // ISO date string
     end_date: string; // ISO date string
-    all_day?: boolean;
     google_calendar_id: string;
+    all_day?: boolean;
+    completed?: boolean;
 }
 
 type JustInTimeCoverProps = {
@@ -113,8 +114,10 @@ export default function JustInTimeCover({
     className = "",
 }: JustInTimeCoverProps) {
     const [now, setNow] = useState(() => new Date());
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
+        setIsClient(true);
         const t = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(t);
     }, []);
@@ -171,6 +174,8 @@ export default function JustInTimeCover({
                 return `${base} bg-emerald-500/80 text-white`;
             case "blocked":
                 return `${base} bg-rose-500/80 text-white`;
+            case "ongoing":
+                return `${base} bg-pink-500/80 text-white`;
             case "in progress":
             default:
                 return `${base} bg-blue-500/80 text-white`;
@@ -197,8 +202,8 @@ export default function JustInTimeCover({
                     </div>
 
                     <div className="text-right">
-                        <div className="text-3xl tabular-nums">{timeText}</div>
-                        <div className="opacity-90">{dateText}</div>
+                        <div className="text-3xl tabular-nums">{isClient ? timeText : "00:00:00"}</div>
+                        <div className="opacity-90">{isClient ? dateText : "Loading..."}</div>
                     </div>
                 </div>
 

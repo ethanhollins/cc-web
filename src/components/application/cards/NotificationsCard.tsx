@@ -30,7 +30,7 @@ export default function NotificationsCard({ items, newCount = items.filter((i) =
     }
 
     return (
-        <Card className="mt-[10px] mb-[5px] flex-6">
+        <Card className="mt-2 mb-2 flex-6">
             <CardHeader title="Recent Notifications" className="text-blue-950" headerIcon={<Bell01 className="size-5 text-blue-800" />}>
                 {!!newCount && <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-900 select-none">{newCount} new</span>}
             </CardHeader>
@@ -52,13 +52,13 @@ export default function NotificationsCard({ items, newCount = items.filter((i) =
                     );
 
                     return (
-                        <li key={n.id} className={[idx !== items.length - 1 ? "border-b border-gray-200/70" : ""].join(" ")}>
+                        <li key={n.id}>
                             <RowTag
                                 {...(n.href ? { href: n.href } : {})}
                                 className={[
-                                    "flex items-center justify-between gap-2 px-4 py-2",
-                                    n.unread ? "bg-slate-50" : "",
-                                    n.href ? "-mx-2 rounded-lg px-2 ring-0 outline-none hover:bg-gray-50 focus:bg-gray-50" : "",
+                                    "flex items-center justify-between gap-2 px-4 py-3",
+                                    n.unread ? "bg-blue-50/30" : "",
+                                    n.href ? "ring-0 outline-none hover:bg-gray-50/50 focus:bg-gray-50/50" : "",
                                 ].join(" ")}
                             >
                                 {content}

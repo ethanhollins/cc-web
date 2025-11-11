@@ -68,9 +68,10 @@ export async function handleEventDrop(dropInfo: any, updateEvents: (updater: (pr
 
 /**
  * Handle event resize/change (event duration or time changed)
+ * This function only handles the API call since optimistic updates are done in the component
  */
-export async function handleEventChange(resizeInfo: any, updateEvents: (updater: (prevEvents: TicketEvent[]) => TicketEvent[]) => void) {
-    console.log("Event resized:", resizeInfo);
+export async function handleEventChange(resizeInfo: any, updateEvents?: (updater: (prevEvents: TicketEvent[]) => TicketEvent[]) => void) {
+    console.log("Event API update:", resizeInfo);
 
     const startDateStr = resizeInfo.startDate.slice(0, 19); // Get YYYY-MM-DDTHH:mm:ss
     const endDateStr = resizeInfo.endDate.slice(0, 19);
@@ -96,22 +97,15 @@ export async function handleEventChange(resizeInfo: any, updateEvents: (updater:
         }
 
         const res = await response.json();
-        console.log("Updated event:", res);
+        console.log("Event successfully updated on server:", res);
 
-        // Update the event in the events list
-        updateEvents((prev) =>
-            prev.map((e) =>
-                e.google_id === resizeInfo.eventId
-                    ? {
-                          ...e,
-                          start_date: sydneyStartDate,
-                          end_date: sydneyEndDate,
-                      }
-                    : e,
-            ),
-        );
+        return { success: true, data: res };
     } catch (error) {
         console.error("Error updating event:", error);
+
+        // If updateEvents callback is provided, we can show an error state or revert
+        // For now, just return the error - the component can handle showing a toast/notification
+        return { success: false, error };
     }
 }
 
@@ -248,5 +242,39 @@ export async function handleDeleteEvent(eventId: string, events: TicketEvent[], 
         updateEvents((prev) => prev.filter((e) => e.google_id !== eventId));
     } catch (error) {
         console.error("Error deleting event:", error);
+    }
+}
+
+/**
+ * Handle event completion toggle
+ */
+export async function handleEventCompletionToggle(
+    eventId: string,
+    completed: boolean,
+    updateEvents: (updater: (prevEvents: TicketEvent[]) => TicketEvent[]) => void,
+) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/${eventId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                completed: completed,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to update event completion");
+        }
+
+        const res = await response.json();
+        console.log("Updated event completion:", res);
+
+        // Update the event in the events list
+        updateEvents((prev) => prev.map((e) => (e.google_id === eventId ? { ...e, completed: completed } : e)));
+    } catch (error) {
+        console.error("Error updating event completion:", error);
+        throw error;
     }
 }

@@ -23,8 +23,9 @@ export interface TicketEvent {
     meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
     start_date: string; // ISO date string
     end_date: string; // ISO date string
-    all_day?: boolean;
     google_calendar_id: string;
+    all_day?: boolean;
+    completed?: boolean;
 }
 
 type Props = {

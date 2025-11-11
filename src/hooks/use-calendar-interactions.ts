@@ -13,9 +13,40 @@ export interface ContextMenu {
 }
 
 /**
+ * Hook for managing event drag and resize state
+ */
+export function useEventDragState() {
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleDragStart = useCallback(() => {
+        setIsDragging(true);
+    }, []);
+
+    const handleDragStop = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    const handleResizeStart = useCallback(() => {
+        setIsDragging(true);
+    }, []);
+
+    const handleResizeStop = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    return {
+        isDragging,
+        handleDragStart,
+        handleDragStop,
+        handleResizeStart,
+        handleResizeStop,
+    };
+}
+
+/**
  * Hook for managing calendar context menu state and interactions
  */
-export function useCalendarContextMenu() {
+export function useCalendarContextMenu(isDragging?: boolean) {
     const [contextMenu, setContextMenu] = useState<ContextMenu>({
         show: false,
         x: 0,
@@ -23,16 +54,31 @@ export function useCalendarContextMenu() {
         type: "event",
     });
 
-    const showContextMenu = useCallback((x: number, y: number, eventId?: string, googleCalendarId?: string) => {
-        setContextMenu({
-            show: true,
-            x,
-            y,
-            type: "event",
-            eventId,
-            googleCalendarId,
-        });
-    }, []);
+    const showContextMenu = useCallback(
+        (x: number, y: number, eventId?: string, googleCalendarId?: string) => {
+            // Don't show context menu if an event is being dragged
+            if (isDragging) {
+                return;
+            }
+
+            setContextMenu({
+                show: true,
+                x,
+                y,
+                type: "event",
+                eventId,
+                googleCalendarId,
+            });
+        },
+        [isDragging],
+    );
+
+    // Auto-hide context menu when dragging starts
+    useEffect(() => {
+        if (isDragging && contextMenu.show) {
+            setContextMenu((prev) => ({ ...prev, show: false }));
+        }
+    }, [isDragging, contextMenu.show]);
 
     const hideContextMenu = useCallback(() => {
         setContextMenu((prev) => ({ ...prev, show: false }));
@@ -55,26 +101,28 @@ export function useCalendarContextMenu() {
 /**
  * Hook for managing long press interactions on touch devices
  */
-export function useLongPress() {
+export function useLongPress(isDragging?: boolean) {
     const [isLongPressing, setIsLongPressing] = useState(false);
     const [editableEventId, setEditableEventId] = useState<string | null>(null);
 
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
     const editingLongPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const onHideContextMenuRef = useRef<(() => void) | null>(null);
 
     const handleTouchStart = useCallback(
-        (e: React.TouchEvent, eventId?: string, onContextMenu?: (x: number, y: number) => void) => {
+        (e: React.TouchEvent, eventId?: string, onContextMenu?: (x: number, y: number) => void, onHideContextMenu?: () => void) => {
             setIsLongPressing(false);
+            onHideContextMenuRef.current = onHideContextMenu || null;
 
-            // If this event is already in editing mode, don't start new timers
-            if (editableEventId === eventId) {
+            // Don't start timers if dragging or if this event is already in editing mode
+            if (isDragging || editableEventId === eventId) {
                 return;
             }
 
             // Context menu timer (500ms)
             longPressTimer.current = setTimeout(() => {
-                // Don't show context menu if event is in editing mode
-                if (editableEventId !== eventId) {
+                // Don't show context menu if dragging or event is in editing mode
+                if (!isDragging && editableEventId !== eventId) {
                     setIsLongPressing(true);
                     const touch = e.touches[0];
                     onContextMenu?.(touch.clientX, touch.clientY);
@@ -83,6 +131,8 @@ export function useLongPress() {
 
             // Event editing timer (1000ms - twice as long)
             editingLongPressTimer.current = setTimeout(() => {
+                // Hide context menu before entering edit mode
+                onHideContextMenuRef.current?.();
                 setEditableEventId(eventId || null);
                 console.log("Event editing enabled for:", eventId);
             }, 1000);

@@ -18,8 +18,11 @@ export function CalendarEventContent({ arg }: CalendarEventContentProps) {
     const bandColor = arg.event.extendedProps?.bandColor || "#3b82f6"; // Default blue
     const showBand = arg.event.extendedProps?.showBand !== false; // Show by default
 
-    // Check if event is completed (Done or Removed status)
-    const isCompleted = arg.event.extendedProps?.ticket_status === "Done" || arg.event.extendedProps?.ticket_status === "Removed";
+    // Check if event is completed (Done or Removed status, or marked as completed)
+    const isCompleted =
+        arg.event.extendedProps?.ticket_status === "Done" ||
+        arg.event.extendedProps?.ticket_status === "Removed" ||
+        arg.event.extendedProps?.completed === true;
 
     // Use compact layout for events less than 30 minutes
     if (isEventShort) {

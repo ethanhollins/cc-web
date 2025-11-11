@@ -45,16 +45,17 @@ type TabType = "today" | "unscheduled" | "backlog";
 const statusRank: Record<TicketStatus, number> = {
     "In Progress": 0,
     "In Review": 1,
-    Blocked: 2,
-    Todo: 3,
-    Backlog: 4,
-    Done: 5,
-    Removed: 6,
+    Ongoing: 2,
+    Blocked: 3,
+    Todo: 4,
+    Backlog: 5,
+    Done: 6,
+    Removed: 7,
 };
 
 function typeIcon(t: TicketType) {
     const base = "size-3";
-    switch (t) {
+    switch (t.toLowerCase()) {
         case "bug":
             return <AlertCircle className={`${base} text-red-600`} />;
         case "story":
@@ -217,13 +218,16 @@ export default function TicketsList({
                 project_id: selectedProject.notion_id,
                 internal_project_id: selectedProject.project_id,
                 type: newTicketType.charAt(0).toUpperCase() + newTicketType.slice(1), // Capitalize first letter
-                scheduled_date: newTicketScheduledDate || undefined,
                 google_calendar_id: DEFAULT_CALENDAR_ID,
-                // Add start and end dates for event types (already in Australia/Sydney timezone from calendar)
-                ...(newTicketType === "event" &&
-                    newEventDateRange && {
-                        start_date: moment.tz(newEventDateRange.startDate, "Australia/Sydney").format(),
-                        end_date: moment.tz(newEventDateRange.endDate, "Australia/Sydney").format(),
+                // If we have event date range (from calendar), always use start/end dates regardless of ticket type
+                ...(newEventDateRange && {
+                    start_date: moment.tz(newEventDateRange.startDate, "Australia/Sydney").format(),
+                    end_date: moment.tz(newEventDateRange.endDate, "Australia/Sydney").format(),
+                }),
+                // Only use scheduled_date if there's no event date range (manually scheduled)
+                ...(!newEventDateRange &&
+                    newTicketScheduledDate && {
+                        scheduled_date: newTicketScheduledDate,
                     }),
             };
 
@@ -279,8 +283,11 @@ export default function TicketsList({
     // Update new ticket project when main project changes
     useEffect(() => {
         setNewTicketProject(projectKey);
-        setNewTicketType("task"); // Reset to default type when project changes
-    }, [projectKey]);
+        // Only reset ticket type if not creating from calendar interaction (no event date range)
+        if (!newEventDateRange) {
+            setNewTicketType("task"); // Reset to default type when project changes
+        }
+    }, [projectKey, newEventDateRange]);
 
     // Handle external event creation trigger
     useEffect(() => {
@@ -307,9 +314,9 @@ export default function TicketsList({
     const projectTickets = React.useMemo(() => {
         const allTickets = items[projectKey] || [];
 
-        // Base filter: exclude epics and removed tickets, but keep done tickets for special handling
+        // Base filter: exclude epics, events, and removed tickets, but keep done tickets for special handling
         let filtered = allTickets.filter(
-            (ticket) => !["epic"].includes(ticket.ticket_type.toLowerCase()) && !["removed"].includes(ticket.ticket_status.toLowerCase()),
+            (ticket) => !["epic", "event"].includes(ticket.ticket_type.toLowerCase()) && !["removed"].includes(ticket.ticket_status.toLowerCase()),
         );
 
         // If no selected day, show all filtered tickets in the appropriate tabs (excluding done)
@@ -886,7 +893,34 @@ export default function TicketsList({
                                     {typeIcon(newTicketType)}
                                     <select
                                         value={newTicketType}
-                                        onChange={(e) => setNewTicketType(e.target.value as TicketType)}
+                                        onChange={(e) => {
+                                            const newType = e.target.value as TicketType;
+
+                                            // If changing from event to non-event type and we have an event date range,
+                                            // convert to scheduled date but keep event date range for display
+                                            if (newTicketType === "event" && newType !== "event" && newEventDateRange && !newTicketScheduledDate) {
+                                                const year = newEventDateRange.startDate.getFullYear();
+                                                const month = String(newEventDateRange.startDate.getMonth() + 1).padStart(2, "0");
+                                                const day = String(newEventDateRange.startDate.getDate()).padStart(2, "0");
+                                                setNewTicketScheduledDate(`${year}-${month}-${day}`);
+                                                // Keep the event date range for display purposes
+                                            }
+                                            // If changing from non-event to event type and we have a scheduled date,
+                                            // convert to event date range
+                                            else if (newTicketType !== "event" && newType === "event" && newTicketScheduledDate) {
+                                                // If we don't have an event date range, create one from scheduled date
+                                                if (!newEventDateRange) {
+                                                    const scheduledDate = new Date(newTicketScheduledDate);
+                                                    setNewEventDateRange({
+                                                        startDate: scheduledDate,
+                                                        endDate: scheduledDate,
+                                                    });
+                                                }
+                                                setNewTicketScheduledDate(null);
+                                            }
+
+                                            setNewTicketType(newType);
+                                        }}
                                         className="cursor-pointer appearance-none border-none bg-transparent outline-none hover:text-gray-800 focus:text-gray-800"
                                     >
                                         <option value="task">Task</option>
@@ -903,17 +937,41 @@ export default function TicketsList({
                                 {/* Show scheduled date for non-event types */}
                                 {newTicketScheduledDate && newTicketType !== "event" && (
                                     <button
-                                        onClick={() => setNewTicketScheduledDate(null)}
+                                        onClick={() => {
+                                            setNewTicketScheduledDate(null);
+                                            // Also clear event date range if it exists
+                                            setNewEventDateRange(null);
+                                        }}
                                         className="cursor-pointer text-xs font-medium text-violet-600 hover:text-violet-800"
                                         title="Click to remove scheduled date"
                                     >
-                                        {new Date(newTicketScheduledDate).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                        })}
+                                        {/* Show time format if we have event date range, otherwise just date */}
+                                        {newEventDateRange ? (
+                                            <>
+                                                {newEventDateRange.startDate.toLocaleDateString("en-US", {
+                                                    month: "short",
+                                                    day: "numeric",
+                                                })}{" "}
+                                                {newEventDateRange.startDate.toLocaleTimeString("en-US", {
+                                                    hour: "numeric",
+                                                    minute: "2-digit",
+                                                    hour12: false,
+                                                })}{" "}
+                                                -{" "}
+                                                {newEventDateRange.endDate.toLocaleTimeString("en-US", {
+                                                    hour: "numeric",
+                                                    minute: "2-digit",
+                                                    hour12: false,
+                                                })}
+                                            </>
+                                        ) : (
+                                            new Date(newTicketScheduledDate).toLocaleDateString("en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                            })
+                                        )}
                                     </button>
-                                )}
-
+                                )}{" "}
                                 {/* Show date range for event types */}
                                 {newEventDateRange && newTicketType === "event" && (
                                     <button
@@ -924,15 +982,20 @@ export default function TicketsList({
                                         {newEventDateRange.startDate.toLocaleDateString("en-US", {
                                             month: "short",
                                             day: "numeric",
+                                        })}{" "}
+                                        {newEventDateRange.startDate.toLocaleTimeString("en-US", {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                            hour12: false,
+                                        })}{" "}
+                                        -{" "}
+                                        {newEventDateRange.endDate.toLocaleTimeString("en-US", {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                            hour12: false,
                                         })}
-                                        {newEventDateRange.startDate.toDateString() !== newEventDateRange.endDate.toDateString() &&
-                                            ` - ${newEventDateRange.endDate.toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
-                                            })}`}
                                     </button>
-                                )}
-
+                                )}{" "}
                                 {/* Schedule button - toggle (only for non-event types) */}
                                 {newTicketType !== "event" && (
                                     <button

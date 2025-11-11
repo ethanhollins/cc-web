@@ -16,12 +16,13 @@ type Props = {
 
 const statusRank: Record<TicketStatus, number> = {
     "In Progress": 0,
-    "In Review": 1,
-    Blocked: 2,
-    Todo: 3,
-    Backlog: 4,
-    Done: 5,
-    Removed: 6,
+    Ongoing: 1,
+    "In Review": 2,
+    Blocked: 3,
+    Todo: 4,
+    Backlog: 5,
+    Done: 6,
+    Removed: 7,
 };
 
 function typeIcon(t: TicketType) {
@@ -47,6 +48,7 @@ function statusPillClasses(status: TicketStatus) {
     if (status === "In Progress" || status === "In Review") return "bg-indigo-50 text-indigo-700";
     if (status === "Todo" || status === "Backlog") return "bg-gray-100 text-gray-700";
     if (status === "Blocked") return "bg-amber-50 text-amber-700";
+    if (status === "Ongoing") return "bg-pink-50 text-pink-700";
     if (status === "Done") return "bg-emerald-50 text-emerald-700";
     return "bg-rose-50 text-rose-700"; // Removed
 }
@@ -80,7 +82,7 @@ export default function TicketsCard({ items, projects, selectedProjectKey, onPro
     });
 
     return (
-        <Card className="mb-[10px] flex-10">
+        <Card className="mb-2 min-w-[400px] flex-10">
             <CardHeader title="Project Tickets" className="text-violet-950" headerIcon={<Feather className="size-5 text-violet-800" />}>
                 <div className="relative">
                     <select
@@ -103,12 +105,8 @@ export default function TicketsCard({ items, projects, selectedProjectKey, onPro
             <ul>
                 {sorted.map((t, idx) => {
                     return (
-                        <li
-                            key={t.ticket_id}
-                            onClick={() => onItemClick?.(t)}
-                            className={"cursor-pointer hover:bg-gray-100 " + [idx !== sorted.length - 1 ? "border-b border-gray-200/70" : ""].join(" ")}
-                        >
-                            <div className="flex items-center justify-between gap-2 px-4 py-2">
+                        <li key={t.ticket_id} onClick={() => onItemClick?.(t)} className="cursor-pointer hover:bg-gray-50/50">
+                            <div className="flex items-center justify-between gap-2 px-4 py-3">
                                 <div className="flex min-w-0 items-center gap-3">
                                     <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center">{typeIcon(t.ticket_type)}</span>
                                     <p className="text-xs whitespace-nowrap text-gray-900">{t.ticket_key}</p>

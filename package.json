@@ -21,6 +21,7 @@
         "@tailwindcss/postcss": "^4.1.11",
         "@tailwindcss/typography": "^0.5.16",
         "@types/moment-timezone": "^0.5.13",
+        "@uiw/react-md-editor": "^4.0.8",
         "@untitledui/file-icons": "^0.0.8",
         "@untitledui/icons": "^0.0.19",
         "input-otp": "^1.4.2",

@@ -6,7 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import moment from "moment-timezone";
 import { Project, Ticket } from "@/app/home-screen";
 import { CalendarCard } from "@/components/base/calendar";
-import { useCalendarContextMenu, useCalendarDate, useCalendarOutsideClick, useLongPress } from "@/hooks/use-calendar-interactions";
+import { useCalendarContextMenu, useCalendarDate, useCalendarOutsideClick, useEventDragState, useLongPress } from "@/hooks/use-calendar-interactions";
 import "@/styles/calendar.css";
 import { handleScheduleTicket, handleUnscheduleTicket } from "@/utils/calendar-event-handlers";
 import { calculateScrollTime, formatWeekRange, getWeekEnd, getWeekStart, lightenColor, weekOfMonth } from "@/utils/calendar-utils";
@@ -84,8 +84,9 @@ export default function WeekCalendar({
 
     // Use shared hooks
     const { selectedDate, goToPreviousPeriod, goToNextPeriod, goToToday, handleDatesSet } = useCalendarDate(new Date(), onDateChange);
-    const { contextMenu, showContextMenu, hideContextMenu } = useCalendarContextMenu();
-    const { isLongPressing, editableEventId, handleTouchStart, handleTouchEnd, clearEditableEvent } = useLongPress();
+    const { isDragging, handleDragStart, handleDragStop, handleResizeStart, handleResizeStop } = useEventDragState();
+    const { contextMenu, showContextMenu, hideContextMenu } = useCalendarContextMenu(isDragging);
+    const { isLongPressing, editableEventId, handleTouchStart, handleTouchEnd, clearEditableEvent } = useLongPress(isDragging);
 
     // Notify parent about initial day selection
     useEffect(() => {
@@ -135,8 +136,7 @@ export default function WeekCalendar({
     // Context menu handlers
     const handleOpenEvent = () => {
         if (contextMenu.eventId && onEventClick) {
-            const event = events.find((e) => e.id === contextMenu.eventId);
-            onEventClick(event?.extendedProps?.ticket_id);
+            onEventClick(contextMenu.eventId); // Pass the google_id directly
         }
         hideContextMenu();
         clearEditableEvent();
@@ -351,12 +351,16 @@ export default function WeekCalendar({
                                 return;
                             } else if (!isLongPressing) {
                                 // Normal click, open event
-                                onEventClick?.(info.event.extendedProps?.ticket_id);
+                                onEventClick?.(info.event.id); // Pass the google_id directly
                             }
                         }}
                         eventDidMount={(info) => {
                             // Add right-click handler
                             const handleEventContextMenu = (e: MouseEvent) => {
+                                // Don't show context menu if dragging
+                                if (isDragging) {
+                                    return;
+                                }
                                 e.preventDefault();
                                 e.stopPropagation();
                                 showContextMenu(e.clientX, e.clientY, info.event.id, info.event.extendedProps?.google_calendar_id);
@@ -366,19 +370,47 @@ export default function WeekCalendar({
 
                             // Add touch handlers for long press
                             info.el.addEventListener("touchstart", (e) => {
-                                handleTouchStart(e as any, info.event.id, (x, y) => {
-                                    showContextMenu(x, y, info.event.id, info.event.extendedProps?.google_calendar_id);
-                                });
+                                console.log("Event touched:", e);
+                                handleTouchStart(
+                                    e as any,
+                                    info.event.id,
+                                    (x, y) => {
+                                        showContextMenu(x, y, info.event.id, info.event.extendedProps?.google_calendar_id);
+                                    },
+                                    hideContextMenu,
+                                );
                             });
                             info.el.addEventListener("touchend", handleTouchEnd);
                             info.el.addEventListener("touchcancel", handleTouchEnd);
                         }}
                         eventResize={(info) => {
+                            console.log("Event resized:", info);
+
+                            const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+                            const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+
+                            // Optimistically update the events state immediately
+                            if (onUpdateEvents) {
+                                onUpdateEvents((prevEvents) => {
+                                    const updated = prevEvents.map((event) =>
+                                        event.google_id === info.event.id
+                                            ? {
+                                                  ...event,
+                                                  start_date: newStartDate,
+                                                  end_date: newEndDate,
+                                              }
+                                            : event,
+                                    );
+                                    return updated;
+                                });
+                            }
+
+                            // Then call the API handler for backend update
                             const updatedEvent = {
                                 ...info.event.extendedProps,
                                 eventId: info.event.id,
-                                startDate: info.event.start?.toISOString(),
-                                endDate: info.event.end?.toISOString(),
+                                startDate: newStartDate,
+                                endDate: newEndDate,
                             };
                             onEventChange?.(updatedEvent);
                         }}
@@ -390,26 +422,96 @@ export default function WeekCalendar({
                                       .find((t) => t.ticket_id === ticketId)
                                 : null;
 
+                            // Check if this is a ticket from the sidebar (external drop)
                             if (ticket) {
                                 onEventDrop?.({
                                     ...info,
                                     ticket: ticket,
                                 });
-                            }
-                        }}
-                        eventReceive={(info) => {
-                            if (info.draggedEl?.classList?.contains("draggable-ticket")) {
                                 return;
                             }
-                            console.log("THIS ONE?1", info);
 
+                            // This is an existing calendar event being moved (internal drop)
+                            // The event will be handled by eventReceive, but we can also handle it here
+                            console.log("Internal event drop detected");
+                        }}
+                        eventDrop={(info) => {
+                            console.log("EVENT DROP handler triggered (iPad/touch device):", info);
+
+                            const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+                            const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+
+                            // Optimistically update the events state immediately for moved events
+                            if (onUpdateEvents) {
+                                onUpdateEvents((prevEvents) => {
+                                    const updated = prevEvents.map((event) =>
+                                        event.google_id === info.event.id
+                                            ? {
+                                                  ...event,
+                                                  start_date: newStartDate,
+                                                  end_date: newEndDate,
+                                              }
+                                            : event,
+                                    );
+                                    return updated;
+                                });
+                            }
+
+                            // Then call the API handler for backend update
                             const updatedEvent = {
                                 ...info.event.extendedProps,
                                 eventId: info.event.id,
-                                startDate: info.event.start?.toISOString(),
-                                endDate: info.event.end?.toISOString(),
+                                startDate: newStartDate,
+                                endDate: newEndDate,
                             };
                             onEventChange?.(updatedEvent);
+                        }}
+                        eventReceive={(info) => {
+                            console.log("Event received:", info);
+
+                            if (info.draggedEl?.classList?.contains("draggable-ticket")) {
+                                return;
+                            }
+
+                            const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+                            const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+
+                            // Optimistically update the events state immediately for moved events
+                            if (onUpdateEvents) {
+                                onUpdateEvents((prevEvents) => {
+                                    const updated = prevEvents.map((event) =>
+                                        event.google_id === info.event.id
+                                            ? {
+                                                  ...event,
+                                                  start_date: newStartDate,
+                                                  end_date: newEndDate,
+                                              }
+                                            : event,
+                                    );
+                                    return updated;
+                                });
+                            }
+
+                            // Then call the API handler for backend update
+                            const updatedEvent = {
+                                ...info.event.extendedProps,
+                                eventId: info.event.id,
+                                startDate: newStartDate,
+                                endDate: newEndDate,
+                            };
+                            onEventChange?.(updatedEvent);
+                        }}
+                        eventDragStart={(info) => {
+                            handleDragStart();
+                        }}
+                        eventDragStop={(info) => {
+                            handleDragStop();
+                        }}
+                        eventResizeStart={() => {
+                            handleResizeStart();
+                        }}
+                        eventResizeStop={() => {
+                            handleResizeStop();
                         }}
                     />
                 </div>

@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Clock, Diamond01, MarkerPin01, Package, Ticket01, VideoRecorder } from "@untitledui/icons";
+import { ChevronDown, ChevronRight, Clock, Diamond01, MarkerPin01, Package, Plus, Ticket01, VideoRecorder } from "@untitledui/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Project } from "@/app/home-screen";
+import { Toggle } from "@/components/base/toggle/toggle";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import { useCreateNote, useTicketNotes } from "@/hooks/use-notes";
 import { useTicketDocuments, useTicketNotionContent, useTicketNotionData } from "@/hooks/use-ticket-notion-data";
+import { handleEventCompletionToggle } from "@/utils/calendar-event-handlers";
 import { DescriptionContentSkeleton, SidebarSkeleton, TicketDataSkeleton } from "./LoadingComponents";
+import NotesModal from "./NotesModal";
 
 export type TicketDetail = {
     ticket_id: string;
@@ -33,12 +38,14 @@ export type TicketDetail = {
 type Props = {
     open: boolean;
     ticketId: string | null;
+    eventId?: string | null; // ID of the event that was clicked to open this modal, null if opened another way
     onClose: () => void;
     events?: any[]; // Add events prop
+    onEventUpdate?: (updater: (prevEvents: any[]) => any[]) => void; // Callback to update events
 };
 
 // Helper component for meeting UI in the sidebar
-function MeetingUI({ ticketId, events }: { ticketId: string | null; events?: any[] }) {
+function MeetingUI({ eventId, events }: { eventId: string | null; events?: any[] }) {
     const [now, setNow] = useState<Date>(new Date());
     const [meetingEvent, setMeetingEvent] = useState<any>(null);
 
@@ -47,17 +54,17 @@ function MeetingUI({ ticketId, events }: { ticketId: string | null; events?: any
         return () => clearInterval(id);
     }, []);
 
-    // Update meeting event when events or ticketId changes
+    // Update meeting event when events or eventId changes
     useEffect(() => {
-        if (events && events.length > 0 && ticketId) {
+        if (events && events.length > 0 && eventId) {
             const foundMeeting = events.find((event) => {
-                return event.ticket_id === ticketId && event.meeting_url;
+                return event.google_id === eventId && event.meeting_url;
             });
             setMeetingEvent(foundMeeting || null);
         } else {
             setMeetingEvent(null);
         }
-    }, [events, ticketId]);
+    }, [events, eventId]);
 
     if (!meetingEvent) {
         return null; // No meeting for this ticket
@@ -171,11 +178,15 @@ function MeetingUI({ ticketId, events }: { ticketId: string | null; events?: any
     );
 }
 
-export default function TicketModal({ open, ticketId, onClose, events = [] }: Props) {
+export default function TicketModal({ open, ticketId, eventId = null, onClose, events = [], onEventUpdate }: Props) {
     // Fetch ticket data and content from the APIs
     const { data: ticketData, loading: ticketLoading, error: ticketError } = useTicketNotionData(open ? ticketId : null);
     const { content: ticketContent, loading: contentLoading, error: contentError } = useTicketNotionContent(open ? ticketId : null);
     const { documents: ticketDocuments, loading: documentsLoading, error: documentsError } = useTicketDocuments(open ? ticketId : null);
+
+    // Fetch notes for the ticket
+    const { notes, loading: notesLoading, error: notesError, refetch: refetchNotes } = useTicketNotes(open ? ticketId : null);
+    const { createNote, loading: createNoteLoading } = useCreateNote();
 
     // State for collapsible sections
     const [expandedSections, setExpandedSections] = useState({
@@ -184,11 +195,50 @@ export default function TicketModal({ open, ticketId, onClose, events = [] }: Pr
         ticket: true,
     });
 
+    // State for notes modal
+    const [notesModalOpen, setNotesModalOpen] = useState(false);
+    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+    // State for event completion toggle
+    const [isCompletionLoading, setIsCompletionLoading] = useState(false);
+
+    // Find the current event if eventId is provided
+    const currentEvent = eventId ? events.find((e) => e.google_id === eventId) : null;
+
     const toggleSection = (section: "project" | "epic" | "ticket") => {
         setExpandedSections((prev) => ({
             ...prev,
             [section]: !prev[section],
         }));
+    };
+
+    const handleCreateNote = async () => {
+        if (!ticketId) return;
+
+        const newNote = await createNote(ticketId);
+        if (newNote) {
+            setSelectedNoteId(newNote.note_id);
+            setNotesModalOpen(true);
+            refetchNotes(); // Refresh the notes list
+        }
+    };
+
+    const handleNoteClick = (noteId: string) => {
+        setSelectedNoteId(noteId);
+        setNotesModalOpen(true);
+    };
+
+    const handleCompletionToggle = async (completed: boolean) => {
+        if (!eventId || !onEventUpdate) return;
+
+        setIsCompletionLoading(true);
+        try {
+            await handleEventCompletionToggle(eventId, completed, onEventUpdate);
+        } catch (error) {
+            console.error("Failed to toggle event completion:", error);
+        } finally {
+            setIsCompletionLoading(false);
+        }
     };
 
     // helper to render initials and avatar circle
@@ -534,6 +584,9 @@ export default function TicketModal({ open, ticketId, onClose, events = [] }: Pr
                     <div className="mb-4">
                         {(() => {
                             const s = ticketData.ticket_status ?? "Unknown";
+                            console.log("Ticket status:", s, eventId);
+                            const isOngoingWithEvent = s.toLowerCase() === "ongoing" && eventId && currentEvent;
+
                             // colour mapping aligned with TicketsCard.tsx
                             const map: Record<string, string> = {
                                 Backlog: "bg-gray-100 text-gray-700",
@@ -541,11 +594,36 @@ export default function TicketModal({ open, ticketId, onClose, events = [] }: Pr
                                 "In Progress": "bg-blue-100 text-blue-600",
                                 "In Review": "bg-indigo-50 text-indigo-700",
                                 Blocked: "bg-amber-50 text-amber-700",
+                                Ongoing: "bg-pink-50 text-pink-700",
                                 Done: "bg-emerald-50 text-emerald-700",
                                 Removed: "bg-rose-50 text-rose-700",
                                 Unknown: "bg-gray-100 text-gray-800",
                             };
                             const cls = map[s] ?? "bg-gray-100 text-gray-800";
+
+                            if (isOngoingWithEvent) {
+                                return (
+                                    <div className="flex items-center justify-between">
+                                        <div
+                                            role="status"
+                                            aria-label={`Status: ${s}`}
+                                            className={`inline-flex items-center justify-center rounded-md px-3 py-1 text-sm font-semibold ${cls}`}
+                                        >
+                                            {s}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-gray-600">Done</span>
+                                            <Toggle
+                                                size="sm"
+                                                isSelected={currentEvent.completed === true}
+                                                isDisabled={isCompletionLoading}
+                                                onChange={handleCompletionToggle}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             return (
                                 <div
                                     role="status"
@@ -590,15 +668,69 @@ export default function TicketModal({ open, ticketId, onClose, events = [] }: Pr
                         </div>
                     </div>
 
+                    {/* Meeting UI */}
+                    <MeetingUI eventId={eventId} events={events} />
+
+                    {/* Notes Section */}
+                    <div className="mb-4">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-gray-600">Notes</h4>
+                            <button
+                                onClick={handleCreateNote}
+                                disabled={createNoteLoading}
+                                className="flex items-center gap-1.5 rounded-md bg-transparent px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:cursor-pointer hover:bg-gray-100 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <Plus className="h-3 w-3" />
+                                {createNoteLoading ? "Creating..." : "New Note"}
+                            </button>
+                        </div>
+
+                        {/* Notes list */}
+                        {notesLoading ? (
+                            <div className="space-y-1.5">
+                                <div className="h-8 w-full animate-pulse rounded-md bg-gray-200"></div>
+                                <div className="h-8 w-full animate-pulse rounded-md bg-gray-200"></div>
+                            </div>
+                        ) : notesError ? (
+                            <div className="text-xs text-red-600">Error loading notes: {notesError}</div>
+                        ) : notes.length > 0 ? (
+                            <div className="space-y-1.5">
+                                {notes.map((note) => (
+                                    <button
+                                        key={note.note_id}
+                                        onClick={() => handleNoteClick(note.note_id)}
+                                        className="group flex w-full items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 text-left text-sm transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                    >
+                                        <svg
+                                            className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={1.5}
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                            />
+                                        </svg>
+                                        <span className="truncate text-xs font-medium text-gray-900 group-hover:text-blue-700">
+                                            {note.title || "Untitled Note"}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-xs text-gray-400">No notes yet</div>
+                        )}
+                    </div>
+
                     {/* Go to Notion button at bottom */}
                     <div className="mt-auto">
                         <div className="mt-3 mb-4 text-xs text-gray-500">
                             <div>Created: {ticketData.created_time ? new Date(ticketData.created_time).toLocaleString() : "-"}</div>
                             <div className="mt-1">Updated: {ticketData.last_edited_time ? new Date(ticketData.last_edited_time).toLocaleString() : "-"}</div>
                         </div>
-
-                        {/* Meeting UI */}
-                        <MeetingUI ticketId={ticketId} events={events} />
 
                         <a
                             href={ticketData.notion_url}
@@ -612,6 +744,23 @@ export default function TicketModal({ open, ticketId, onClose, events = [] }: Pr
                     </div>
                 </aside>
             </div>
+
+            {/* Notes Modal */}
+            <NotesModal
+                open={notesModalOpen}
+                ticketId={ticketId}
+                noteId={selectedNoteId}
+                onClose={() => {
+                    setNotesModalOpen(false);
+                    setSelectedNoteId(null);
+                    refetchNotes(); // Refresh notes when modal closes
+                }}
+                onBack={() => {
+                    setNotesModalOpen(false);
+                    setSelectedNoteId(null);
+                    refetchNotes(); // Refresh notes when going back
+                }}
+            />
         </div>
     );
 }
