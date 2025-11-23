@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { EventInput } from "@fullcalendar/core/index.js";
-import { CalendarCheck01, Home03, Package } from "@untitledui/icons";
+import { CalendarCheck01, Home03, Lightbulb04, Package } from "@untitledui/icons";
 import moment from "moment-timezone";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import WeekCalendar from "@/components/application/calendars/WeekCalendar";
@@ -95,6 +95,7 @@ const PlannerScreen = () => {
                     { label: "Home", icon: Home03, href: "/" },
                     { label: "Planner", icon: CalendarCheck01, href: "/planner" },
                     { label: "Projects", icon: Package, href: "/projects" },
+                    { label: "Skills", icon: Lightbulb04, href: "/skills" },
                 ]}
             />
             <div className="ml-[68px] flex min-h-0 flex-1 flex-col px-4">
