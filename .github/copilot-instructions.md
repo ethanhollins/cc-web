@@ -92,15 +92,17 @@ When implementing new features, follow this structured approach:
 - **Present the plan in chat first**
 - Break down the feature into logical, manageable chunks
 - Outline the overall architecture and approach
+- **Request project/ticket code from the user** (e.g., CC-48, CC-52)
 - Get explicit approval before proceeding
 
 #### 2. Branch Creation (if on master)
-Once the plan is approved:
-- **Create a feature branch using conventional commits format**
-  - Format: `<type>/<brief-description>` or `<type>/<scope>/<brief-description>`
-  - Examples: `feat/user-dashboard`, `fix/calendar-timezone`, `refactor/ui/button-component`
+Once the plan is approved and project code is provided:
+- **Create a feature branch using conventional commits format with project code**
+  - Format: `<project-code>-<type>-<brief-description>`
+  - User must provide the project code (e.g., CC-48, CC-52)
+  - Examples: `CC-48-feat-user-dashboard`, `CC-52-fix-calendar-timezone`, `CC-65-refactor-button-component`
 - **Update `CHANGELOG.md` immediately**
-  - Add entry to `[In Progress]` section with feature name and TBD date
+  - Add entry to `[In Progress]` section with feature name (including project code) and TBD date
   - Include brief description of the work to be done
 
 #### 3. Scaffolding Phase
@@ -135,12 +137,13 @@ Developer: "Add a new dashboard page"
 
 AI Response:
 1. [Present plan in chat]
-2. [Wait for approval]
-3. [Check current branch, create feature branch if on master]
-4. [Update CHANGELOG.md with in-progress entry]
-5. [Create scaffolding with TODOs]
-6. [Summarize next steps]
-7. [Wait for "implement this" or similar explicit permission before coding]
+2. [Request project code: "What's the project/ticket code for this feature?"]
+3. [Wait for approval and project code]
+4. [Check current branch, create feature branch if on master: CC-48-feat-user-dashboard]
+5. [Update CHANGELOG.md with in-progress entry including project code]
+6. [Create scaffolding with TODOs]
+7. [Summarize next steps]
+8. [Wait for "implement this" or similar explicit permission before coding]
 ```
 
 ## Technical Stack
