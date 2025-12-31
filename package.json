@@ -1,6 +1,6 @@
 {
-    "name": "untitledui-nextjs-starter-kit",
-    "version": "0.0.0",
+    "name": "command-centre-web",
+    "version": "0.0.1",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
@@ -24,7 +24,9 @@
         "@uiw/react-md-editor": "^4.0.8",
         "@untitledui/file-icons": "^0.0.8",
         "@untitledui/icons": "^0.0.19",
+        "class-variance-authority": "^0.7.1",
         "input-otp": "^1.4.2",
+        "lucide-react": "^0.562.0",
         "moment-timezone": "^0.6.0",
         "motion": "^12.23.12",
         "next": "^15.4.6",

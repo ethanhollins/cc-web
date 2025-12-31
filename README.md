@@ -1,56 +1,123 @@
-# Untitled UI starter kit for Next.js
+# Command Centre Web
 
-This is an official Untitled UI starter kit for Next.js. Kickstart your Untitled UI project with Next.js in seconds.
+A modern Next.js application for task management, planning, and skills tracking.
 
-## Untitled UI React
+## 🚀 Tech Stack
 
-[Untitled UI React](https://www.untitledui.com/react) is the world’s largest collection of open-source React UI components. Everything you need to design and develop modern, beautiful interfaces—fast.
+- **Framework:** Next.js 15 (App Router)
+- **UI Library:** shadcn/ui (migrating from react-aria-components)
+- **Styling:** Tailwind CSS 4
+- **Language:** TypeScript 5
+- **Icons:** lucide-react
+- **Forms:** react-hook-form
+- **State:** React 19 hooks
 
-Built with React 19.1, Tailwind CSS v4.1, TypeScript 5.8, and React Aria, Untitled UI React components deliver modern performance, type safety, and maintainability.
+## 📁 Project Structure
 
-[Learn more](https://www.untitledui.com/react) • [Documentation](https://www.untitledui.com/react/docs/introduction) • [Figma](https://www.untitledui.com/figma) • [FAQs](https://www.untitledui.com/faqs)
+```
+cc-web/
+├── src/
+│   ├── app/                 # Next.js App Router pages
+│   ├── components/          # React components (NEW - use for all new work)
+│   │   ├── auth/           # Authentication components
+│   │   ├── layout/         # Headers, footers, navigation
+│   │   ├── sections/       # Page sections
+│   │   └── ui/             # shadcn/ui components
+│   ├── hooks/              # Custom React hooks
+│   ├── api/                # API client functions
+│   ├── types/              # TypeScript types
+│   ├── utils/              # Utility functions
+│   ├── lib/                # Core library code
+│   └── old/                # Legacy code (DO NOT USE for new features)
+├── test/                   # Tests and mocks
+├── config/                 # Configuration files
+└── public/                 # Static assets
+```
 
-## Getting started
+> [!IMPORTANT]
+> **Refactoring in Progress:** This project is migrating from a legacy react-aria-components library (in `/src/old/`) to a modern shadcn/ui architecture. All new features must use the new component structure in `/src/components/`.
 
-First, run the development server:
+## 🏃 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm, yarn, or pnpm
+
+### Installation
+
+
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-## Resources
+```bash
+npm run build
+npm start
+```
 
-Untitled UI React is built on top of [Untitled UI Figma](https://www.untitledui.com/figma), the world's largest and most popular Figma UI kit and design system. Explore more:
+### Deployment
 
-**[Untitled UI Figma:](https://www.untitledui.com/react/resources/figma-files)** The world's largest Figma UI kit and design system.
-<br/>
-**[Untitled UI Icons:](https://www.untitledui.com/react/resources/icons)** A clean, consistent, and neutral icon library crafted specifically for modern UI design.
-<br/>
-**[Untitled UI file icons:](https://www.untitledui.com/react/resources/file-icons)** Free file format icons, designed specifically for modern web and UI design.
-<br/>
-**[Untitled UI flag icons:](https://www.untitledui.com/react/resources/flag-icons)** Free country flag icons, designed specifically for modern web and UI design.
-<br/>
-**[Untitled UI avatars:](https://www.untitledui.com/react/resources/avatars)** Free placeholder user avatars and profile pictures to use in your projects.
-<br/>
-**[Untitled UI logos:](https://www.untitledui.com/react/resources/logos)** Free fictional company logos to use in your projects.
+```bash
+npm run deploy:dev      # Deploy to dev environment
+npm run deploy:staging  # Deploy to staging
+npm run deploy:prod     # Deploy to production
+```
 
-## License
+## 📝 Development Guidelines
 
-Untitled UI React open-source components are licensed under the MIT license, which means you can use them for free in unlimited commercial projects.
+This project follows strict development practices. **Please read these before contributing:**
 
-> [!NOTE]
-> This license applies only to the starter kit and to the components included in this open-source repository. [Untitled UI React PRO](https://www.untitledui.com/react) includes hundreds more advanced UI components and page examples and is subject to a separate [license agreement](https://www.untitledui.com/license).
+- **[GitHub Copilot Instructions](.github/copilot-instructions.md)** - Required reading for AI-assisted development
+- **[Changelog](CHANGELOG.md)** - Track all changes here (append-only)
+- **[Conventional Commits](https://www.conventionalcommits.org/)** - All commits must follow this spec
 
-[Untitled UI license agreement →](https://www.untitledui.com/license)
+### Key Rules
 
-[Frequently asked questions →](https://www.untitledui.com/faqs)
+1. ✅ **DO** use shadcn/ui components for all new UI
+2. ✅ **DO** design mobile-first (320px+)
+3. ✅ **DO** follow the scaffolding → implementation workflow
+4. ✅ **DO** update CHANGELOG.md for all features
+5. ❌ **DON'T** import from `/src/old/` in new code
+6. ❌ **DON'T** write full implementations without explicit permission
+
+## 🎨 Adding UI Components
+
+```bash
+# Add shadcn/ui components as needed
+npx shadcn@latest add button
+npx shadcn@latest add card
+npx shadcn@latest add dialog
+```
+
+## 📚 Path Aliases
+
+```typescript
+import { Button } from "@/ui/button"              // shadcn components
+import { LoginForm } from "@/components/auth/..."  // Custom components
+import { useAuth } from "@/hooks/use-auth"         // Hooks
+import { api } from "@/api/client"                 // API functions
+import type { User } from "@/types/user"           // Types
+import { cn } from "@/lib/utils"                   // Utilities
+```
+
+## 🔧 Configuration
+
+- **Tailwind:** `tailwind.config.js`
+- **TypeScript:** `tsconfig.json`
+- **Next.js:** `next.config.mjs`
+- **shadcn/ui:** `components.json`
+
+## 📄 License
+
+MIT License - See LICENSE file for details
