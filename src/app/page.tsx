@@ -1,3 +1,1 @@
-import { HomeScreen } from "./home-screen";
-
-export default HomeScreen;
+export { default } from "../old/app/page";
