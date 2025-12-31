@@ -1,8 +1,8 @@
 /**
  * Transform skill graph API responses to frontend types
  */
-import { Ticket } from "@/app/home-screen";
-import { Objective, Skill, SkillStage, SkillStageNode } from "@/types/skills";
+import { Ticket } from "@/old/app/home-screen";
+import { Objective, Skill, SkillStage, SkillStageNode } from "@/old/types/skills";
 
 // Graph node from API
 export type GraphNodeAPI = {

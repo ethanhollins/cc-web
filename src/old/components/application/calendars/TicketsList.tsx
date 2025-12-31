@@ -19,9 +19,9 @@ import {
     Plus,
 } from "@untitledui/icons";
 import moment from "moment-timezone";
-import { Project, Ticket, TicketStatus, TicketType } from "@/app/home-screen";
-import { CalendarCard } from "@/components/base/calendar";
-import { DEFAULT_CALENDAR_ID, handleCreateTicket } from "@/utils/calendar-event-handlers";
+import { Project, Ticket, TicketStatus, TicketType } from "@/old/app/home-screen";
+import { CalendarCard } from "@/old/components/base/calendar";
+import { DEFAULT_CALENDAR_ID, handleCreateTicket } from "@/old/utils/calendar-event-handlers";
 
 type Props = {
     items: Record<string, Ticket[]>;

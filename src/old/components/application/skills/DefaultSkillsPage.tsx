@@ -1,7 +1,7 @@
 "use client";
 
 import { Lightbulb04, Target04 } from "@untitledui/icons";
-import { Objective, Skill } from "@/types/skills";
+import { Objective, Skill } from "@/old/types/skills";
 import { AddCard, ObjectiveCard, SkillCard } from "./SkillCards";
 
 type DefaultSkillsPageProps = {

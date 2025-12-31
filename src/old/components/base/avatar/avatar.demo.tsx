@@ -1,10 +1,10 @@
 "use client";
 
 import { User01 } from "@untitledui/icons";
-import { Avatar } from "@/components/base/avatar/avatar";
-import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
-import { AvatarProfilePhoto } from "@/components/base/avatar/avatar-profile-photo";
-import { AvatarAddButton, AvatarCompanyIcon } from "@/components/base/avatar/base-components";
+import { Avatar } from "@/old/components/base/avatar/avatar";
+import { AvatarLabelGroup } from "@/old/components/base/avatar/avatar-label-group";
+import { AvatarProfilePhoto } from "@/old/components/base/avatar/avatar-profile-photo";
+import { AvatarAddButton, AvatarCompanyIcon } from "@/old/components/base/avatar/base-components";
 
 export const DefaultDemo = () => {
     return (

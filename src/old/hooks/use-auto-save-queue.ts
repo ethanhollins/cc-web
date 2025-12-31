@@ -3,7 +3,7 @@
  * Queues changes and sends them after 5 seconds of inactivity
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { updateNodePositions } from "@/utils/skills-api";
+import { updateNodePositions } from "@/old/utils/skills-api";
 
 type PositionUpdate = {
     node_id: string;

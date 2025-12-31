@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as BadgeGroup from "@/components/base/badges/badge-groups.demo";
+import * as BadgeGroup from "@/old/components/base/badges/badge-groups.demo";
 
 export default {
     title: "Base components/Badge groups",

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { TicketEvent } from "@/app/home-screen";
-import { API_BASE_URL } from "@/config/api";
-import { useWebSocketMessages } from "@/hooks/use-websocket";
-import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
+import { TicketEvent } from "@/old/app/home-screen";
+import { API_BASE_URL } from "@/old/config/api";
+import { useWebSocketMessages } from "@/old/hooks/use-websocket";
+import { getWeekCacheKey, getWeekStart } from "@/old/utils/calendar-utils";
 
 /**
  * Hook for managing calendar events with caching, debouncing, and WebSocket updates

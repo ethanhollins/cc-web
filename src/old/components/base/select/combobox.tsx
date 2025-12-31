@@ -5,12 +5,12 @@ import { useCallback, useContext, useRef, useState } from "react";
 import { SearchLg as SearchIcon } from "@untitledui/icons";
 import type { ComboBoxProps as AriaComboBoxProps, GroupProps as AriaGroupProps, ListBoxProps as AriaListBoxProps } from "react-aria-components";
 import { ComboBox as AriaComboBox, Group as AriaGroup, Input as AriaInput, ListBox as AriaListBox, ComboBoxStateContext } from "react-aria-components";
-import { HintText } from "@/components/base/input/hint-text";
-import { Label } from "@/components/base/input/label";
-import { Popover } from "@/components/base/select/popover";
-import { type CommonProps, SelectContext, type SelectItemType, sizes } from "@/components/base/select/select";
-import { useResizeObserver } from "@/hooks/use-resize-observer";
-import { cx } from "@/utils/cx";
+import { HintText } from "@/old/components/base/input/hint-text";
+import { Label } from "@/old/components/base/input/label";
+import { Popover } from "@/old/components/base/select/popover";
+import { type CommonProps, SelectContext, type SelectItemType, sizes } from "@/old/components/base/select/select";
+import { useResizeObserver } from "@/old/hooks/use-resize-observer";
+import { cx } from "@/old/utils/cx";
 
 interface ComboBoxProps extends Omit<AriaComboBoxProps<SelectItemType>, "children" | "items">, RefAttributes<HTMLDivElement>, CommonProps {
     shortcut?: boolean;

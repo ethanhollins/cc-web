@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Edit01, Send01, Trash01, X } from "@untitledui/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Card } from "@/components/application/cards/Card";
-import { useCreateJournalNote, useDeleteNote, useNote, useSummarizeNote, useUpdateNote } from "@/hooks/use-notes";
+import { Card } from "@/old/components/application/cards/Card";
+import { useCreateJournalNote, useDeleteNote, useNote, useSummarizeNote, useUpdateNote } from "@/old/hooks/use-notes";
 
 interface JournalProps {
     selectedDate?: Date;

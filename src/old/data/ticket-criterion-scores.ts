@@ -1,4 +1,4 @@
-import { TicketCriterionScore } from "@/types/skills";
+import { TicketCriterionScore } from "@/old/types/skills";
 
 /**
  * Maps ticket IDs to their criterion scores

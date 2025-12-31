@@ -1,6 +1,6 @@
 "use client";
 
-import { cx } from "@/utils/cx";
+import { cx } from "@/old/utils/cx";
 
 interface TagCheckboxProps {
     size?: "sm" | "md" | "lg";

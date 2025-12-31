@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as Dropdowns from "@/components/base/dropdown/dropdown.demo";
+import * as Dropdowns from "@/old/components/base/dropdown/dropdown.demo";
 
 export default {
     title: "Base components/Dropdowns",

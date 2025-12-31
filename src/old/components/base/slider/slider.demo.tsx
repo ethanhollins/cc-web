@@ -1,6 +1,6 @@
 "use client";
 
-import { Slider } from "@/components/base/slider/slider";
+import { Slider } from "@/old/components/base/slider/slider";
 
 export const Default = () => {
     return <Slider defaultValue={[0, 25]} />;

@@ -268,7 +268,7 @@ USAGE (Next.js):
 4) Import & use in a Client Page/Component:
 
    "use client";
-   import WeatherHeroCard from "@/components/WeatherHeroCard";
+   import WeatherHeroCard from "@/old/components/WeatherHeroCard";
 
    export default function Page() {
      return (

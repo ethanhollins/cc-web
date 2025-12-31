@@ -2,10 +2,10 @@
 
 import type { HTMLAttributes } from "react";
 import { Check, Copy01, DownloadCloud02, Edit01, Edit02, Placeholder, Trash01, Trash02 } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
-import { ButtonUtility } from "@/components/base/buttons/button-utility";
-import { CloseButton } from "@/components/base/buttons/close-button";
-import { cx } from "@/utils/cx";
+import { Button } from "@/old/components/base/buttons/button";
+import { ButtonUtility } from "@/old/components/base/buttons/button-utility";
+import { CloseButton } from "@/old/components/base/buttons/close-button";
+import { cx } from "@/old/utils/cx";
 
 const Circle = (props: HTMLAttributes<HTMLSpanElement>) => <span {...props} className={cx("size-5 rounded-[50%] border-2 border-current", props.className)} />;
 

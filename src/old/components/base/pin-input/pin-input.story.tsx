@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as PinInputs from "@/components/base/pin-input/pin-input.demo";
+import * as PinInputs from "@/old/components/base/pin-input/pin-input.demo";
 
 export default {
     title: "Base components/Inputs/Verification code input",

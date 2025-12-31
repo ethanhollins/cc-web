@@ -1,7 +1,7 @@
 /**
  * Transform skills API responses to frontend types
  */
-import { Objective, ObjectiveRubric, RubricCriterion, Skill, SkillStage, SkillStageNode, StageRubric } from "@/types/skills";
+import { Objective, ObjectiveRubric, RubricCriterion, Skill, SkillStage, SkillStageNode, StageRubric } from "@/old/types/skills";
 
 // API response types (matching backend structure)
 type AssessmentCriterion = {

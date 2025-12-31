@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { WebSocketMessage, useWebSocket } from "@/providers/websocket-provider";
+import { WebSocketMessage, useWebSocket } from "@/old/providers/websocket-provider";
 
 export interface UseWebSocketMessagesOptions {
     /**

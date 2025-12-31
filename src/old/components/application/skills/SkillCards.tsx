@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "@untitledui/icons";
-import { Objective, Skill } from "@/types/skills";
+import { Objective, Skill } from "@/old/types/skills";
 
 type SkillCardProps = {
     skill: Skill;

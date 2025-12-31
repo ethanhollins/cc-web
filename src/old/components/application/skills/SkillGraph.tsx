@@ -20,9 +20,9 @@ import ReactFlow, {
     useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Ticket } from "@/app/home-screen";
-import { useAutoSaveQueue } from "@/hooks/use-auto-save-queue";
-import { Objective, Skill, SkillStage, SkillStageNode } from "@/types/skills";
+import { Ticket } from "@/old/app/home-screen";
+import { useAutoSaveQueue } from "@/old/hooks/use-auto-save-queue";
+import { Objective, Skill, SkillStage, SkillStageNode } from "@/old/types/skills";
 import FloatingEdge from "./FloatingEdge";
 import { NodeBlobs } from "./NodeBlobs";
 import { ObjectiveNode } from "./ObjectiveNode";

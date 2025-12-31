@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, X } from "@untitledui/icons";
-import { Objective, Skill } from "@/types/skills";
+import { Objective, Skill } from "@/old/types/skills";
 
 export type Tab = {
     id: string;

@@ -1,7 +1,7 @@
 import React from "react";
 import { Check, Plus } from "@untitledui/icons";
 import { Handle, Position } from "reactflow";
-import { SkillStage, SkillStageNode } from "@/types/skills";
+import { SkillStage, SkillStageNode } from "@/old/types/skills";
 import { StageIcon } from "./StageIcons";
 
 type StageNodeProps = {

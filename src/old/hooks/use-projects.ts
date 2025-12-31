@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Project } from "@/app/home-screen";
-import { API_BASE_URL } from "@/config/api";
+import { Project } from "@/old/app/home-screen";
+import { API_BASE_URL } from "@/old/config/api";
 
 /**
  * Hook for managing projects data with caching

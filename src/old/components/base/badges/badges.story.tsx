@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as Badges from "@/components/base/badges/badges.demo";
+import * as Badges from "@/old/components/base/badges/badges.demo";
 
 export default {
     title: "Base components/Badges",

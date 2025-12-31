@@ -2,10 +2,10 @@
 
 import { User01 } from "@untitledui/icons";
 import { useListData } from "react-stately";
-import { MultiSelect } from "@/components/base/select/multi-select";
-import { Select, type SelectItemType } from "@/components/base/select/select";
-import { NativeSelect } from "@/components/base/select/select-native";
-import { Dot } from "@/components/foundations/dot-icon";
+import { MultiSelect } from "@/old/components/base/select/multi-select";
+import { Select, type SelectItemType } from "@/old/components/base/select/select";
+import { NativeSelect } from "@/old/components/base/select/select-native";
+import { Dot } from "@/old/components/foundations/dot-icon";
 
 const items = [
     {

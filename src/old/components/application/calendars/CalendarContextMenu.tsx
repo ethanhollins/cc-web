@@ -1,6 +1,6 @@
 import React from "react";
 import { Eye, Trash01 } from "@untitledui/icons";
-import { ContextMenu } from "@/hooks/use-calendar-interactions";
+import { ContextMenu } from "@/old/hooks/use-calendar-interactions";
 
 interface CalendarContextMenuProps {
     contextMenu: ContextMenu;

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Node, useViewport } from "reactflow";
-import { Objective, Skill } from "@/types/skills";
+import { Objective, Skill } from "@/old/types/skills";
 
 type NodeBlobsProps = {
     nodes: Node[];

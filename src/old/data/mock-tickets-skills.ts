@@ -1,4 +1,4 @@
-import { Ticket } from "@/app/home-screen";
+import { Ticket } from "@/old/app/home-screen";
 
 /**
  * Extended Ticket type with position for skills graph

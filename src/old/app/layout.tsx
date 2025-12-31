@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { RouteProvider } from "@/providers/router-provider";
-import { Theme } from "@/providers/theme";
-import { WebSocketProvider } from "@/providers/websocket-provider";
-import "@/styles/globals.css";
-import { cx } from "@/utils/cx";
+import { RouteProvider } from "@/old/providers/router-provider";
+import { Theme } from "@/old/providers/theme";
+import { WebSocketProvider } from "@/old/providers/websocket-provider";
+import "@/old/styles/globals.css";
+import { cx } from "@/old/utils/cx";
 
 const inter = Inter({
     subsets: ["latin"],

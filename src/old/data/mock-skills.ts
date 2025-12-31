@@ -1,4 +1,4 @@
-import { Objective, Skill, SkillStage, SkillStageNode } from "@/types/skills";
+import { Objective, Skill, SkillStage, SkillStageNode } from "@/old/types/skills";
 
 /**
  * Mock data for skills system

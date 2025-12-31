@@ -3,21 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarCheck01, ChevronDown, Home03, Lightbulb02, Lightbulb04, Package, Plus, SearchLg, Target04, X } from "@untitledui/icons";
 import { Button as AriaButton } from "react-aria-components";
-import { Ticket } from "@/app/home-screen";
-import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
-import { CreateSkillModal } from "@/components/application/modals/CreateSkillModal";
-import TicketModal from "@/components/application/modals/TicketModal";
-import { DefaultSkillsPage } from "@/components/application/skills/DefaultSkillsPage";
-import { ObjectiveModal } from "@/components/application/skills/ObjectiveModal";
-import { SkillGraph } from "@/components/application/skills/SkillGraph";
-import { SkillModal } from "@/components/application/skills/SkillModal";
-import { SkillTabs, Tab } from "@/components/application/skills/SkillTabs";
-import { StageIcon } from "@/components/application/skills/StageIcons";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
-import { GmailIcon, GoogleChatIcon, JiraIcon, NBAIcon, NotionIcon, YouTubeIcon } from "@/components/foundations/external-app-icons";
-import { useSkillGraph, useSkills } from "@/hooks/use-skills";
-import { Objective, Skill, SkillStageNode } from "@/types/skills";
-import { linkTicketToSkill, searchTickets, unlinkTicketFromSkill } from "@/utils/skills-api";
+import { Ticket } from "@/old/app/home-screen";
+import { SidebarNavigationSlim } from "@/old/components/application/app-navigation/sidebar-navigation/sidebar-slim";
+import { CreateSkillModal } from "@/old/components/application/modals/CreateSkillModal";
+import TicketModal from "@/old/components/application/modals/TicketModal";
+import { DefaultSkillsPage } from "@/old/components/application/skills/DefaultSkillsPage";
+import { ObjectiveModal } from "@/old/components/application/skills/ObjectiveModal";
+import { SkillGraph } from "@/old/components/application/skills/SkillGraph";
+import { SkillModal } from "@/old/components/application/skills/SkillModal";
+import { SkillTabs, Tab } from "@/old/components/application/skills/SkillTabs";
+import { StageIcon } from "@/old/components/application/skills/StageIcons";
+import { Dropdown } from "@/old/components/base/dropdown/dropdown";
+import { GmailIcon, GoogleChatIcon, JiraIcon, NBAIcon, NotionIcon, YouTubeIcon } from "@/old/components/foundations/external-app-icons";
+import { useSkillGraph, useSkills } from "@/old/hooks/use-skills";
+import { Objective, Skill, SkillStageNode } from "@/old/types/skills";
+import { linkTicketToSkill, searchTickets, unlinkTicketFromSkill } from "@/old/utils/skills-api";
 
 const STORAGE_KEY = "skills-page-tabs";
 

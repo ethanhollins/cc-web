@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useWebSocketConnection, useWebSocketMessages } from "@/hooks/use-websocket";
-import { WebSocketMessage } from "@/providers/websocket-provider";
+import { useWebSocketConnection, useWebSocketMessages } from "@/old/hooks/use-websocket";
+import { WebSocketMessage } from "@/old/providers/websocket-provider";
 
 export function WebSocketDebugPanel() {
     const [messages, setMessages] = useState<WebSocketMessage[]>([]);

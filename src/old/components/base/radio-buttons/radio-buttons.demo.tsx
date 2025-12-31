@@ -1,6 +1,6 @@
 "use client";
 
-import { RadioButton, RadioGroup } from "@/components/base/radio-buttons/radio-buttons";
+import { RadioButton, RadioGroup } from "@/old/components/base/radio-buttons/radio-buttons";
 
 export const WithLabelDemo = () => {
     return (

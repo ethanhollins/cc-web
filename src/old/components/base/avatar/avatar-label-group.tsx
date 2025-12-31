@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { cx } from "@/utils/cx";
+import { cx } from "@/old/utils/cx";
 import { Avatar, type AvatarProps } from "./avatar";
 
 const styles = {

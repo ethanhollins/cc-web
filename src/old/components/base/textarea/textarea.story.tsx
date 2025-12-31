@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as TextAreas from "@/components/base/textarea/textarea.demo";
+import * as TextAreas from "@/old/components/base/textarea/textarea.demo";
 
 export default {
     title: "Base components/Inputs/Textarea",

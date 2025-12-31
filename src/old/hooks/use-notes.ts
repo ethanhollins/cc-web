@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL } from "@/old/config/api";
 
 export type Note = {
     note_id: string;

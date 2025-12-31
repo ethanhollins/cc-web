@@ -2,11 +2,11 @@
 
 import { ChevronDown, Container, HelpCircle, LayersTwo01, LogOut01, Settings01, User01 } from "@untitledui/icons";
 import { Button as AriaButton } from "react-aria-components";
-import { Avatar } from "@/components/base/avatar/avatar";
-import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
-import { Button } from "@/components/base/buttons/button";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
-import { cx } from "@/utils/cx";
+import { Avatar } from "@/old/components/base/avatar/avatar";
+import { AvatarLabelGroup } from "@/old/components/base/avatar/avatar-label-group";
+import { Button } from "@/old/components/base/buttons/button";
+import { Dropdown } from "@/old/components/base/dropdown/dropdown";
+import { cx } from "@/old/utils/cx";
 
 export const DropdownButton = () => (
     <Dropdown.Root>

@@ -1,9 +1,9 @@
 import React from "react";
 import { CheckCircle, CheckDone02, CheckSquare, Circle, Diamond01, Feather, X } from "@untitledui/icons";
 import { Handle, Position } from "reactflow";
-import { Ticket, TicketType } from "@/app/home-screen";
-import { TicketCriterionScore } from "@/types/skills";
-import { getCriterionColor } from "@/utils/criterion-colors";
+import { Ticket, TicketType } from "@/old/app/home-screen";
+import { TicketCriterionScore } from "@/old/types/skills";
+import { getCriterionColor } from "@/old/utils/criterion-colors";
 
 type TicketNodeProps = {
     data: Ticket & {

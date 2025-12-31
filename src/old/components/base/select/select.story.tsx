@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as Selects from "@/components/base/select/select.demo";
+import * as Selects from "@/old/components/base/select/select.demo";
 
 export default {
     title: "Base components/Select",

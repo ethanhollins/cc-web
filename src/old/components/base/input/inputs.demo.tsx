@@ -3,12 +3,12 @@
 import { useState } from "react";
 import React from "react";
 import { Check, Copy01, Mail01 } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
-import { Input, InputBase } from "@/components/base/input/input";
-import { InputGroup } from "@/components/base/input/input-group";
-import { PaymentInput } from "@/components/base/input/input-payment";
-import { NativeSelect } from "@/components/base/select/select-native";
-import { useClipboard } from "@/hooks/use-clipboard";
+import { Button } from "@/old/components/base/buttons/button";
+import { Input, InputBase } from "@/old/components/base/input/input";
+import { InputGroup } from "@/old/components/base/input/input-group";
+import { PaymentInput } from "@/old/components/base/input/input-payment";
+import { NativeSelect } from "@/old/components/base/select/select-native";
+import { useClipboard } from "@/old/hooks/use-clipboard";
 
 export const DefaultDemo = () => {
     return <Input isRequired label="Email" hint="This is a hint text to help user." placeholder="olivia@untitledui.com" tooltip="This is a tooltip" />;

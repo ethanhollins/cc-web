@@ -1,4 +1,4 @@
-import * as Buttons from "@/components/base/buttons/app-store-buttons.demo";
+import * as Buttons from "@/old/components/base/buttons/app-store-buttons.demo";
 
 export default {
     title: "Base components/Buttons/Mobile app store buttons",

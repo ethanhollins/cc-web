@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { Target04, X } from "@untitledui/icons";
 import { Button as AriaButton, Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-components";
-import { Button } from "@/components/base/buttons/button";
-import { Input } from "@/components/base/input/input";
-import { TextArea } from "@/components/base/textarea/textarea";
-import { createSkill } from "@/utils/skills-api";
+import { Button } from "@/old/components/base/buttons/button";
+import { Input } from "@/old/components/base/input/input";
+import { TextArea } from "@/old/components/base/textarea/textarea";
+import { createSkill } from "@/old/utils/skills-api";
 
 type CreateSkillModalProps = {
     open: boolean;

@@ -2,7 +2,7 @@
  * Hook for managing ticket-skill relationships
  */
 import { useCallback, useState } from "react";
-import { linkTicketToSkill, unlinkTicketFromSkill } from "@/utils/skills-api";
+import { linkTicketToSkill, unlinkTicketFromSkill } from "@/old/utils/skills-api";
 
 export function useTicketSkillLink() {
     const [isLinking, setIsLinking] = useState(false);

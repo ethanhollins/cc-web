@@ -1,6 +1,6 @@
 "use client";
 
-import { Toggle } from "@/components/base/toggle/toggle";
+import { Toggle } from "@/old/components/base/toggle/toggle";
 
 export const DefaultDemo = () => <Toggle label="Remember me" hint="Save my login details for next time." size="sm" />;
 

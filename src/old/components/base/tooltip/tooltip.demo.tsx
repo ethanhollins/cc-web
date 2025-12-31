@@ -2,7 +2,7 @@
 
 import type { Placement } from "@react-types/overlays";
 import { HelpCircle } from "@untitledui/icons";
-import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
+import { Tooltip, TooltipTrigger } from "@/old/components/base/tooltip/tooltip";
 
 const PLACEMENTS: { label: string; value: Placement }[] = [
     {

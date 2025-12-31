@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeGroup } from "@/components/base/badges/badge-groups";
+import { BadgeGroup } from "@/old/components/base/badges/badge-groups";
 
 const variants = [
     {

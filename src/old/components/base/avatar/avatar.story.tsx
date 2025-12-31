@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as Avatar from "@/components/base/avatar/avatar.demo";
+import * as Avatar from "@/old/components/base/avatar/avatar.demo";
 
 export default {
     title: "Base components/Avatars",

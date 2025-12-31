@@ -2,11 +2,11 @@
  * Hook for fetching and managing skills data
  */
 import { useCallback, useEffect, useState } from "react";
-import { Ticket } from "@/app/home-screen";
-import { Objective, Skill, SkillStageNode } from "@/types/skills";
-import { getAllSkills, getSkill, getSkillGraph } from "@/utils/skills-api";
-import { GraphNodeAPI, transformSkillGraph } from "@/utils/transform-graph";
-import { transformSkills } from "@/utils/transform-skills";
+import { Ticket } from "@/old/app/home-screen";
+import { Objective, Skill, SkillStageNode } from "@/old/types/skills";
+import { getAllSkills, getSkill, getSkillGraph } from "@/old/utils/skills-api";
+import { GraphNodeAPI, transformSkillGraph } from "@/old/utils/transform-graph";
+import { transformSkills } from "@/old/utils/transform-skills";
 
 export function useSkills() {
     const [skills, setSkills] = useState<Skill[]>([]);

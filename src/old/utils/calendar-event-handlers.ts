@@ -1,6 +1,6 @@
 import moment from "moment-timezone";
-import { Ticket, TicketEvent } from "@/app/home-screen";
-import { API_BASE_URL } from "@/config/api";
+import { Ticket, TicketEvent } from "@/old/app/home-screen";
+import { API_BASE_URL } from "@/old/config/api";
 
 export const DEFAULT_CALENDAR_ID = "ethanjohol@gmail.com";
 

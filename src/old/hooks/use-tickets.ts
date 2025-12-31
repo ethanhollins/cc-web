@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Project, Ticket } from "@/app/home-screen";
-import { API_BASE_URL } from "@/config/api";
+import { Project, Ticket } from "@/old/app/home-screen";
+import { API_BASE_URL } from "@/old/config/api";
 
 /**
  * Hook for managing project tickets with caching

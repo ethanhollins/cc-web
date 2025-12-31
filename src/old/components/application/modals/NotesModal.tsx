@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Send01, Trash01, X } from "@untitledui/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useDeleteNote, useNote, useSummarizeNote, useUpdateNote } from "@/hooks/use-notes";
+import { useDeleteNote, useNote, useSummarizeNote, useUpdateNote } from "@/old/hooks/use-notes";
 
 type Props = {
     open: boolean;

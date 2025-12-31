@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "@untitledui/icons";
-import { cx } from "@/utils/cx";
+import { cx } from "@/old/utils/cx";
 
 interface CalendarCardProps {
     /** Initial date to display, defaults to today */

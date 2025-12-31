@@ -2,8 +2,8 @@
 
 import React from "react";
 import { Target04, X } from "@untitledui/icons";
-import { Objective } from "@/types/skills";
-import { getCriterionColor } from "@/utils/criterion-colors";
+import { Objective } from "@/old/types/skills";
+import { getCriterionColor } from "@/old/utils/criterion-colors";
 
 type ObjectiveModalProps = {
     open: boolean;

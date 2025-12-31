@@ -3,7 +3,7 @@
 import type { RefAttributes } from "react";
 import { XClose } from "@untitledui/icons";
 import { Button as AriaButton, type ButtonProps as AriaButtonProps } from "react-aria-components";
-import { cx } from "@/utils/cx";
+import { cx } from "@/old/utils/cx";
 
 interface TagCloseXProps extends AriaButtonProps, RefAttributes<HTMLButtonElement> {
     size?: "sm" | "md" | "lg";

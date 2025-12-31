@@ -3,11 +3,11 @@
 import type { FC, ReactNode } from "react";
 import { Bell01, LifeBuoy01, SearchLg, Settings01 } from "@untitledui/icons";
 import { Button as AriaButton, DialogTrigger, Popover } from "react-aria-components";
-import { Avatar } from "@/components/base/avatar/avatar";
-import { BadgeWithDot } from "@/components/base/badges/badges";
-import { Input } from "@/components/base/input/input";
-import { UntitledLogo } from "@/components/foundations/logo/untitledui-logo";
-import { cx } from "@/utils/cx";
+import { Avatar } from "@/old/components/base/avatar/avatar";
+import { BadgeWithDot } from "@/old/components/base/badges/badges";
+import { Input } from "@/old/components/base/input/input";
+import { UntitledLogo } from "@/old/components/foundations/logo/untitledui-logo";
+import { cx } from "@/old/utils/cx";
 import { MobileNavigationHeader } from "./base-components/mobile-header";
 import { NavAccountCard, NavAccountMenu } from "./base-components/nav-account-card";
 import { NavItemBase } from "./base-components/nav-item";

@@ -4,9 +4,9 @@ import { isValidElement, useContext } from "react";
 import { Check } from "@untitledui/icons";
 import type { ListBoxItemProps as AriaListBoxItemProps } from "react-aria-components";
 import { ListBoxItem as AriaListBoxItem, Text as AriaText } from "react-aria-components";
-import { Avatar } from "@/components/base/avatar/avatar";
-import { cx } from "@/utils/cx";
-import { isReactComponent } from "@/utils/is-react-component";
+import { Avatar } from "@/old/components/base/avatar/avatar";
+import { cx } from "@/old/utils/cx";
+import { isReactComponent } from "@/old/utils/is-react-component";
 import type { SelectItemType } from "./select";
 import { SelectContext } from "./select";
 

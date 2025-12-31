@@ -3,7 +3,7 @@
 import type { ComponentPropsWithRef } from "react";
 import { createContext, useContext, useId } from "react";
 import { OTPInput, OTPInputContext } from "input-otp";
-import { cx } from "@/utils/cx";
+import { cx } from "@/old/utils/cx";
 
 type PinInputContextType = {
     size: "sm" | "md" | "lg";

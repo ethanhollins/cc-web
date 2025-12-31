@@ -1,6 +1,6 @@
 import React from "react";
 import { EventContentArg } from "@fullcalendar/core";
-import { calculateEventDuration, isShortEvent } from "@/utils/calendar-utils";
+import { calculateEventDuration, isShortEvent } from "@/old/utils/calendar-utils";
 
 interface CalendarEventContentProps {
     arg: EventContentArg;

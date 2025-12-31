@@ -1,8 +1,8 @@
 "use client";
 
 import { ArrowRight, ArrowUp, Plus } from "@untitledui/icons";
-import type { BadgeColors } from "@/components/base/badges/badge-types";
-import { Badge, BadgeIcon, BadgeWithButton, BadgeWithDot, BadgeWithFlag, BadgeWithIcon, BadgeWithImage, filledColors } from "@/components/base/badges/badges";
+import type { BadgeColors } from "@/old/components/base/badges/badge-types";
+import { Badge, BadgeIcon, BadgeWithButton, BadgeWithDot, BadgeWithFlag, BadgeWithIcon, BadgeWithImage, filledColors } from "@/old/components/base/badges/badges";
 
 export const Default = () => {
     return (

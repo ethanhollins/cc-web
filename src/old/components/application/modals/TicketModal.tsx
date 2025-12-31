@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Clock, Diamond01, MarkerPin01, Package, Plus, Ticket01, VideoRecorder } from "@untitledui/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Project } from "@/app/home-screen";
-import { Toggle } from "@/components/base/toggle/toggle";
-import { useCalendarEvents } from "@/hooks/use-calendar-events";
-import { useCreateNote, useTicketNotes } from "@/hooks/use-notes";
-import { useTicketDocuments, useTicketNotionContent, useTicketNotionData } from "@/hooks/use-ticket-notion-data";
-import { handleEventCompletionToggle } from "@/utils/calendar-event-handlers";
+import { Project } from "@/old/app/home-screen";
+import { Toggle } from "@/old/components/base/toggle/toggle";
+import { useCalendarEvents } from "@/old/hooks/use-calendar-events";
+import { useCreateNote, useTicketNotes } from "@/old/hooks/use-notes";
+import { useTicketDocuments, useTicketNotionContent, useTicketNotionData } from "@/old/hooks/use-ticket-notion-data";
+import { handleEventCompletionToggle } from "@/old/utils/calendar-event-handlers";
 import { DescriptionContentSkeleton, SidebarSkeleton, TicketDataSkeleton } from "./LoadingComponents";
 import NotesModal from "./NotesModal";
 

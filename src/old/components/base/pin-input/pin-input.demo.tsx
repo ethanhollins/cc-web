@@ -1,6 +1,6 @@
 "use client";
 
-import { PinInput } from "@/components/base/pin-input/pin-input";
+import { PinInput } from "@/old/components/base/pin-input/pin-input";
 
 export const FourDigitsDemo = () => {
     return (

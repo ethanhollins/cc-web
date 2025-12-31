@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Selection } from "react-aria-components";
-import { Tag, TagGroup, type TagItem, TagList } from "@/components/base/tags/tags";
+import { Tag, TagGroup, type TagItem, TagList } from "@/old/components/base/tags/tags";
 
 export const DefaultDemo = () => {
     return (

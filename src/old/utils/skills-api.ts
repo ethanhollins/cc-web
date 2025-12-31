@@ -2,8 +2,8 @@
  * Skills API Client
  * Handles all API calls for skills, objectives, and skill graph operations
  */
-import { API_BASE_URL } from "@/config/api";
-import { Objective, Skill } from "@/types/skills";
+import { API_BASE_URL } from "@/old/config/api";
+import { Objective, Skill } from "@/old/types/skills";
 
 // Generic SQS response type
 type SQSResponse = {

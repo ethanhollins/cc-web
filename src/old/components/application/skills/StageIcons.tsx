@@ -1,5 +1,5 @@
 import React from "react";
-import { SkillStage } from "@/types/skills";
+import { SkillStage } from "@/old/types/skills";
 
 type StageIconProps = {
     stage: SkillStage;

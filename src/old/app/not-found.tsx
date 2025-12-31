@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from "@untitledui/icons";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/base/buttons/button";
+import { Button } from "@/old/components/base/buttons/button";
 
 export default function NotFound() {
     const router = useRouter();

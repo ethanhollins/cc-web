@@ -4,14 +4,14 @@ import { useState } from "react";
 import { EventInput } from "@fullcalendar/core/index.js";
 import { CalendarCheck01, Home03, Lightbulb04, Package } from "@untitledui/icons";
 import moment from "moment-timezone";
-import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
-import WeekCalendar from "@/components/application/calendars/WeekCalendar";
-import TicketModal from "@/components/application/modals/TicketModal";
-import { GmailIcon, GoogleChatIcon, JiraIcon, NBAIcon, NotionIcon, YouTubeIcon } from "@/components/foundations/external-app-icons";
-import { useCalendarEvents } from "@/hooks/use-calendar-events";
-import { useProjects } from "@/hooks/use-projects";
-import { useTickets } from "@/hooks/use-tickets";
-import { handleDeleteEvent, handleEventChange, handleEventDrop } from "@/utils/calendar-event-handlers";
+import { SidebarNavigationSlim } from "@/old/components/application/app-navigation/sidebar-navigation/sidebar-slim";
+import WeekCalendar from "@/old/components/application/calendars/WeekCalendar";
+import TicketModal from "@/old/components/application/modals/TicketModal";
+import { GmailIcon, GoogleChatIcon, JiraIcon, NBAIcon, NotionIcon, YouTubeIcon } from "@/old/components/foundations/external-app-icons";
+import { useCalendarEvents } from "@/old/hooks/use-calendar-events";
+import { useProjects } from "@/old/hooks/use-projects";
+import { useTickets } from "@/old/hooks/use-tickets";
+import { handleDeleteEvent, handleEventChange, handleEventDrop } from "@/old/utils/calendar-event-handlers";
 import { Ticket } from "../home-screen";
 
 const PlannerScreen = () => {

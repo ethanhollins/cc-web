@@ -1,6 +1,6 @@
 "use client";
 
-import { TextArea } from "@/components/base/textarea/textarea";
+import { TextArea } from "@/old/components/base/textarea/textarea";
 
 export const DefaultDemo = () => {
     return <TextArea isRequired placeholder="This is a placeholder." label="Description" hint="This is a hint text to help user." rows={5} />;

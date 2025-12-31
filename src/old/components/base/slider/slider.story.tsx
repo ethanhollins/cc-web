@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import * as Sliders from "@/components/base/slider/slider.demo";
+import * as Sliders from "@/old/components/base/slider/slider.demo";
 
 export default {
     title: "Base components/Sliders",

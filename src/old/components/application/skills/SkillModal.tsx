@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight, X } from "@untitledui/icons";
-import { Skill, SkillStage } from "@/types/skills";
-import { getCriterionColor } from "@/utils/criterion-colors";
+import { Skill, SkillStage } from "@/old/types/skills";
+import { getCriterionColor } from "@/old/utils/criterion-colors";
 import { StageIcon, getStageBgColor, getStageBorderColor, getStageColor } from "./StageIcons";
 
 type SkillModalProps = {

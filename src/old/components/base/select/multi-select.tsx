@@ -8,15 +8,15 @@ import type { ComboBoxProps as AriaComboBoxProps, GroupProps as AriaGroupProps, 
 import { ComboBox as AriaComboBox, Group as AriaGroup, Input as AriaInput, ListBox as AriaListBox, ComboBoxStateContext } from "react-aria-components";
 import type { ListData } from "react-stately";
 import { useListData } from "react-stately";
-import { Avatar } from "@/components/base/avatar/avatar";
-import type { IconComponentType } from "@/components/base/badges/badge-types";
-import { HintText } from "@/components/base/input/hint-text";
-import { Label } from "@/components/base/input/label";
-import { Popover } from "@/components/base/select/popover";
-import { type SelectItemType, sizes } from "@/components/base/select/select";
-import { TagCloseX } from "@/components/base/tags/base-components/tag-close-x";
-import { useResizeObserver } from "@/hooks/use-resize-observer";
-import { cx } from "@/utils/cx";
+import { Avatar } from "@/old/components/base/avatar/avatar";
+import type { IconComponentType } from "@/old/components/base/badges/badge-types";
+import { HintText } from "@/old/components/base/input/hint-text";
+import { Label } from "@/old/components/base/input/label";
+import { Popover } from "@/old/components/base/select/popover";
+import { type SelectItemType, sizes } from "@/old/components/base/select/select";
+import { TagCloseX } from "@/old/components/base/tags/base-components/tag-close-x";
+import { useResizeObserver } from "@/old/hooks/use-resize-observer";
+import { cx } from "@/old/utils/cx";
 import { SelectItem } from "./select-item";
 
 interface ComboBoxValueProps extends AriaGroupProps {

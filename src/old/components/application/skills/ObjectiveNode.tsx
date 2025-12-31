@@ -1,7 +1,7 @@
 import React from "react";
 import { Target04 } from "@untitledui/icons";
 import { Handle, Position } from "reactflow";
-import { Objective } from "@/types/skills";
+import { Objective } from "@/old/types/skills";
 
 type ObjectiveNodeProps = {
     data: Objective & {

@@ -4,12 +4,12 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import moment from "moment-timezone";
-import { Project, Ticket } from "@/app/home-screen";
-import { CalendarCard } from "@/components/base/calendar";
-import { useCalendarContextMenu, useCalendarDate, useCalendarOutsideClick, useEventDragState, useLongPress } from "@/hooks/use-calendar-interactions";
-import "@/styles/calendar.css";
-import { handleScheduleTicket, handleUnscheduleTicket } from "@/utils/calendar-event-handlers";
-import { calculateScrollTime, formatWeekRange, getWeekEnd, getWeekStart, lightenColor, weekOfMonth } from "@/utils/calendar-utils";
+import { Project, Ticket } from "@/old/app/home-screen";
+import { CalendarCard } from "@/old/components/base/calendar";
+import { useCalendarContextMenu, useCalendarDate, useCalendarOutsideClick, useEventDragState, useLongPress } from "@/old/hooks/use-calendar-interactions";
+import "@/old/styles/calendar.css";
+import { handleScheduleTicket, handleUnscheduleTicket } from "@/old/utils/calendar-event-handlers";
+import { calculateScrollTime, formatWeekRange, getWeekEnd, getWeekStart, lightenColor, weekOfMonth } from "@/old/utils/calendar-utils";
 import { CalendarContextMenu } from "./CalendarContextMenu";
 import { CalendarEventContent } from "./CalendarEventContent";
 import TicketsList from "./TicketsList";
@@ -185,12 +185,12 @@ export default function WeekCalendar({
                     <div className="flex items-center gap-4">
                         {/* Date badge */}
                         <div className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl border border-gray-200 text-[11px] shadow-sm">
-                            <div className="font-medium tracking-wide text-gray-500 uppercase">
+                            <div className="font-medium uppercase tracking-wide text-gray-500">
                                 {selectedDay
                                     ? selectedDay.toLocaleString("en-US", { month: "short" })
                                     : selectedDate.toLocaleString("en-US", { month: "short" })}
                             </div>
-                            <div className="text-2xl leading-6 font-semibold">{selectedDay ? selectedDay.getDate() : selectedDate.getDate()}</div>
+                            <div className="text-2xl font-semibold leading-6">{selectedDay ? selectedDay.getDate() : selectedDate.getDate()}</div>
                         </div>
 
                         {/* Title */}

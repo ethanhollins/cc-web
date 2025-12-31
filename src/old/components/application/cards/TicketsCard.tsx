@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AlertCircle, BookOpen01, CalendarDate, CheckDone02, CheckSquare, ChevronDown, Diamond01, Feather } from "@untitledui/icons";
-import { Project, Ticket, TicketStatus, TicketType } from "@/app/home-screen";
+import { Project, Ticket, TicketStatus, TicketType } from "@/old/app/home-screen";
 import { Card } from "./Card";
 import { CardHeader } from "./CardHeader";
 
