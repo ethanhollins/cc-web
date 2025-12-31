@@ -1,1 +1,1 @@
-export { CalendarCard } from "./calendar-card";
+export * from '../../../old/components/base/calendar/index';
