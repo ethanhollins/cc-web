@@ -2,14 +2,14 @@ import type { FC } from "react";
 import * as Badges from "@/old/components/base/badges/badges.demo";
 
 export default {
-    title: "Base components/Badges",
-    decorators: [
-        (Story: FC) => (
-            <div className="flex h-screen w-full bg-primary p-4">
-                <Story />
-            </div>
-        ),
-    ],
+  title: "Base components/Badges",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary flex h-screen w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const PillColor = () => <Badges.PillColor />;

@@ -2,14 +2,14 @@ import type { FC } from "react";
 import * as Radio from "@/old/components/base/radio-buttons/radio-buttons.demo";
 
 export default {
-    title: "Base components/Radio buttons",
-    decorators: [
-        (Story: FC) => (
-            <div className="flex min-h-screen w-full bg-primary p-4">
-                <Story />
-            </div>
-        ),
-    ],
+  title: "Base components/Radio buttons",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary flex min-h-screen w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const RadioButtons = () => <Radio.RadioButtons />;

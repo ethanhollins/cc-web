@@ -1,28 +1,25 @@
 {
-	"servers": {
-		"shadcn": {
-			"command": "npx",
-			"args": [
-				"shadcn@latest",
-				"mcp"
-			]
-		},
-		"io.github.github/github-mcp-server": {
-			"type": "http",
-			"url": "https://api.githubcopilot.com/mcp/",
-			"headers": {
-				"Authorization": "${input:Authorization}"
-			},
-			"gallery": "https://api.mcp.github.com",
-			"version": "0.26.3"
-		}
-	},
-	"inputs": [
-		{
-			"id": "Authorization",
-			"type": "promptString",
-			"description": "Authentication token (PAT or App token)",
-			"password": true
-		}
-	]
+  "servers": {
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "io.github.github/github-mcp-server": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "${input:Authorization}"
+      },
+      "gallery": "https://api.mcp.github.com",
+      "version": "0.26.3"
+    }
+  },
+  "inputs": [
+    {
+      "id": "Authorization",
+      "type": "promptString",
+      "description": "Authentication token (PAT or App token)",
+      "password": true
+    }
+  ]
 }

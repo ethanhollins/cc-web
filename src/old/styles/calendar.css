@@ -1,66 +1,79 @@
 :root {
-    /* Make the grid white & lines subtle */
-    --fc-border-color: #e5e7eb; /* gray-200 */
-    --fc-page-bg-color: #ffffff;
-    --fc-neutral-bg-color: #ffffff; /* remove yellow wash */
-    --fc-today-bg-color: transparent;
-    --fc-now-indicator-color: #ef4444;
+  /* Make the grid white & lines subtle */
+  --fc-border-color: #e5e7eb; /* gray-200 */
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #ffffff; /* remove yellow wash */
+  --fc-today-bg-color: transparent;
+  --fc-now-indicator-color: #ef4444;
 }
 .fc {
-    font-family:
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        Segoe UI,
-        Roboto,
-        Helvetica,
-        Arial,
-        Apple Color Emoji,
-        Segoe UI Emoji;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    Apple Color Emoji,
+    Segoe UI Emoji;
 }
 /* Softer hour labels */
 .fc .fc-timegrid-slot-label {
-    color: #6b7280; /* gray-500 */
-    font-size: 0.875rem;
+  color: #6b7280; /* gray-500 */
+  font-size: 0.875rem;
+}
+/* All-day label and axis labels */
+.fc .fc-timegrid-axis-cushion,
+.fc .fc-timegrid-slot-label-cushion {
+  color: #6b7280; /* gray-500 */
 }
 /* Slot height for air */
 .fc .fc-timegrid-slot {
-    height: 3.25rem;
+  height: 3.25rem;
 }
 /* Remove non-business shading just in case */
 .fc .fc-non-business {
-    background: transparent;
+  background: transparent;
 }
 /* Selection mirror rounded */
 .fc .fc-highlight,
 .fc .fc-event.fc-event-mirror {
-    border-radius: 4px;
+  border-radius: 4px;
 }
 .fc .fc-timegrid-event {
-    border-radius: 4px;
+  border-radius: 4px;
 }
 /* Touch support for mobile */
 .fc {
-    touch-action: manipulation;
+  touch-action: manipulation;
 }
 .fc .fc-timegrid-body,
 .fc .fc-timegrid-slots {
-    touch-action: pan-y pinch-zoom;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Smooth transitions for calendar table during resize */
+.fc-view-harness,
+.fc-timegrid,
+.fc-col-header,
+.fc-scrollgrid {
+  transition: width 300ms ease-in-out !important;
 }
 
 /* Selected day column highlighting - subtle styling */
 .fc .fc-day-selected {
-    background-color: rgba(124, 58, 237, 0.03) !important; /* Very subtle violet background */
+  background-color: rgba(124, 58, 237, 0.03) !important; /* Very subtle violet background */
 }
 
 /* Selected day header styling - minimal emphasis */
 .fc .fc-col-header-cell.fc-day-selected {
-    background-color: rgba(124, 58, 237, 0.05) !important; /* Subtle header background */
-    font-weight: 500; /* Slightly bolder but not too obvious */
-    color: #6b46c1; /* Slightly muted violet */
+  background-color: rgba(124, 58, 237, 0.05) !important; /* Subtle header background */
+  font-weight: 500; /* Slightly bolder but not too obvious */
+  color: #6b46c1; /* Slightly muted violet */
 }
 
 /* Ensure selected styling applies to entire column - very subtle */
 .fc .fc-timegrid-col.fc-day-selected {
-    background-color: rgba(124, 58, 237, 0.02) !important; /* Barely visible tint */
+  background-color: rgba(124, 58, 237, 0.02) !important; /* Barely visible tint */
 }

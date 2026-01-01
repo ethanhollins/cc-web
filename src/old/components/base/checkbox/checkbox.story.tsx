@@ -2,14 +2,14 @@ import type { FC } from "react";
 import * as Checkbox from "@/old/components/base/checkbox/checkbox.demo";
 
 export default {
-    title: "Base components/Checkboxes",
-    decorators: [
-        (Story: FC) => (
-            <div className="flex min-h-screen w-full bg-primary p-4">
-                <Story />
-            </div>
-        ),
-    ],
+  title: "Base components/Checkboxes",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary flex min-h-screen w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const Checkboxes = () => <Checkbox.Checkboxes />;
