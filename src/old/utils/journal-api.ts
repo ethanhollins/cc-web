@@ -1,13 +1,13 @@
 export interface ChatMessage {
-    type: "text" | "image";
-    content: string;
-    fileName?: string;
+  type: "text" | "image";
+  content: string;
+  fileName?: string;
 }
 
 export interface JournalAPIResponse {
-    success: boolean;
-    markdown: string;
-    timestamp: string;
+  success: boolean;
+  markdown: string;
+  timestamp: string;
 }
 
 /**
@@ -15,14 +15,14 @@ export interface JournalAPIResponse {
  * TODO: Replace with actual API endpoint
  */
 export const sendJournalMessage = async (message: ChatMessage): Promise<JournalAPIResponse> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Mock response based on message type
-    let mockMarkdown: string;
+  // Mock response based on message type
+  let mockMarkdown: string;
 
-    if (message.type === "image") {
-        mockMarkdown = `# Image Analysis
+  if (message.type === "image") {
+    mockMarkdown = `# Image Analysis
 
 I can see you've shared an image: **${message.fileName}**
 
@@ -35,8 +35,8 @@ Here's what I observe:
 This image makes me think about the importance of visual documentation in our daily work and life.
 
 *Generated at ${new Date().toLocaleString()}*`;
-    } else {
-        mockMarkdown = `# Reflection on: "${message.content}"
+  } else {
+    mockMarkdown = `# Reflection on: "${message.content}"
 
 Thank you for sharing your thoughts. Here's my reflection:
 
@@ -53,17 +53,17 @@ Your message touches on several important themes:
 
 ## Summary
 ${
-    message.content.split(" ").length > 10
-        ? "This detailed thought deserves deeper consideration and follow-up action."
-        : "Sometimes the simplest thoughts carry the most profound insights."
+  message.content.split(" ").length > 10
+    ? "This detailed thought deserves deeper consideration and follow-up action."
+    : "Sometimes the simplest thoughts carry the most profound insights."
 }
 
 *Generated at ${new Date().toLocaleString()}*`;
-    }
+  }
 
-    return {
-        success: true,
-        markdown: mockMarkdown,
-        timestamp: new Date().toISOString(),
-    };
+  return {
+    success: true,
+    markdown: mockMarkdown,
+    timestamp: new Date().toISOString(),
+  };
 };

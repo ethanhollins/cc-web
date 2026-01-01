@@ -9,129 +9,129 @@ import { Dropdown } from "@/old/components/base/dropdown/dropdown";
 import { cx } from "@/old/utils/cx";
 
 export const DropdownButton = () => (
-    <Dropdown.Root>
-        <Button className="group" color="secondary" iconTrailing={ChevronDown}>
-            Account
-        </Button>
+  <Dropdown.Root>
+    <Button className="group" color="secondary" iconTrailing={ChevronDown}>
+      Account
+    </Button>
 
-        <Dropdown.Popover>
-            <div className="flex gap-3 border-b border-secondary p-3">
-                <AvatarLabelGroup
-                    size="md"
-                    src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
-                    status="online"
-                    title="Olivia Rhye"
-                    subtitle="olivia@untitledui.com"
-                />
-            </div>
-            <Dropdown.Menu>
-                <Dropdown.Section>
-                    <Dropdown.Item addon="⌘K->P" icon={User01}>
-                        View profile
-                    </Dropdown.Item>
-                    <Dropdown.Item addon="⌘S" icon={Settings01}>
-                        Settings
-                    </Dropdown.Item>
-                </Dropdown.Section>
-                <Dropdown.Separator />
-                <Dropdown.Section>
-                    <Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
-                    <Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
-                    <Dropdown.Item icon={Container}>API</Dropdown.Item>
-                </Dropdown.Section>
-                <Dropdown.Separator />
-                <Dropdown.Section>
-                    <Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
-                        Log out
-                    </Dropdown.Item>
-                </Dropdown.Section>
-            </Dropdown.Menu>
-        </Dropdown.Popover>
-    </Dropdown.Root>
+    <Dropdown.Popover>
+      <div className="border-secondary flex gap-3 border-b p-3">
+        <AvatarLabelGroup
+          size="md"
+          src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
+          status="online"
+          title="Olivia Rhye"
+          subtitle="olivia@untitledui.com"
+        />
+      </div>
+      <Dropdown.Menu>
+        <Dropdown.Section>
+          <Dropdown.Item addon="⌘K->P" icon={User01}>
+            View profile
+          </Dropdown.Item>
+          <Dropdown.Item addon="⌘S" icon={Settings01}>
+            Settings
+          </Dropdown.Item>
+        </Dropdown.Section>
+        <Dropdown.Separator />
+        <Dropdown.Section>
+          <Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
+          <Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
+          <Dropdown.Item icon={Container}>API</Dropdown.Item>
+        </Dropdown.Section>
+        <Dropdown.Separator />
+        <Dropdown.Section>
+          <Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
+            Log out
+          </Dropdown.Item>
+        </Dropdown.Section>
+      </Dropdown.Menu>
+    </Dropdown.Popover>
+  </Dropdown.Root>
 );
 
 export const DropdownIcon = () => (
-    <Dropdown.Root>
-        <Dropdown.DotsButton />
+  <Dropdown.Root>
+    <Dropdown.DotsButton />
 
-        <Dropdown.Popover>
-            <div className="flex gap-3 border-b border-secondary p-3">
-                <AvatarLabelGroup
-                    size="md"
-                    src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
-                    status="online"
-                    title="Olivia Rhye"
-                    subtitle="olivia@untitledui.com"
-                />
-            </div>
-            <Dropdown.Menu>
-                <Dropdown.Section>
-                    <Dropdown.Item addon="⌘K->P" icon={User01}>
-                        View profile
-                    </Dropdown.Item>
-                    <Dropdown.Item addon="⌘S" icon={Settings01}>
-                        Settings
-                    </Dropdown.Item>
-                </Dropdown.Section>
-                <Dropdown.Separator />
-                <Dropdown.Section>
-                    <Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
-                    <Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
-                    <Dropdown.Item icon={Container}>API</Dropdown.Item>
-                </Dropdown.Section>
-                <Dropdown.Separator />
-                <Dropdown.Section>
-                    <Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
-                        Log out
-                    </Dropdown.Item>
-                </Dropdown.Section>
-            </Dropdown.Menu>
-        </Dropdown.Popover>
-    </Dropdown.Root>
+    <Dropdown.Popover>
+      <div className="border-secondary flex gap-3 border-b p-3">
+        <AvatarLabelGroup
+          size="md"
+          src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
+          status="online"
+          title="Olivia Rhye"
+          subtitle="olivia@untitledui.com"
+        />
+      </div>
+      <Dropdown.Menu>
+        <Dropdown.Section>
+          <Dropdown.Item addon="⌘K->P" icon={User01}>
+            View profile
+          </Dropdown.Item>
+          <Dropdown.Item addon="⌘S" icon={Settings01}>
+            Settings
+          </Dropdown.Item>
+        </Dropdown.Section>
+        <Dropdown.Separator />
+        <Dropdown.Section>
+          <Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
+          <Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
+          <Dropdown.Item icon={Container}>API</Dropdown.Item>
+        </Dropdown.Section>
+        <Dropdown.Separator />
+        <Dropdown.Section>
+          <Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
+            Log out
+          </Dropdown.Item>
+        </Dropdown.Section>
+      </Dropdown.Menu>
+    </Dropdown.Popover>
+  </Dropdown.Root>
 );
 
 export const DropdownAvatar = () => (
-    <Dropdown.Root>
-        <AriaButton
-            className={({ isPressed, isFocusVisible }) =>
-                cx("group relative inline-flex cursor-pointer rounded-full outline-focus-ring", (isPressed || isFocusVisible) && "outline-2 outline-offset-2")
-            }
-        >
-            <Avatar alt="Olivia Rhye" src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80" size="md" />
-        </AriaButton>
+  <Dropdown.Root>
+    <AriaButton
+      className={({ isPressed, isFocusVisible }) =>
+        cx("outline-focus-ring group relative inline-flex cursor-pointer rounded-full", (isPressed || isFocusVisible) && "outline-2 outline-offset-2")
+      }
+    >
+      <Avatar alt="Olivia Rhye" src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80" size="md" />
+    </AriaButton>
 
-        <Dropdown.Popover>
-            <div className="flex gap-3 border-b border-secondary p-3">
-                <AvatarLabelGroup
-                    size="md"
-                    src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
-                    status="online"
-                    title="Olivia Rhye"
-                    subtitle="olivia@untitledui.com"
-                />
-            </div>
-            <Dropdown.Menu>
-                <Dropdown.Section>
-                    <Dropdown.Item addon="⌘K->P" icon={User01}>
-                        View profile
-                    </Dropdown.Item>
-                    <Dropdown.Item addon="⌘S" icon={Settings01}>
-                        Settings
-                    </Dropdown.Item>
-                </Dropdown.Section>
-                <Dropdown.Separator />
-                <Dropdown.Section>
-                    <Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
-                    <Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
-                    <Dropdown.Item icon={Container}>API</Dropdown.Item>
-                </Dropdown.Section>
-                <Dropdown.Separator />
-                <Dropdown.Section>
-                    <Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
-                        Log out
-                    </Dropdown.Item>
-                </Dropdown.Section>
-            </Dropdown.Menu>
-        </Dropdown.Popover>
-    </Dropdown.Root>
+    <Dropdown.Popover>
+      <div className="border-secondary flex gap-3 border-b p-3">
+        <AvatarLabelGroup
+          size="md"
+          src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
+          status="online"
+          title="Olivia Rhye"
+          subtitle="olivia@untitledui.com"
+        />
+      </div>
+      <Dropdown.Menu>
+        <Dropdown.Section>
+          <Dropdown.Item addon="⌘K->P" icon={User01}>
+            View profile
+          </Dropdown.Item>
+          <Dropdown.Item addon="⌘S" icon={Settings01}>
+            Settings
+          </Dropdown.Item>
+        </Dropdown.Section>
+        <Dropdown.Separator />
+        <Dropdown.Section>
+          <Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
+          <Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
+          <Dropdown.Item icon={Container}>API</Dropdown.Item>
+        </Dropdown.Section>
+        <Dropdown.Separator />
+        <Dropdown.Section>
+          <Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
+            Log out
+          </Dropdown.Item>
+        </Dropdown.Section>
+      </Dropdown.Menu>
+    </Dropdown.Popover>
+  </Dropdown.Root>
 );

@@ -2,14 +2,14 @@ import type { FC } from "react";
 import * as Tags from "@/old/components/base/tags/tags.demo";
 
 export default {
-    title: "Base components/Tags",
-    decorators: [
-        (Story: FC) => (
-            <div className="flex min-h-screen w-full overflow-auto bg-primary p-4">
-                <Story />
-            </div>
-        ),
-    ],
+  title: "Base components/Tags",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary flex min-h-screen w-full overflow-auto p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const Default = () => <Tags.Default />;

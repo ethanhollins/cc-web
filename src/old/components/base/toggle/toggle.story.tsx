@@ -2,14 +2,14 @@ import type { FC } from "react";
 import * as ToggleComponents from "@/old/components/base/toggle/toggle.demo";
 
 export default {
-    title: "Base components/Toggles",
-    decorators: [
-        (Story: FC) => (
-            <div className="flex min-h-screen w-full bg-primary p-4">
-                <Story />
-            </div>
-        ),
-    ],
+  title: "Base components/Toggles",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary flex min-h-screen w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const Toggles = () => <ToggleComponents.Toggles />;

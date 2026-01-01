@@ -43,7 +43,6 @@ cc-web/
 - **`/src/app/`** - Next.js App Router pages
   - Currently imports from `/src/old/` folder
   - Pages here will be progressively replaced with new implementations
-  
 - **`/src/components/`** - New component library ✨ **USE THIS FOR ALL NEW WORK**
   - `ui/` - shadcn/ui components (Button, Card, Dialog, etc.)
   - `auth/` - Authentication-related components
@@ -67,17 +66,38 @@ When replacing old pages or components:
 
 ## Development Guidelines
 
+### Naming Conventions
+
+**MUST follow these file naming conventions:**
+
+- **Hooks**: camelCase (e.g., `useCalendarEvents.ts`, `useAuth.ts`)
+- **Components**: PascalCase (e.g., `CalendarView.tsx`, `UserProfile.tsx`)
+- **Utils/Other Files**: kebab-case (e.g., `calendar-utils.ts`, `format-date.ts`)
+
 ### Component Library
 
 **MUST use shadcn/ui components wherever possible:**
+
 - All new UI components should be built with shadcn/ui
 - Check available components: `npx shadcn@latest add [component-name]`
 - Configure components using the project's design system tokens
 - Extend shadcn components when additional functionality is needed
 
+### Sharable Architecture
+
+**Design all new code to be sharable and composable:**
+
+- Prefer small, focused components over page-specific monoliths
+- Extract reusable logic into `/src/hooks` (for stateful or behavioral concerns)
+- Extract pure computation and formatting into `/src/utils` (kebab-case files)
+- Keep API access isolated in `/src/api` and shared configuration in `/src/lib`
+- Avoid duplicating logic across pages; create shared hooks/utils instead
+- Do not introduce new imports from `/src/old/` – if legacy behavior is needed, migrate or wrap it into the new `/src` structure first
+
 ### Design Principles
 
 **Mobile-First Design is MANDATORY:**
+
 - Start designs with mobile viewport (320px+)
 - Use Tailwind responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
 - Test all new features on mobile viewports first
@@ -89,6 +109,7 @@ When replacing old pages or components:
 When implementing new features, follow this structured approach:
 
 #### 1. Initial Planning Phase
+
 - **Present the plan in chat first**
 - Break down the feature into logical, manageable chunks
 - Outline the overall architecture and approach
@@ -96,7 +117,9 @@ When implementing new features, follow this structured approach:
 - Get explicit approval before proceeding
 
 #### 2. Branch Creation (if on master)
+
 Once the plan is approved and project code is provided:
+
 - **Create a feature branch using conventional commits format with project code**
   - Format: `<project-code>-<type>-<brief-description>`
   - User must provide the project code (e.g., CC-48, CC-52)
@@ -105,14 +128,49 @@ Once the plan is approved and project code is provided:
   - Add entry to `[In Progress]` section with feature name (including project code) and TBD date
   - Include brief description of the work to be done
 
-#### 3. Scaffolding Phase
+#### 3. Scaffolding Phase (DEFAULT APPROACH)
+
 - Create file structure with placeholder files
 - Add comprehensive TODO comments for each section
 - Provide rough code implementation suggestions as comments
-- Include type definitions and interfaces
+- Include type definitions and interfaces (can be complete)
 - Add placeholder functions with clear documentation
+- Use comments like `// TODO: implement...`, `// NOTE: ...`, `// EXAMPLE: ...`
+- Keep function bodies minimal with instructive comments
+
+**Example of proper scaffolding:**
+
+```typescript
+// ❌ WRONG - TODOs above completed code
+export async function fetchProjects(signal?: AbortSignal): Promise<ProjectsResponse> {
+  // TODO: Make fetch request with signal
+  const response = await fetch(`${API_BASE_URL}/projects`, { signal });
+
+  // TODO: Check response status
+  if (!response.ok) {
+    throw new Error(`Failed to fetch projects: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// ✅ CORRECT - Empty function with TODOs inside explaining what to implement
+export async function fetchProjects(signal?: AbortSignal): Promise<ProjectsResponse> {
+  // TODO: Implement fetchProjects function
+  // 1. Make GET request to `${API_BASE_URL}/projects` with signal
+  // 2. Check if response.ok, throw error if not
+  // 3. Parse and return response.json()
+  // EXAMPLE:
+  // const response = await fetch(`${API_BASE_URL}/projects`, { signal });
+  // if (!response.ok) throw new Error(`Failed to fetch projects: ${response.status}`);
+  // return response.json();
+
+  throw new Error("Not implemented");
+}
+```
 
 #### 4. Implementation Guidance
+
 - Keep chunks small and manageable for manual implementation
 - After each scaffolding section is created:
   - Maintain a TODO list of remaining work
@@ -121,11 +179,26 @@ Once the plan is approved and project code is provided:
   - Continue to the next chunk only when ready
 
 #### 5. Full Implementation
-- **ONLY fully implement code when explicitly given permission**
+
+- **CRITICAL: ONLY fully implement code when explicitly given permission with phrases like "implement this", "write the code", "fill this in", etc.**
+- **DEFAULT BEHAVIOR: Always create scaffolding with TODOs and implementation guidance**
 - Never assume permission to write complete implementations
 - Always default to scaffolding + guidance approach
+- If uncertain, ask: "Should I create scaffolding or implement this fully?"
 
 #### 6. Completion
+
+- **CRITICAL: Always check for errors after making changes**
+- First, run ESLint for the project (e.g. via the `lint` npm script) and **fix all reported problems**
+- Second, run Prettier over the changed files to ensure formatting is consistent
+- Then run `get_errors` tool after editing files to validate changes
+- Fix any syntax errors, type errors, or compilation issues immediately
+- Do not consider work complete until all errors are resolved
+- Before committing or opening a PR, perform an architectural/shareability review of all changed files:
+  - Confirm new logic is placed in appropriate shared hooks (`/src/hooks`) or utils (`/src/utils`) instead of embedded in pages
+  - Check that components are reusable and follow the directory layout (`components/ui`, `components/layout`, `components/sections`, etc.)
+  - Ensure there are no new imports from `/src/old/` in any new or refactored code
+  - Validate that mobile-first and shadcn/ui guidelines are followed
 - Update `CHANGELOG.md` with completion date
 - Move entry from `[In Progress]` to `[Completed]`
 - Create PR with descriptive conventional commit message
@@ -163,6 +236,7 @@ AI Response:
 Reference `CHANGELOG.md` when writing commit messages.
 
 ### Format
+
 ```
 <type>[optional scope]: <description>
 
@@ -172,6 +246,7 @@ Reference `CHANGELOG.md` when writing commit messages.
 ```
 
 ### Common Types
+
 - `feat:` - New features
 - `fix:` - Bug fixes
 - `refactor:` - Code refactoring (old → new)
@@ -184,10 +259,12 @@ Reference `CHANGELOG.md` when writing commit messages.
 - `build:` - Build system or dependencies
 
 ### Breaking Changes
+
 - Append `!` after type/scope: `feat!:` or `feat(api)!:`
 - Include `BREAKING CHANGE:` in footer
 
 ### Examples
+
 ```
 feat(auth): add login with Google OAuth
 fix(calendar): resolve date picker timezone issue
@@ -214,19 +291,18 @@ Use these configured path aliases for imports:
 ```
 
 ### Import Examples
+
 ```typescript
 // shadcn/ui components
-import { Button } from "@/ui/button"
-import { Card } from "@/ui/card"
-
 // Custom components
-import { LoginForm } from "@/components/auth/login-form"
-import { PageHeader } from "@/components/layout/page-header"
-
+import { LoginForm } from "@/components/auth/login-form";
+import { PageHeader } from "@/components/layout/page-header";
 // Hooks, utils, types
-import { useAuth } from "@/hooks/use-auth"
-import { cn } from "@/lib/utils"
-import type { User } from "@/types/user"
+import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
+import type { User } from "@/types/user";
+import { Button } from "@/ui/button";
+import { Card } from "@/ui/card";
 ```
 
 ## Important Notes

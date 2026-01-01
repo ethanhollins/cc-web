@@ -2,23 +2,23 @@ import type { FC } from "react";
 import * as Selects from "@/old/components/base/select/select.demo";
 
 export default {
-    title: "Base components/Select",
+  title: "Base components/Select",
 };
 
 const DefaultDecorator = (Story: FC) => (
-    <div className="flex min-h-screen w-full bg-primary p-4">
-        <div className="w-80">
-            <Story />
-        </div>
+  <div className="bg-primary flex min-h-screen w-full p-4">
+    <div className="w-80">
+      <Story />
     </div>
+  </div>
 );
 
 const WiderDecorator = (Story: FC) => (
-    <div className="flex min-h-screen w-full bg-primary p-4">
-        <div className="w-100">
-            <Story />
-        </div>
+  <div className="bg-primary flex min-h-screen w-full p-4">
+    <div className="w-100">
+      <Story />
     </div>
+  </div>
 );
 
 export const Default = () => <Selects.Default />;

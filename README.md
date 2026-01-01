@@ -41,11 +41,10 @@ cc-web/
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm, yarn, or pnpm
 
 ### Installation
-
 
 ```bash
 npm install
@@ -103,12 +102,19 @@ npx shadcn@latest add dialog
 ## 📚 Path Aliases
 
 ```typescript
-import { Button } from "@/ui/button"              // shadcn components
-import { LoginForm } from "@/components/auth/..."  // Custom components
-import { useAuth } from "@/hooks/use-auth"         // Hooks
-import { api } from "@/api/client"                 // API functions
-import type { User } from "@/types/user"           // Types
-import { cn } from "@/lib/utils"                   // Utilities
+// Hooks
+import { api } from "@/api/client";
+// shadcn components
+import { LoginForm } from "@/components/auth/...";
+// Custom components
+import { useAuth } from "@/hooks/use-auth";
+// Types
+import { cn } from "@/lib/utils";
+// API functions
+import type { User } from "@/types/user";
+import { Button } from "@/ui/button";
+
+// Utilities
 ```
 
 ## 🔧 Configuration

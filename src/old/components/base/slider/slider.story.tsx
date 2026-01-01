@@ -2,16 +2,16 @@ import type { FC } from "react";
 import * as Sliders from "@/old/components/base/slider/slider.demo";
 
 export default {
-    title: "Base components/Sliders",
-    decorators: [
-        (Story: FC) => (
-            <div className="bg-primary p-16">
-                <div className="max-w-xs">
-                    <Story />
-                </div>
-            </div>
-        ),
-    ],
+  title: "Base components/Sliders",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary p-16">
+        <div className="max-w-xs">
+          <Story />
+        </div>
+      </div>
+    ),
+  ],
 };
 
 export const Default = () => <Sliders.Default />;

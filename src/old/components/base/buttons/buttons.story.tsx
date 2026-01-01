@@ -2,14 +2,14 @@ import type { FC } from "react";
 import * as Buttons from "@/old/components/base/buttons/buttons.demo";
 
 export default {
-    title: "Base components/Buttons",
-    decorators: [
-        (Story: FC) => (
-            <div className="flex min-h-screen w-full bg-primary p-4">
-                <Story />
-            </div>
-        ),
-    ],
+  title: "Base components/Buttons",
+  decorators: [
+    (Story: FC) => (
+      <div className="bg-primary flex min-h-screen w-full p-4">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const Primary = () => <Buttons.Primary />;
