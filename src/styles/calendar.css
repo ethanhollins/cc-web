@@ -1,10 +1,29 @@
-:root {
+/*
+ * FullCalendar theming
+ *
+ * We scope light/dark styling via the planner theme classes so
+ * the calendar inherits the same tokens as the rest of the UI.
+ */
+
+/* Light (default) */
+:root,
+.theme-soft-light {
   /* Make the grid white & lines subtle */
   --fc-border-color: #e5e7eb; /* gray-200 */
   --fc-page-bg-color: #ffffff;
   --fc-neutral-bg-color: #ffffff; /* remove yellow wash */
   --fc-today-bg-color: transparent;
   --fc-now-indicator-color: #ef4444;
+}
+
+/* Dark theme overrides */
+.theme-soft-dark {
+  /* Slightly lifted near-black background that still shows grid */
+  --fc-border-color: rgba(148, 163, 184, 0.35); /* slate-400-ish */
+  --fc-page-bg-color: transparent; /* let planner surface show through */
+  --fc-neutral-bg-color: transparent;
+  --fc-today-bg-color: rgba(37, 99, 235, 0.09); /* subtle blue wash */
+  --fc-now-indicator-color: #f97316; /* warm orange now-line */
 }
 .fc {
   font-family:
@@ -28,6 +47,11 @@
 .fc .fc-timegrid-slot-label-cushion {
   color: #6b7280; /* gray-500 */
 }
+/* Style the all-day row label (now a sun icon) */
+.fc .fc-timegrid-axis.fc-timegrid-axis-all-day .fc-timegrid-axis-cushion {
+  font-size: 0.8rem;
+  color: var(--accent, #2563eb);
+}
 /* Slot height for air */
 .fc .fc-timegrid-slot {
   height: 3.25rem;
@@ -48,24 +72,45 @@
 .fc {
   touch-action: manipulation;
 }
+.fc .fc-timegrid-col.fc-timegrid-col-all-day .fc-timegrid-col-frame {
+  /* Make all-day row very compact so only header content fits */
+  min-height: 2.25rem;
+  max-height: 2.5rem;
+  overflow: hidden;
+}
+.fc .fc-scrollgrid {
+  /* Round only the top corners of the main calendar grid/table */
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  /* Distinct background for the grid area to create depth
+     (lighter than the surrounding card in dark mode, slightly darker
+     than the card in light mode). */
+  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.04), transparent 65%), var(--planner-grid-bg, #f3f4f6);
+}
+.fc .fc-view-harness {
+  /* Add horizontal breathing room so the main grid lines up visually
+     with the outer header controls (date pill and Today arrows). */
+  margin-inline: 1rem; /* 16px, roughly matching header padding */
+}
 .fc .fc-timegrid-body,
 .fc .fc-timegrid-slots {
   touch-action: pan-y pinch-zoom;
 }
 
-/* Selected day column highlighting - subtle styling */
+/* Selected day column highlighting - subtle styling (blue accent) */
 .fc .fc-day-selected {
-  background-color: rgba(124, 58, 237, 0.03) !important; /* Very subtle violet background */
+  background-color: var(--accent-subtle, rgba(37, 99, 235, 0.05)) !important; /* Very subtle blue background */
 }
 
 /* Selected day header styling - minimal emphasis */
 .fc .fc-col-header-cell.fc-day-selected {
-  background-color: rgba(124, 58, 237, 0.05) !important; /* Subtle header background */
+  background-color: var(--accent-soft, rgba(37, 99, 235, 0.12)) !important; /* Subtle header background */
   font-weight: 500; /* Slightly bolder but not too obvious */
-  color: #6b46c1; /* Slightly muted violet */
+  color: var(--accent, #2563eb); /* Accent blue */
 }
 
 /* Ensure selected styling applies to entire column - very subtle */
 .fc .fc-timegrid-col.fc-day-selected {
-  background-color: rgba(124, 58, 237, 0.02) !important; /* Barely visible tint */
+  background-color: rgba(37, 99, 235, 0.02) !important; /* Barely visible tint */
 }

@@ -10,13 +10,22 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [In Progress]
 
-_No active in-progress items._
-
 ---
 
 ## [Completed]
 
-<!-- Example format:
+### CC-48: Soft Light/Dark Theming for Planner - 2026-01-02
+
+- Define soft light/dark global theme tokens and planner-specific CSS variables, and load them via the app root layout
+- Add a dedicated `usePlannerTheme` hook plus `PlannerNavBar` to provide a planner-only soft light/dark toggle with persisted user preference
+- Update planner layout and calendar components (header, view, events, FullCalendar CSS) to consume the new theme tokens, including all-day row and selected-day highlighting
+- Refresh the tickets sidebar with `TicketCard` and `TicketCreateModal` components styled against the new palette while preserving drag-and-drop and scheduling behaviour
+- Implement ticket scheduling/unscheduling API integration and TODOs on planner page
+- Add shared popover positioning utility and refactor TicketCard/TicketCreateModal to use it
+- Consolidate error-utils imports to use @/utils alias consistently
+- Finalize themes.css for production (remove scaffolding comments)
+- Add toggle behavior to CalendarCard popup in TicketCard schedule button
+
 ### Project Setup & Configuration - 2025-12-31
 - Added CHANGELOG.md for tracking project changes
 - Created GitHub Copilot instructions document
@@ -44,7 +53,6 @@ _No active in-progress items._
 - [x] Add calendar picker widget for manual ticket scheduling
 - [x] Implement event/ticket API integration
 - [x] Add comprehensive error handling and loading states
--->
 
 ### Project Setup & Configuration - 2025-12-31
 

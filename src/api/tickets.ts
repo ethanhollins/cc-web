@@ -43,3 +43,35 @@ export async function createTicket(
 
   return response.data as Ticket;
 }
+
+export async function scheduleTicket(ticketId: string, scheduledDate: string, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      scheduled_date: scheduledDate,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to schedule ticket: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
+export async function unscheduleTicket(ticketId: string, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      scheduled_date: null,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to unschedule ticket: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}

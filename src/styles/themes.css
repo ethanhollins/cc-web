@@ -1,0 +1,209 @@
+/*
+ * Global application theming for Command Centre
+ *
+ * This file defines soft, inviting light and dark theme palettes using
+ * CSS custom properties (design tokens). These tokens SHOULD be reused
+ * across new pages and components, not just the planner, unless a token
+ * is explicitly marked as planner-specific.
+ *
+ * Usage guidelines:
+ * - Scope themes using one of the theme classes (e.g. on a layout root):
+ *   - .theme-soft-light
+ *   - .theme-soft-dark
+ * - Within React components, prefer Tailwind utilities that reference
+ *   these variables, e.g.:
+ *   - bg-[var(--surface)]
+ *   - text-[var(--text-muted)]
+ *   - border-[var(--border-subtle)]
+ * - When a feature area needs custom tuning, derive area-specific tokens
+ *   from the global ones (e.g. --planner-surface: var(--surface)).
+ */
+
+/* :root reserved for future global, non-theme-specific tokens if needed. */
+
+/*
+ * Soft Light Theme
+ * - Warm, low-contrast backgrounds
+ * - Soft coral accent for primary actions
+ * - Muted greens and purples for positive/secondary accents
+ */
+
+.theme-soft-light {
+  /* Base colours */
+  background-color: var(--app-bg);
+  color: var(--text);
+
+  /* Global structure tokens */
+  /* Soft, neutral gray background with white surfaces */
+  --app-bg: #f1f3f4;
+  --surface: #ffffff;
+  --surface-muted: #e5e7eb;
+  --surface-elevated: #ffffff;
+
+  /* Borders & outlines */
+  --border-subtle: #e4e4e7;
+  --border-strong: #d4d4d8;
+
+  /* Event/completion accents */
+  /* Slightly darker grey for completed event overlays to remain visible over event backgrounds */
+  --event-completed-stripe: #9ca3af;
+
+  /* Text */
+  --text: #1f2933;
+  --text-muted: #6b7280;
+  --text-on-accent: #ffffff;
+
+  /* Accents - professional, friendly blue */
+  --accent: #2563eb; /* blue-600 */
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --accent-subtle: rgba(37, 99, 235, 0.06);
+
+  /* Secondary accent - meeting purple */
+  --accent-meeting: #7c3aed; /* violet-600 */
+  --accent-meeting-soft: rgba(124, 58, 237, 0.16);
+
+  /* Status colours */
+  --success: #34d399; /* emerald */
+  --warning: #fbbf24; /* amber */
+  --danger: #fb7185; /* rose */
+
+  /* Application-specific derived tokens */
+  /*
+   * Planner derived tokens
+   * - These are intentionally scoped as planner-* but are defined here so
+   *   they can be themed consistently with the rest of the app.
+   */
+  --planner-bg: var(--app-bg);
+  --planner-surface: var(--surface);
+  --planner-sidebar-bg: #f7f7f8; /* slightly lighter than surface-muted */
+  --planner-time-column-bg: #f5f5f7;
+  --planner-time-indicator: var(--accent);
+  --planner-event-bg: #f5f5ff;
+  --planner-event-border: #e4e4f7;
+  --planner-event-selected-border: var(--accent);
+
+  --planner-label-pill-bg: var(--accent-soft);
+  --planner-label-pill-text: var(--accent);
+
+  --planner-card-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --planner-surface-radius: 24px;
+
+  /* Calendar grid background (slightly darker than main card) */
+  --planner-grid-bg: #f3f4f6;
+
+  /* Sidebar icon tile (Project Tickets) */
+  --planner-sidebar-icon-bg: #ffffff;
+  --planner-sidebar-icon-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+/*
+ * Soft Dark Theme
+ * - Deep navy/charcoal background
+ * - Pastel pink/purple accents
+ * - Maintain good contrast for text and timeline labels
+ */
+
+.theme-soft-dark {
+  /* Base colours */
+  background-color: var(--app-bg);
+  color: var(--text);
+
+  /* Global structure tokens */
+  /*
+   * Jet-black professional neutrals
+   * - app-bg: lighter outer background
+   * - surface: main panels / cards (darker)
+   * - elevated: lighter inner cards / chips / grid
+   * Keep these greyscale so the blue accent stands out.
+   */
+  --app-bg: #141414; /* outer page background (clean neutral grey) */
+  --surface: #050505; /* main panels/cards - deep near-black */
+  --surface-muted: #0a0a0a; /* muted chips, subtle controls */
+  --surface-elevated: #1f1f23; /* elevated cards, headers, grid */
+
+  /* Borders & outlines */
+  --border-subtle: #2b2b32; /* soft outline between surfaces */
+  --border-strong: #3a3a45; /* stronger separators */
+
+  /* Event/completion accents */
+  /* Darker mid-grey for completed event overlays in dark mode */
+  --event-completed-stripe: #6b7280;
+
+  /* Text */
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --text-on-accent: #ffffff;
+
+  /* Accents - brighter blue for dark theme */
+  --accent: #60a5fa; /* blue-400 */
+  --accent-soft: rgba(96, 165, 250, 0.22);
+  --accent-subtle: rgba(96, 165, 250, 0.12);
+
+  /* Secondary accent - meeting purple (lighter in dark mode) */
+  --accent-meeting: #c990ff;
+  --accent-meeting-soft: rgba(168, 85, 247, 0.28);
+
+  /* Status colours */
+  --success: #4ade80; /* brighter green */
+  --warning: #facc15;
+  --danger: #fb7185;
+
+  /* Planner derived tokens */
+  /*
+   * Dark mode depth (jet black):
+   * - Background: lighter deep neutral
+   * - Main calendar surface: darker panel
+   * - Sidebar/nav: darkest rail
+   * - Grid/elevated content: slightly lighter inner panel
+   */
+  --planner-bg: radial-gradient(circle at top left, #141414, #141414);
+  --planner-surface: #050505; /* main calendar card - darker than app bg */
+  --planner-sidebar-bg: #000000; /* nav rail / outer sidebar - darkest */
+  --planner-sidebar-surface: #050505; /* ticket list surface matches card */
+  --planner-time-column-bg: #050505; /* left time column matches card */
+  --planner-time-indicator: var(--accent);
+  --planner-event-bg: rgba(148, 163, 184, 0.14);
+  --planner-event-border: rgba(148, 163, 184, 0.5);
+  --planner-event-selected-border: var(--accent);
+
+  --planner-label-pill-bg: var(--accent-soft);
+  --planner-label-pill-text: #f9fafb;
+
+  --planner-card-shadow: 0 18px 40px rgba(15, 23, 42, 0.75);
+  --planner-surface-radius: 24px;
+
+  /* Calendar grid background (noticeably lighter than card for depth) */
+  --planner-grid-bg: #232329;
+
+  /* Sidebar icon tile (Project Tickets) */
+  --planner-sidebar-icon-bg: var(--accent-subtle);
+  --planner-sidebar-icon-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+/* Shared interaction affordance: anything clickable should use pointer cursor */
+.theme-soft-light button,
+.theme-soft-dark button,
+.theme-soft-light [role="button"],
+.theme-soft-dark [role="button"],
+.theme-soft-light a[href],
+.theme-soft-dark a[href],
+.theme-soft-light summary,
+.theme-soft-dark summary,
+.theme-soft-light select,
+.theme-soft-dark select,
+.theme-soft-light input[type="button"],
+.theme-soft-dark input[type="button"],
+.theme-soft-light input[type="submit"],
+.theme-soft-dark input[type="submit"],
+.theme-soft-light input[type="reset"],
+.theme-soft-dark input[type="reset"],
+.theme-soft-light input[type="checkbox"],
+.theme-soft-dark input[type="checkbox"],
+.theme-soft-light input[type="radio"],
+.theme-soft-dark input[type="radio"],
+.theme-soft-light input[type="file"],
+.theme-soft-dark input[type="file"],
+.theme-soft-light input[type="range"],
+.theme-soft-dark input[type="range"] {
+  cursor: pointer;
+}

@@ -123,18 +123,17 @@ export function CalendarView({
         stickyHeaderDates={config.stickyHeaderDates}
         firstDay={1} // Monday
         // Mobile-friendly day header
-        dayHeaderFormat={{ weekday: "short", day: "numeric", month: "numeric" }}
+        dayHeaderFormat={{ weekday: "short", day: "numeric" }}
         dayHeaderContent={(args) => {
           const date = args.date;
           const day = date.getDate();
-          const month = date.getMonth() + 1;
           const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
 
-          // Format: Mon, 29/12
+          // Format: Mon 29
           return (
-            <div className="flex items-center gap-1 text-sm text-gray-900">
-              <span className="font-medium">{weekday},</span>
-              <span className="text-gray-600">{`${day}/${month}`}</span>
+            <div className="flex items-center gap-1 text-sm text-[var(--text)]">
+              <span className="font-medium">{weekday}</span>
+              <span className="text-[var(--text-muted)]">{day}</span>
             </div>
           );
         }}
@@ -177,6 +176,8 @@ export function CalendarView({
         }}
         // Time slots
         allDaySlot={config.allDaySlot}
+        // Use a clear text label for the all-day row
+        allDayText=""
         slotDuration={config.slotDuration}
         snapDuration="00:05:00"
         slotMinTime={config.slotMinTime}

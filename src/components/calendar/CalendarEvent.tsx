@@ -18,9 +18,18 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
   const isEventShort = isShortEvent(event.start, event.end);
 
   // Visual properties
-  const bandColor = extendedProps?.bandColor || "#3b82f6";
+  const bandColor = extendedProps?.bandColor || "var(--accent)";
   const showBand = extendedProps?.showBand !== false;
   const isCompleted = extendedProps?.ticket_status === "Done" || extendedProps?.ticket_status === "Removed" || extendedProps?.completed === true;
+
+  // All-day events: render as a compact header-only chip
+  if (event.allDay) {
+    return (
+      <div className="relative flex h-full items-center overflow-hidden px-1.5 py-0.5">
+        <div className="truncate text-[11px] font-semibold leading-tight sm:text-xs">{event.title}</div>
+      </div>
+    );
+  }
 
   // Compact layout for short events (< 30 min) - better for mobile
   if (isEventShort) {
@@ -40,8 +49,8 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
                 45deg,
                 transparent,
                 transparent 4px,
-                #6b7280 4px,
-                #6b7280 5.5px
+                var(--event-completed-stripe) 4px,
+                var(--event-completed-stripe) 5.5px
               )`,
             }}
           />
@@ -71,8 +80,8 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
               45deg,
               transparent,
               transparent 4px,
-              #6b7280 4px,
-              #6b7280 5.5px
+              var(--event-completed-stripe) 4px,
+              var(--event-completed-stripe) 5.5px
             )`,
           }}
         />
