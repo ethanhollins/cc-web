@@ -3,7 +3,7 @@ import { deleteEvent as apiDeleteEvent, updateEvent as apiUpdateEvent, fetchEven
 import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import type { CalendarEvent } from "@/types/calendar";
 import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
-import { isAbortError } from "../utils/error-utils";
+import { isAbortError } from "@/utils/error-utils";
 
 /**
  * Hook for managing calendar events with caching, debouncing, and WebSocket updates

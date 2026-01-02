@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { DateSelectArg } from "@fullcalendar/core";
+import type { DateSelectArg, DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
 import moment from "moment-timezone";
 import { createEvent } from "@/api/calendar";
+import { scheduleTicket, unscheduleTicket } from "@/api/tickets";
 import { CalendarContextMenu } from "@/components/calendar/CalendarContextMenu";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
@@ -32,12 +33,32 @@ export default function StagePlannerPage() {
     return today;
   });
 
+  const [isTodayInRange, setIsTodayInRange] = useState(true);
+
   // Projects and tickets
   const { projects, selectedProjectKey, selectProject } = useProjects();
   const { tickets, updateTickets } = useTickets(selectedProjectKey, projects);
 
   // Calendar date navigation
   const { selectedDate, goToPreviousPeriod, goToNextPeriod, goToToday, handleDatesSet } = useCalendarDate(calendarRef);
+
+  const handleDatesSetWithToday = useCallback(
+    (dateInfo: DatesSetArg) => {
+      handleDatesSet(dateInfo);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const start = new Date(dateInfo.start);
+      const end = new Date(dateInfo.end);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+
+      const inRange = today.getTime() >= start.getTime() && today.getTime() < end.getTime();
+      setIsTodayInRange(inRange);
+    },
+    [handleDatesSet],
+  );
 
   // Calendar events with caching
   const { events, isLoading: _isLoading, updateEvent, deleteEvent, updateEvents, refetch } = useCalendarEvents(selectedDate);
@@ -158,36 +179,46 @@ export default function StagePlannerPage() {
 
   const handleScheduleTicket = useCallback(
     async (ticketId: string, scheduledDate: string) => {
-      console.log("Schedule ticket:", ticketId, scheduledDate);
-      // TODO: API call to schedule ticket
-      if (selectedProjectKey && tickets[selectedProjectKey]) {
-        const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
-          ticket.ticket_id === ticketId ? { ...ticket, scheduled_date: scheduledDate } : ticket,
-        );
-        updateTickets(selectedProjectKey, updatedTickets);
+      try {
+        await scheduleTicket(ticketId, scheduledDate);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, scheduled_date: scheduledDate } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to schedule ticket:", error);
       }
-      refetch();
     },
     [refetch, selectedProjectKey, tickets, updateTickets],
   );
 
   const handleUnscheduleTicket = useCallback(
     async (ticketId: string) => {
-      console.log("Unschedule ticket:", ticketId);
-      // TODO: API call to unschedule ticket
-      if (selectedProjectKey && tickets[selectedProjectKey]) {
-        const updatedTickets = tickets[selectedProjectKey].map((ticket) => (ticket.ticket_id === ticketId ? { ...ticket, scheduled_date: undefined } : ticket));
-        updateTickets(selectedProjectKey, updatedTickets);
+      try {
+        await unscheduleTicket(ticketId);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, scheduled_date: undefined } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to unschedule ticket:", error);
       }
-      refetch();
     },
     [refetch, selectedProjectKey, tickets, updateTickets],
   );
 
   const handleCreateTicket = useCallback(
     (ticket: Ticket, projectKey: string) => {
-      console.log("Create ticket:", ticket, projectKey);
-      // TODO: API call to create ticket
       if (tickets[projectKey]) {
         const updatedTickets = [...tickets[projectKey], ticket];
         updateTickets(projectKey, updatedTickets);
@@ -198,22 +229,13 @@ export default function StagePlannerPage() {
   );
 
   // Handle time selection for creating new tickets
-  const handleDateSelect = useCallback(
-    (selectInfo: DateSelectArg) => {
-      if (selectInfo.start && selectInfo.end && selectedProjectKey) {
-        const startMoment = moment.tz(selectInfo.startStr, "Australia/Sydney");
-        const endMoment = moment.tz(selectInfo.endStr, "Australia/Sydney");
-
-        console.log("Time slot selected for new ticket:", {
-          start: startMoment.toDate(),
-          end: endMoment.toDate(),
-          projectKey: selectedProjectKey,
-        });
-        // TODO: Trigger ticket creation flow
-      }
-    },
-    [selectedProjectKey],
-  );
+  const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
+    if (selectInfo.start) {
+      const startMoment = moment.tz(selectInfo.startStr, "Australia/Sydney");
+      const startOfDay = startMoment.clone().startOf("day").toDate();
+      setSelectedDay(startOfDay);
+    }
+  }, []);
 
   // Unselect calendar on outside click
   const handleUnselectCalendar = useCallback(() => {
@@ -266,7 +288,14 @@ export default function StagePlannerPage() {
         }
         calendar={
           <div ref={containerRef} className="flex h-full flex-col">
-            <CalendarHeader title={title} currentDate={selectedDate} onPrevious={goToPreviousPeriod} onNext={goToNextPeriod} onToday={goToToday} />
+            <CalendarHeader
+              title={title}
+              currentDate={selectedDate}
+              onPrevious={goToPreviousPeriod}
+              onNext={goToNextPeriod}
+              onToday={goToToday}
+              isTodayInRange={isTodayInRange}
+            />
 
             <div className="relative flex-1 overflow-hidden">
               <CalendarView
@@ -275,7 +304,7 @@ export default function StagePlannerPage() {
                 selectedDay={selectedDay}
                 isDragging={eventDragState.isDragging}
                 editableEventId={longPressHandlers.editableEventId}
-                onDatesSet={handleDatesSet}
+                onDatesSet={handleDatesSetWithToday}
                 onEventClick={handleEventClickWrapper}
                 onEventDrop={handleEventDrop}
                 onEventResize={handleEventResize}

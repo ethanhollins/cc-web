@@ -3,7 +3,7 @@ import { fetchTickets } from "@/api/tickets";
 import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
-import { isAbortError } from "../utils/error-utils";
+import { isAbortError } from "@/utils/error-utils";
 
 /**
  * Hook for managing project tickets with caching
