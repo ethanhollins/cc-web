@@ -11,6 +11,7 @@ import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { TicketModal } from "@/components/modals/TicketModal";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
+import { CoachesSidebar } from "@/components/planner/CoachesSidebar";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
@@ -286,6 +287,7 @@ export default function StagePlannerPage() {
             onUnselectCalendar={handleUnselectCalendar}
           />
         }
+        coachesSidebar={<CoachesSidebar />}
         calendar={
           <div ref={containerRef} className="flex h-full flex-col">
             <CalendarHeader

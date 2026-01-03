@@ -14,6 +14,12 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### CC-51: Coaches Nav and Happiness Stats - 2026-01-03
+
+- Add a "Coaches" tab to the planner navbar that opens a dedicated coaches sidebar panel
+- Implement clickable coach profile cards with portrait images, notification badges, yield icons with counts, and three gradient-based happiness stat bars driven by theme tokens
+- Wire planner layout and sidebar so that the Coaches panel can be toggled alongside existing project tickets via the planner nav bar
+
 ### CC-48: Soft Light/Dark Theming for Planner - 2026-01-02
 
 - Define soft light/dark global theme tokens and planner-specific CSS variables, and load them via the app root layout

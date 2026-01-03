@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { Feather } from "lucide-react";
+import { CircleStar, Feather } from "lucide-react";
 import { PlannerNavBar } from "@/components/planner/PlannerNavBar";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePlannerTheme } from "@/hooks/usePlannerTheme";
@@ -11,6 +11,8 @@ interface PlannerLayoutProps {
   sidebar: ReactNode;
   calendar: ReactNode;
   navigation?: ReactNode;
+  /** Optional coaches sidebar panel rendered when the Coaches tab is active. */
+  coachesSidebar?: ReactNode;
 }
 
 const MAX_HEIGHT_VH = 85; // Maximum 85vh
@@ -22,7 +24,7 @@ const OPEN_HEIGHT_VH = 50; // Default open height (1/2 of screen)
  * Mobile: Full-screen calendar with drawer sidebar
  * Desktop: Side-by-side with collapsible sidebar
  */
-export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutProps) {
+export function PlannerLayout({ sidebar, calendar, navigation, coachesSidebar }: PlannerLayoutProps) {
   const { theme, containerClass, setTheme } = usePlannerTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -207,7 +209,12 @@ export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutPr
           >
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.16),transparent_35%)]" />
             <div className="relative z-10 flex h-full flex-col">
-              {!desktopSidebarCollapsed && activePanelId === "tickets" && <div className="flex-1 overflow-hidden">{sidebar}</div>}
+              {!desktopSidebarCollapsed && activePanelId && (
+                <div className="flex-1 overflow-hidden">
+                  {activePanelId === "tickets" && sidebar}
+                  {activePanelId === "coaches" && coachesSidebar}
+                </div>
+              )}
             </div>
           </div>
 
@@ -218,6 +225,11 @@ export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutPr
                 id: "tickets",
                 icon: <Feather className="h-5 w-5" />,
                 label: "Project tickets",
+              },
+              {
+                id: "coaches",
+                icon: <CircleStar className="h-5 w-5" />,
+                label: "Coaches",
               },
             ]}
             activeId={!desktopSidebarCollapsed ? activePanelId : null}

@@ -226,7 +226,7 @@ export function TicketsSidebar({
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--planner-sidebar-icon-bg)] text-[var(--accent)] shadow-[var(--planner-sidebar-icon-shadow)]">
             <Feather className="h-4 w-4" />
           </div>
-          <h3 className="text-lg font-semibold text-[var(--text)]">Project Tickets</h3>
+          <h3 className="text-lg font-semibold text-[var(--text)]">Tickets</h3>
         </div>
         {selectedDay && (
           <div className="text-sm text-[var(--text-muted)]">
