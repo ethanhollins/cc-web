@@ -1,5 +1,8 @@
 "use client";
 
+// NOTE: This stage route is an experimental playground for the
+// refactored planner (CC-45, CC-52). Behaviour and mocks here may
+// change frequently and are not guaranteed to be stable.
 import { useCallback, useRef, useState } from "react";
 import type { DateSelectArg, DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
@@ -10,8 +13,8 @@ import { CalendarContextMenu } from "@/components/calendar/CalendarContextMenu";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { TicketModal } from "@/components/modals/TicketModal";
-import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { CoachesSidebar } from "@/components/planner/CoachesSidebar";
+import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";

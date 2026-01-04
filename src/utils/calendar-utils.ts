@@ -108,3 +108,62 @@ export function calculateEventDuration(start: Date | null, end: Date | null): nu
 export function isShortEvent(start: Date | null, end: Date | null): boolean {
   return calculateEventDuration(start, end) < 30;
 }
+
+/**
+ * Internal helper to sort all timegrid event harnesses within a column
+ * container so that earlier events (visually higher up) end up later
+ * in the DOM tree. This causes them to render on top when elements
+ * share the same z-index.
+ *
+ * NOTE: This relies on FullCalendar's current timegrid DOM structure
+ * (".fc-timegrid-event-harness" inside ".fc-timegrid-col-events"). If
+ * FullCalendar is upgraded, re-verify these selectors still exist.
+ */
+function sortTimegridHarnessesInContainer(eventsContainer: HTMLElement): void {
+  const harnesses = Array.from(eventsContainer.querySelectorAll<HTMLElement>(".fc-timegrid-event-harness"));
+
+  harnesses
+    // Use offsetTop (distance from the container's top) as the vertical
+    // position; larger offsetTop = lower on the screen. We sort descending
+    // so earlier events (smaller offsetTop) are appended last and thus sit
+    // visually on top.
+    .sort((a, b) => b.offsetTop - a.offsetTop)
+    .forEach((el) => {
+      eventsContainer.appendChild(el);
+    });
+}
+
+/**
+ * Re-order timegrid event harnesses within the current column so that
+ * earlier events (visually higher up) end up later in the DOM tree.
+ * This makes earlier events render on top when elements share the same
+ * z-index, without relying on z-index tweaks.
+ */
+export function reorderTimegridColumnEventsForElement(eventElement: HTMLElement): void {
+  const harness = eventElement.closest(".fc-timegrid-event-harness") as HTMLElement | null;
+  const eventsContainer = harness?.closest(".fc-timegrid-col-events") as HTMLElement | null;
+
+  if (!harness || !eventsContainer) return;
+
+  // Perform an immediate sort for the current state.
+  sortTimegridHarnessesInContainer(eventsContainer);
+
+  // Attach a MutationObserver once per column container so that any future
+  // DOM changes FullCalendar makes (for example, when events are updated
+  // or re-rendered) will automatically re-apply our sorting. This prevents
+  // internal updates from "undoing" the desired stacking order.
+  if (eventsContainer.dataset.ccHarnessObserverAttached === "true") {
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
+    // Avoid infinite loops by disconnecting while we perform our own
+    // DOM mutations, then re-attaching afterwards.
+    observer.disconnect();
+    sortTimegridHarnessesInContainer(eventsContainer);
+    observer.observe(eventsContainer, { childList: true });
+  });
+
+  observer.observe(eventsContainer, { childList: true });
+  eventsContainer.dataset.ccHarnessObserverAttached = "true";
+}

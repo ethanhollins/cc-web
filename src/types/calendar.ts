@@ -1,5 +1,5 @@
 import type { Project } from "./project";
-import type { Ticket } from "./ticket";
+import type { Ticket, TicketYield } from "./ticket";
 
 /**
  * Calendar and event type definitions
@@ -26,6 +26,16 @@ export interface CalendarEventExtendedProps {
   google_calendar_id: string;
   completed?: boolean;
   project?: Project;
+  /** Optional coach score for events that come from coach-managed tickets. */
+  score?: number;
+  /** Optional yields associated with the underlying ticket/program. */
+  yields?: TicketYield[];
+  /**
+   * Whether this particular calendar event instance should visually display
+   * ticket yields. Used when a ticket has multiple events so that only the
+   * latest-ending event shows the yield icons.
+   */
+  showYieldsOnEvent?: boolean;
 }
 
 export type CalendarView = "timeGridWeek" | "timeGridDay" | "dayGridMonth";

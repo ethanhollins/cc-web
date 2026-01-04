@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AlertCircle, BookOpen, CalendarDays, CalendarMinus, CalendarPlus, Check, CheckSquare, Diamond, Video } from "lucide-react";
+import { TicketYieldStack } from "@/components/planner/TicketYieldStack";
 import { cn } from "@/lib/utils";
 import type { Ticket, TicketType } from "@/types/ticket";
 import { Badge } from "@/ui/badge";
@@ -168,56 +169,63 @@ export function TicketCard({ ticket, isDone, isEventToday, onTicketClick, onUnsc
           {/* Tear line */}
           <div className="mb-2 border-t border-dashed border-[var(--accent-soft)]" />
 
-          {/* Bottom row: event time range or schedule controls */}
-          <div className="mt-auto flex items-center justify-end gap-2">
-            {isEventToday && eventTimeRange ? (
-              <span className="text-xs font-medium text-[var(--accent)]">{eventTimeRange}</span>
-            ) : (
-              !isEventToday && (
-                <>
-                  {ticket.scheduled_date && !isDone && (
-                    <span className="flex-shrink-0 text-xs text-[var(--accent)]">
-                      {new Date(ticket.scheduled_date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  )}
+          {/* Bottom row: yields on the left, time/schedule controls on the right */}
+          <div className="mt-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              {typeof ticket.score === "number" && <span className="text-xs font-semibold text-[var(--accent)]">+{ticket.score}</span>}
+              {ticket.yields && ticket.yields.length > 0 && <TicketYieldStack yields={ticket.yields} />}
+            </div>
 
-                  {!isDone && ticket.scheduled_date && onUnscheduleTicket && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onUnscheduleTicket(ticket.ticket_id);
-                      }}
-                      className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-[var(--danger)] bg-[var(--surface)] text-[var(--danger)] transition-colors hover:bg-[var(--accent-subtle)]"
-                    >
-                      <CalendarMinus className="h-3 w-3" />
-                    </button>
-                  )}
+            <div className="flex items-center gap-2">
+              {isEventToday && eventTimeRange ? (
+                <span className="text-xs font-medium text-[var(--accent)]">{eventTimeRange}</span>
+              ) : (
+                !isEventToday && (
+                  <>
+                    {ticket.scheduled_date && !isDone && (
+                      <span className="flex-shrink-0 text-xs text-[var(--accent)]">
+                        {new Date(ticket.scheduled_date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    )}
 
-                  {!isDone && onOpenSchedulePicker && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                    {!isDone && ticket.scheduled_date && onUnscheduleTicket && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onUnscheduleTicket(ticket.ticket_id);
+                        }}
+                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-[var(--danger)] bg-[var(--surface)] text-[var(--danger)] transition-colors hover:bg-[var(--accent-subtle)]"
+                      >
+                        <CalendarMinus className="h-3 w-3" />
+                      </button>
+                    )}
 
-                        const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                        const { x, y } = getAnchoredPopoverPosition(rect, 288, 320);
+                    {!isDone && onOpenSchedulePicker && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
 
-                        onOpenSchedulePicker(ticket.ticket_id, { x, y });
-                      }}
-                      className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] transition-colors hover:bg-[var(--accent-subtle)]"
-                    >
-                      <CalendarPlus className="h-3 w-3" />
-                    </button>
-                  )}
-                </>
-              )
-            )}
+                          const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                          const { x, y } = getAnchoredPopoverPosition(rect, 288, 320);
+
+                          onOpenSchedulePicker(ticket.ticket_id, { x, y });
+                        }}
+                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] transition-colors hover:bg-[var(--accent-subtle)]"
+                      >
+                        <CalendarPlus className="h-3 w-3" />
+                      </button>
+                    )}
+                  </>
+                )
+              )}
+            </div>
           </div>
         </div>
       </div>

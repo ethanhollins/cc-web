@@ -10,7 +10,11 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [In Progress]
 
----
+### CC-52: Ticket Yields and Scores - TBD
+
+- Add optional score and yield metadata to tickets and calendar events for coach-managed projects
+- Mock a small subset of tickets as coach-managed with common, uncommon, and rare yields so visuals can be evaluated
+- Render stacked yield icons on tickets in the planner sidebar and on corresponding calendar events
 
 ## [Completed]
 

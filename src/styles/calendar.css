@@ -67,6 +67,8 @@
 }
 .fc .fc-timegrid-event {
   border-radius: 4px;
+  /* Allow yield icons to hang slightly outside the event without clipping */
+  overflow: visible;
 }
 /* Touch support for mobile */
 .fc {

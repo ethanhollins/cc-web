@@ -7,13 +7,13 @@ import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { ScrollArea } from "@/ui/scroll-area";
 
-interface CoachStat {
+export interface CoachStat {
   id: string;
   label: string;
   value: number; // 0 - 100
 }
 
-interface CoachYieldIcon {
+export interface CoachYieldIcon {
   id: string;
   alt: string;
   imageSrc: string;
@@ -21,7 +21,7 @@ interface CoachYieldIcon {
   count: number;
 }
 
-interface CoachProfile {
+export interface CoachProfile {
   id: string;
   name: string;
   title: string;
@@ -30,12 +30,18 @@ interface CoachProfile {
   notificationsCount?: number;
   /** Domains (projects) this coach monitors. */
   domains: string[];
+  /**
+   * Specific project titles this coach manages in the planner.
+   * Used for calendar highlighting (coach lens) so that only
+   * events for these projects remain at full opacity.
+   */
+  managedProjectTitles?: string[];
   /** Recent yield icons earned with this coach. */
   yields: CoachYieldIcon[];
   stats: CoachStat[];
 }
 
-const MOCK_COACHES: CoachProfile[] = [
+export const MOCK_COACHES: CoachProfile[] = [
   {
     id: "zore",
     name: "Zore",
@@ -43,6 +49,7 @@ const MOCK_COACHES: CoachProfile[] = [
     imageSrc: "/coaches/coach_zore.png",
     notificationsCount: 2,
     domains: ["Training", "Health", "Recovery"],
+    managedProjectTitles: ["Command Center"],
     yields: [
       { id: "workouts", alt: "Workouts yield", imageSrc: "/coaches/workouts_yield.png", count: 10 },
       { id: "streak", alt: "Streak yield", imageSrc: "/coaches/streak_yield.png", count: 4 },

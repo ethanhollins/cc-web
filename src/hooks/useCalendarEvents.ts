@@ -4,6 +4,7 @@ import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import type { CalendarEvent } from "@/types/calendar";
 import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
 import { isAbortError } from "@/utils/error-utils";
+import { attachMockYieldsAndScore } from "@/utils/ticket-yields";
 
 /**
  * Hook for managing calendar events with caching, debouncing, and WebSocket updates
@@ -123,7 +124,7 @@ export function useCalendarEvents(selectedDate: Date) {
 
         console.debug("Fetching events from API for week:", startDate, "to", endDate);
         const data = await fetchEvents(startDate, endDate, ac.signal);
-        const items = data.events || [];
+        const items: CalendarEvent[] = (data.events || []).map((event) => attachMockYieldsAndScore(event));
         console.debug("Events fetched from API:", items);
 
         // Update cache and state

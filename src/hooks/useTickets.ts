@@ -4,6 +4,7 @@ import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
 import { isAbortError } from "@/utils/error-utils";
+import { attachMockYieldsAndScore } from "@/utils/ticket-yields";
 
 /**
  * Hook for managing project tickets with caching
@@ -31,7 +32,7 @@ export function useTickets(selectedProjectKey: string | undefined, projects: Pro
         if (!project) return;
 
         const data = await fetchTickets(project.project_id, ac.signal);
-        const items = data.tickets.map((ticket) => ({ ...ticket, project })) || [];
+        const items = (data.tickets || []).map((ticket) => attachMockYieldsAndScore({ ...ticket, project })) || [];
         console.debug("Tickets:", selectedProjectKey, items);
 
         if (items.length) {

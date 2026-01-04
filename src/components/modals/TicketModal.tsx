@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Clock, MapPin, Video } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { TicketYieldStack } from "@/components/planner/TicketYieldStack";
 import { useTicketDocuments, useTicketNotionContent, useTicketNotionData } from "@/hooks/useTicketNotionData";
 import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
@@ -239,6 +240,11 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
   const createdTime = ticketData?.created_time ?? baseTicket?.created_time;
   const lastEditedTime = ticketData?.last_edited_time ?? baseTicket?.last_edited_time;
 
+  const ticketWithYields = baseTicket as (Ticket | CalendarEvent) & {
+    score?: number;
+    yields?: Ticket["yields"];
+  };
+
   return (
     <Dialog
       open={open}
@@ -442,6 +448,21 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                 </div>
               </div>
             </div>
+
+            {/* Coach score & yields (mocked for coach-managed tickets) */}
+            {(ticketWithYields?.score || (ticketWithYields?.yields && ticketWithYields.yields.length > 0)) && (
+              <div className="mb-4">
+                <h4 className="mb-2 text-sm font-semibold text-gray-600">Coach score &amp; yields</h4>
+                {typeof ticketWithYields.score === "number" && (
+                  <div className="mb-1 text-sm text-gray-700">
+                    Score: <span className="font-semibold">+{ticketWithYields.score}</span>
+                  </div>
+                )}
+                {ticketWithYields.yields && ticketWithYields.yields.length > 0 && (
+                  <TicketYieldStack yields={ticketWithYields.yields} variant="inline" showCounts className="mt-1" />
+                )}
+              </div>
+            )}
 
             {/* Meeting UI (if applicable) */}
             <MeetingUI event={currentEvent} />

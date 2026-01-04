@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DateSelectArg, DatesSetArg, EventDropArg, EventInput, EventMountArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { Search } from "lucide-react";
+import Image from "next/image";
+import { MOCK_COACHES } from "@/components/planner/CoachesSidebar";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
-import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
-import { calculateScrollTime, lightenColor } from "@/utils/calendar-utils";
+import type { CalendarEventExtendedProps, CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
+import { calculateScrollTime, lightenColor, reorderTimegridColumnEventsForElement } from "@/utils/calendar-utils";
 import { CalendarEvent } from "./CalendarEvent";
 
 interface CalendarViewProps {
@@ -73,6 +76,10 @@ export function CalendarView({
   const internalRef = useRef<FullCalendar | null>(null);
   const calendarRef = externalRef || internalRef;
   const scrollTime = calculateScrollTime();
+  // TODO: Consider lifting coach lens state into a shared hook or
+  // context so other planner surfaces (e.g. navbar, sidebar) can
+  // reflect the active coach without duplicating state.
+  const [activeCoachIndex, setActiveCoachIndex] = useState<number | null>(null);
 
   // Default config with mobile optimizations
   const defaultConfig: CalendarViewConfig = {
@@ -97,8 +104,34 @@ export function CalendarView({
     }
   }, [calendarRef]);
 
+  const activeCoach = activeCoachIndex !== null && activeCoachIndex >= 0 && activeCoachIndex < MOCK_COACHES.length ? MOCK_COACHES[activeCoachIndex] : null;
+
+  const toggleCoachFilter = () => {
+    if (MOCK_COACHES.length === 0) return;
+
+    setActiveCoachIndex((prev) => {
+      if (prev === null) return 0; // Start with first coach
+      if (prev >= MOCK_COACHES.length - 1) return null; // Cycle back to "no coach"
+      return prev + 1;
+    });
+  };
+
+  const isCoachFilterActive = !!activeCoach;
+
+  const isEventManagedByActiveCoach = (event: EventInput): boolean => {
+    if (!activeCoach) return false;
+
+    const extendedProps = event.extendedProps as CalendarEventExtendedProps | undefined;
+    const projectTitle = extendedProps?.project?.title;
+    const managedProjects = activeCoach.managedProjectTitles ?? [];
+
+    if (!projectTitle || managedProjects.length === 0) return false;
+
+    return managedProjects.includes(projectTitle);
+  };
+
   return (
-    <div className={cn("h-full w-full", className)}>
+    <div className={cn("relative h-full w-full", className)}>
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
@@ -213,7 +246,24 @@ export function CalendarView({
         eventBackgroundColor="#ffffff"
         eventBorderColor="#d1d5db"
         eventTextColor="#374151"
-        eventClassNames={() => ["rounded-lg", "border", "overflow-hidden", "relative"]}
+        eventClassNames={(arg) => {
+          const classes = ["rounded-lg", "border", "overflow-hidden", "relative"] as string[];
+
+          if (isCoachFilterActive) {
+            const managed = isEventManagedByActiveCoach({
+              id: arg.event.id,
+              start: arg.event.start ?? undefined,
+              end: arg.event.end ?? undefined,
+              extendedProps: arg.event.extendedProps ?? {},
+            });
+
+            if (!managed) {
+              classes.push("opacity-40");
+            }
+          }
+
+          return classes;
+        }}
         eventContent={(arg) => <CalendarEvent eventInfo={arg} />}
         // Drag & drop
         droppable={true}
@@ -253,6 +303,11 @@ export function CalendarView({
             info.el.addEventListener("touchcancel", () => onTouchEnd());
           }
 
+          // Re-order event harnesses within the owning timegrid column so that
+          // earlier events (higher in the column) end up later in the DOM tree
+          // and therefore render on top when overlapping.
+          reorderTimegridColumnEventsForElement(info.el as HTMLElement);
+
           // Call custom eventDidMount if provided
           onEventDidMount?.(info);
         }}
@@ -261,6 +316,37 @@ export function CalendarView({
         eventResizeStart={onResizeStart}
         eventResizeStop={onResizeStop}
       />
+
+      {/* Coach focus toggle - bottom-right overlay */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleCoachFilter();
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        className={cn(
+          "pointer-events-auto absolute bottom-4 right-4 z-50 flex h-9 w-9 items-center justify-center outline-none",
+          activeCoach
+            ? undefined
+            : "rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-md hover:border-[var(--accent-soft)] hover:shadow-lg",
+        )}
+        aria-label={isCoachFilterActive ? "Clear coach focus" : "Focus on coach-managed events"}
+      >
+        {activeCoach ? (
+          <Image src={activeCoach.imageSrc} alt={`${activeCoach.name} coach focus`} width={56} height={56} className="h-11 w-11 rounded-full object-cover" />
+        ) : (
+          <Search className="h-4 w-4 text-[var(--text-muted)]" />
+        )}
+      </button>
     </div>
   );
 }

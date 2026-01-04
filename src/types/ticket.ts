@@ -8,6 +8,22 @@ export type TicketType = "task" | "story" | "bug" | "epic" | "subtask" | "event"
 
 export type TicketStatus = "Backlog" | "Todo" | "In Progress" | "In Review" | "Blocked" | "Ongoing" | "Done" | "Removed";
 
+export type TicketYieldRarity = "common" | "uncommon" | "rare";
+
+export interface TicketYield {
+  id: string;
+  label: string;
+  /**
+   * Path to the yield icon asset (e.g. /coaches/streak_yield.png).
+   * This allows different surfaces (tickets, events, modals) to render
+   * a consistent visual for the yield.
+   */
+  icon: string;
+  rarity: TicketYieldRarity;
+  /** How many of this yield the user has earned for this ticket/program. */
+  count: number;
+}
+
 export interface Ticket {
   ticket_id: string;
   ticket_key: string;
@@ -27,6 +43,10 @@ export interface Ticket {
   priority?: string;
   created_time?: string;
   last_edited_time?: string;
+  /** Optional coach score for this ticket when it is part of a coach-managed program. */
+  score?: number;
+  /** Optional yields awarded/associated with this ticket (coach-managed domains only). */
+  yields?: TicketYield[];
 }
 
 export interface TicketsResponse {
