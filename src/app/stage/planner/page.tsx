@@ -12,16 +12,19 @@ import { scheduleTicket, unscheduleTicket } from "@/api/tickets";
 import { CalendarContextMenu } from "@/components/calendar/CalendarContextMenu";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { CoachProgramDialog } from "@/components/modals/CoachProgramDialog";
 import { TicketModal } from "@/components/modals/TicketModal";
 import { CoachesSidebar } from "@/components/planner/CoachesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
+import { mockFarsiProgram, mockLatestCoachMessage, mockSubmitCoachPromptResponseMessage } from "@/data/mock-programs";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useCalendarInteractions } from "@/hooks/useCalendarInteractions";
 import { useProjects } from "@/hooks/useProjects";
 import { useTickets } from "@/hooks/useTickets";
 import type { CalendarEvent } from "@/types/calendar";
+import type { CoachProgram } from "@/types/program";
 import type { Ticket } from "@/types/ticket";
 import { transformEventsToCalendarFormat } from "@/utils/calendar-transform";
 import { getWeekRangeTitle } from "@/utils/calendar-utils";
@@ -148,6 +151,12 @@ export default function StagePlannerPage() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
+  // Mocked coach program + dialog state for CC-53
+  const [isCoachProgramOpen, setIsCoachProgramOpen] = useState(true);
+  const [coachProgram, setCoachProgram] = useState<CoachProgram | null>(() => mockFarsiProgram);
+  const [latestCoachMessage, setLatestCoachMessage] = useState<string>(mockLatestCoachMessage);
+  const [isSubmittingCoachMessage, setIsSubmittingCoachMessage] = useState(false);
+
   // Handle opening ticket from event click
   const handleEventClickWrapper = useCallback(
     (eventId: string) => {
@@ -162,6 +171,25 @@ export default function StagePlannerPage() {
     setSelectedTicket(ticket);
     setSelectedEventId(null); // Clear event ID when opening from ticket list
   }, []);
+
+  const handleSubmitCoachPrompt = useCallback(
+    async (_message: string) => {
+      if (!coachProgram) return;
+      setIsSubmittingCoachMessage(true);
+
+      try {
+        // TODO: Replace with real backend call once available.
+        // For now, mock an updated coach message and optionally tweak program.
+        const simulatedResponseMessage = mockSubmitCoachPromptResponseMessage;
+
+        setLatestCoachMessage(simulatedResponseMessage);
+        setCoachProgram((current) => current ?? coachProgram);
+      } finally {
+        setIsSubmittingCoachMessage(false);
+      }
+    },
+    [coachProgram],
+  );
 
   // Handle day header click for filtering
   const handleDayHeaderClick = useCallback((date: Date) => {
@@ -353,6 +381,18 @@ export default function StagePlannerPage() {
         projects={projects}
         ticket={selectedTicket}
       />
+
+      {coachProgram && (
+        <CoachProgramDialog
+          open={isCoachProgramOpen}
+          onOpenChange={setIsCoachProgramOpen}
+          program={coachProgram}
+          coachMessage={latestCoachMessage}
+          onSubmitMessage={handleSubmitCoachPrompt}
+          isSubmitting={isSubmittingCoachMessage}
+          onTicketClick={handleTicketClick}
+        />
+      )}
     </div>
   );
 }

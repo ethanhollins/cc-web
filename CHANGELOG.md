@@ -10,13 +10,25 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [In Progress]
 
-### CC-52: Ticket Yields and Scores - TBD
+## [Completed]
+
+### CC-53: Coach Programs Dialog - 2026-01-06
+
+- Add a reusable coach conversation dialog that renders structured 2-4 week programs with objectives, current vs target state, weekly milestones, success criteria, and coach notes
+- Display only the most recent coach message in a floating speech bubble with a single user input for continuing the conversation (no full chat history)
+- Wire an example usage into the stage planner experience for experimentation with mocked program and coach response data
+- Create AnimatedSignature UI component with handwritten animation, clip-path reveal, and golden shimmer effect
+- Build CoachEnvelopeView with interactive open/close animation and wax seal
+- Implement CoachProgramView with postcard design, stamps, milestones, success criteria, and signature flow
+- Add CoachProgramDialog modal with envelope-to-program transition
+- Create shared CoachProgramHeader component for consistent headers across views
+- Extract mock program data to centralized src/data/mock-programs.ts
+
+### CC-52: Ticket Yields and Scores - 2026-01-05
 
 - Add optional score and yield metadata to tickets and calendar events for coach-managed projects
 - Mock a small subset of tickets as coach-managed with common, uncommon, and rare yields so visuals can be evaluated
 - Render stacked yield icons on tickets in the planner sidebar and on corresponding calendar events
-
-## [Completed]
 
 ### CC-51: Coaches Nav and Happiness Stats - 2026-01-03
 
