@@ -11,6 +11,7 @@ export interface CalendarEvent extends Ticket {
   google_calendar_id: string;
   all_day?: boolean;
   completed?: boolean;
+  isOptimistic?: boolean;
 }
 
 export interface EventsResponse {

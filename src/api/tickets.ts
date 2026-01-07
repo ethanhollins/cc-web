@@ -1,6 +1,8 @@
 import type { Ticket, TicketsResponse } from "@/types/ticket";
 import { apiClient } from "./client";
 
+export const DEFAULT_CALENDAR_ID = "ethanjohol@gmail.com";
+
 /**
  * API functions for tickets
  */
@@ -23,6 +25,8 @@ export async function createTicket(
     internalProjectId: string;
     type?: string;
     scheduledDate?: string;
+    startDate?: string;
+    endDate?: string;
   },
   signal?: AbortSignal,
 ): Promise<Ticket> {
@@ -33,6 +37,12 @@ export async function createTicket(
     // API expects capitalized type strings like "Task" / "Event"
     type: (data.type ?? "task").charAt(0).toUpperCase() + (data.type ?? "task").slice(1),
     ...(data.scheduledDate && { scheduled_date: data.scheduledDate }),
+    ...(data.startDate &&
+      data.endDate && {
+        start_date: data.startDate,
+        end_date: data.endDate,
+        google_calendar_id: DEFAULT_CALENDAR_ID,
+      }),
   };
 
   const response = await apiClient.post("/tickets", payload, { signal });

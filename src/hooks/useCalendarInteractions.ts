@@ -3,6 +3,7 @@ import type { DateSelectArg, EventClickArg, EventDropArg } from "@fullcalendar/c
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import moment from "moment-timezone";
 import type { CalendarResizeArg } from "@/types/calendar";
+import { toTimezone } from "@/utils/date-utils";
 
 /**
  * Calendar interaction hooks for drag/drop, context menu, and touch interactions
@@ -237,8 +238,8 @@ export function useCalendarInteractions({
       try {
         const eventId = info.event.id;
         // Format dates in Sydney timezone (matching old implementation)
-        const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
-        const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+        const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
+        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
 
         const updates = {
           start_date: newStartDate,
@@ -259,8 +260,8 @@ export function useCalendarInteractions({
       try {
         const eventId = info.event.id;
         // Format dates in Sydney timezone (matching old implementation)
-        const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
-        const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+        const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
+        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
 
         const updates = {
           start_date: newStartDate,
@@ -286,8 +287,8 @@ export function useCalendarInteractions({
       try {
         const eventId = info.event.id;
         // Format dates in Sydney timezone (matching old implementation)
-        const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
-        const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+        const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
+        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
 
         const updates = {
           start_date: newStartDate,

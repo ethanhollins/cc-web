@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { DateSelectArg, DatesSetArg, EventDropArg, EventInput, EventMountArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { Clock, Edit, Plus, Trash2 } from "lucide-react";
+import { useCalendarSelection } from "@/hooks/useCalendarSelection";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
+import { ContextMenuButton } from "@/ui/context-menu-button";
 import { calculateScrollTime, lightenColor } from "@/utils/calendar-utils";
+import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
 
 interface CalendarViewProps {
@@ -19,7 +23,6 @@ interface CalendarViewProps {
   onEventDrop?: (dropInfo: EventDropArg) => void;
   onEventResize?: (resizeInfo: CalendarResizeArg) => void;
   onEventReceive?: (receiveInfo: EventReceiveArg) => void;
-  onDateSelect?: (selectInfo: DateSelectArg) => void;
   onDatesSet?: (dateInfo: DatesSetArg) => void;
   onEventDidMount?: (info: EventMountArg) => void;
   onDayHeaderClick?: (date: Date) => void;
@@ -27,8 +30,16 @@ interface CalendarViewProps {
   selectedDay?: Date | null;
   isDragging?: boolean;
   editableEventId?: string | null;
+  // Event context menu props
   showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string) => void;
   hideContextMenu?: () => void;
+  eventContextMenu?: CalendarContextMenuState;
+  onEventEdit?: (eventId: string) => void;
+  onEventDelete?: (eventId: string) => void;
+  // Selection context menu props
+  onCreateEvent?: (startDate: Date, endDate: Date) => void;
+  onScheduleBreak?: (startDate: Date, endDate: Date) => void;
+  // Touch and drag handlers
   onTouchStart?: (e: TouchEvent, eventId: string) => void;
   onTouchEnd?: () => void;
   onDragStart?: () => void;
@@ -51,7 +62,6 @@ export function CalendarView({
   onEventDrop,
   onEventResize,
   onEventReceive,
-  onDateSelect,
   onDatesSet,
   onEventDidMount,
   onDayHeaderClick,
@@ -60,7 +70,12 @@ export function CalendarView({
   isDragging,
   editableEventId,
   showContextMenu,
-  hideContextMenu: _hideContextMenu,
+  hideContextMenu,
+  eventContextMenu,
+  onEventEdit,
+  onEventDelete,
+  onCreateEvent,
+  onScheduleBreak,
   onTouchStart,
   onTouchEnd,
   onDragStart,
@@ -72,7 +87,42 @@ export function CalendarView({
 }: CalendarViewProps) {
   const internalRef = useRef<FullCalendar | null>(null);
   const calendarRef = externalRef || internalRef;
+
+  // Selection context menu management
+  const { selectionContextMenu, handleDateSelect, hideSelectionContextMenu } = useCalendarSelection();
   const scrollTime = calculateScrollTime();
+
+  // Wrap handleDateSelect to also hide event context menu
+  const handleDateSelectWrapper = useCallback(
+    (selectInfo: DateSelectArg) => {
+      hideContextMenu?.(); // Close event menu when making a selection
+      handleDateSelect(selectInfo);
+    },
+    [handleDateSelect, hideContextMenu],
+  );
+
+  // Helper to close selection menu and unselect
+  // eslint-disable-next-line
+  const handleSelectionMenuClose = useCallback(() => {
+    hideSelectionContextMenu();
+    calendarRef.current?.getApi().unselect();
+  }, [hideSelectionContextMenu, calendarRef]);
+
+  // Handler for create event action
+  const handleCreateEvent = useCallback(() => {
+    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onCreateEvent) {
+      onCreateEvent(selectionContextMenu.startDate, selectionContextMenu.endDate);
+    }
+    handleSelectionMenuClose();
+  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onCreateEvent, handleSelectionMenuClose]);
+
+  // Handler for schedule break action
+  const handleScheduleBreak = useCallback(() => {
+    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onScheduleBreak) {
+      onScheduleBreak(selectionContextMenu.startDate, selectionContextMenu.endDate);
+    }
+    handleSelectionMenuClose();
+  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onScheduleBreak, handleSelectionMenuClose]);
 
   // Default config with mobile optimizations
   const defaultConfig: CalendarViewConfig = {
@@ -122,6 +172,12 @@ export function CalendarView({
         expandRows={config.expandRows}
         stickyHeaderDates={config.stickyHeaderDates}
         firstDay={1} // Monday
+        // Enable time selection
+        selectable
+        selectMirror
+        unselectAuto={false}
+        longPressDelay={1200}
+        selectLongPressDelay={1200}
         // Mobile-friendly day header
         dayHeaderFormat={{ weekday: "short", day: "numeric" }}
         dayHeaderContent={(args) => {
@@ -190,12 +246,7 @@ export function CalendarView({
         editable
         eventStartEditable
         eventDurationEditable
-        // Selection
-        selectable
-        selectMirror
-        unselectAuto={false}
-        longPressDelay={1200}
-        selectLongPressDelay={1200}
+        eventResizableFromStart
         // Events with project colors
         events={events.map((event) => {
           if (event.extendedProps?.project?.colour) {
@@ -230,7 +281,7 @@ export function CalendarView({
         eventDrop={onEventDrop}
         eventResize={onEventResize}
         eventReceive={onEventReceive}
-        select={onDateSelect}
+        select={handleDateSelectWrapper}
         drop={onDrop}
         datesSet={onDatesSet}
         eventDidMount={(info) => {
@@ -261,6 +312,45 @@ export function CalendarView({
         eventResizeStart={onResizeStart}
         eventResizeStop={onResizeStop}
       />
+
+      {/* Event context menu (right-click on event) - only show if it has an eventId */}
+      {eventContextMenu && eventContextMenu.show && eventContextMenu.type === "event" && eventContextMenu.eventId && (
+        <CalendarContextMenu contextMenu={eventContextMenu} onClose={() => hideContextMenu?.()}>
+          <ContextMenuButton
+            icon={Edit}
+            onClick={() => {
+              if (eventContextMenu.eventId && onEventEdit) onEventEdit(eventContextMenu.eventId);
+              hideContextMenu?.();
+            }}
+          >
+            Open Ticket
+          </ContextMenuButton>
+
+          <ContextMenuButton
+            icon={Trash2}
+            variant="destructive"
+            onClick={() => {
+              if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
+              hideContextMenu?.();
+            }}
+          >
+            Delete Event
+          </ContextMenuButton>
+        </CalendarContextMenu>
+      )}
+
+      {/* Selection context menu (click & drag to select time) */}
+      {selectionContextMenu.show && (
+        <CalendarContextMenu contextMenu={selectionContextMenu} onClose={handleSelectionMenuClose}>
+          <ContextMenuButton icon={Plus} onClick={handleCreateEvent}>
+            Create Event
+          </ContextMenuButton>
+
+          <ContextMenuButton icon={Clock} onClick={handleScheduleBreak}>
+            Schedule Break
+          </ContextMenuButton>
+        </CalendarContextMenu>
+      )}
     </div>
   );
 }

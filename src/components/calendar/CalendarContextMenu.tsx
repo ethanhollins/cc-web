@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Edit, ExternalLink, Trash2 } from "lucide-react";
-import type { ContextMenu } from "@/hooks/useCalendarInteractions";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Card } from "@/ui/card";
 
+// Union type for different context menu types
+export type CalendarContextMenuState =
+  | { show: boolean; x: number; y: number; type: "event"; eventId?: string; googleCalendarId?: string }
+  | { show: boolean; x: number; y: number; type: "selection"; startDate?: Date; endDate?: Date };
+
 interface CalendarContextMenuProps {
-  contextMenu: ContextMenu;
-  onEdit?: (eventId: string) => void;
-  onDelete?: (eventId: string) => void;
-  onOpenInCalendar?: (googleCalendarId: string) => void;
+  contextMenu: CalendarContextMenuState;
   onClose: () => void;
+  children: ReactNode;
 }
 
 /**
- * Context menu for calendar events (right-click or long-press)
+ * Context menu for calendar interactions (right-click events or time selections)
  * Touch-optimized with larger tap targets
+ * Accepts menu items as children for maximum flexibility
  */
-export function CalendarContextMenu({ contextMenu, onEdit, onDelete, onOpenInCalendar, onClose }: CalendarContextMenuProps) {
+export function CalendarContextMenu({ contextMenu, onClose, children }: CalendarContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -69,43 +71,7 @@ export function CalendarContextMenu({ contextMenu, onEdit, onDelete, onOpenInCal
 
   return (
     <Card ref={menuRef} className="fixed z-50 w-48 rounded border border-gray-200 bg-white p-1 shadow-lg" style={{ left: contextMenu.x, top: contextMenu.y }}>
-      {/* Open Ticket */}
-      <button
-        onClick={() => {
-          if (contextMenu.eventId && onEdit) onEdit(contextMenu.eventId);
-          onClose();
-        }}
-        className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-100"
-      >
-        <Edit className="h-4 w-4" />
-        Open Ticket
-      </button>
-
-      {/* Delete */}
-      <button
-        onClick={() => {
-          if (contextMenu.eventId && onDelete) onDelete(contextMenu.eventId);
-          onClose();
-        }}
-        className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-      >
-        <Trash2 className="h-4 w-4" />
-        Delete Event
-      </button>
-
-      {/* Open in Calendar */}
-      {contextMenu.googleCalendarId && onOpenInCalendar && (
-        <button
-          onClick={() => {
-            onOpenInCalendar(contextMenu.googleCalendarId!);
-            onClose();
-          }}
-          className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-100"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Open in Google Calendar
-        </button>
-      )}
+      {children}
     </Card>
   );
 }

@@ -1,16 +1,15 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { DateSelectArg, DatesSetArg } from "@fullcalendar/core";
+import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
-import moment from "moment-timezone";
 import { createEvent } from "@/api/calendar";
 import { scheduleTicket, unscheduleTicket } from "@/api/tickets";
-import { CalendarContextMenu } from "@/components/calendar/CalendarContextMenu";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { TicketModal } from "@/components/modals/TicketModal";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
+import { TicketCreateModal } from "@/components/planner/TicketCreateModal";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
@@ -34,6 +33,10 @@ export default function StagePlannerPage() {
   });
 
   const [isTodayInRange, setIsTodayInRange] = useState(true);
+
+  // Event creation trigger state (for calendar time selection)
+  const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Projects and tickets
   const { projects, selectedProjectKey, selectProject } = useProjects();
@@ -99,23 +102,30 @@ export default function StagePlannerPage() {
     },
     onEventDelete: deleteEvent,
     onEventCreate: async (eventData) => {
-      // Optimistically add the event to local state first
+      // Find the actual ticket and project from state
+      const ticket =
+        selectedProjectKey && tickets[selectedProjectKey] ? tickets[selectedProjectKey].find((t) => t.ticket_id === eventData.ticket_data.ticket_id) : null;
+      const project = projects.find((p) => p.project_id === eventData.project_id);
+
+      // Optimistically add the event to local state first with real ticket data
       const tempId = `temp-${Date.now()}`;
       const optimisticEvent: CalendarEvent = {
         google_id: tempId,
         ticket_id: eventData.ticket_data.ticket_id,
-        ticket_key: "",
-        ticket_type: "task", // Default to task type
+        ticket_key: ticket?.ticket_key || "",
+        ticket_type: ticket?.ticket_type || "task",
         title: eventData.ticket_data.title,
-        ticket_status: "In Progress", // Default status
+        ticket_status: ticket?.ticket_status || "In Progress",
         project_id: eventData.project_id,
+        project: project,
         start_date: eventData.start_date,
         end_date: eventData.end_date,
-        colour: "",
-        epic: "",
+        colour: ticket?.colour || "",
+        epic: ticket?.epic || "",
         google_calendar_id: eventData.calendar_id,
         all_day: false,
         completed: false,
+        isOptimistic: true,
       };
 
       // Add optimistic event immediately
@@ -219,22 +229,46 @@ export default function StagePlannerPage() {
 
   const handleCreateTicket = useCallback(
     (ticket: Ticket, projectKey: string) => {
+      // Update tickets list
       if (tickets[projectKey]) {
         const updatedTickets = [...tickets[projectKey], ticket];
         updateTickets(projectKey, updatedTickets);
       }
+
+      // Optimistically add to calendar events if it has start/end dates
+      // The ticket response should include these fields if it was created as an event
+      if (updateEvents) {
+        const ticketAsCalendarEvent = ticket as CalendarEvent;
+        if (ticketAsCalendarEvent.start_date && ticketAsCalendarEvent.end_date && ticketAsCalendarEvent.google_calendar_id) {
+          updateEvents((prevEvents) => [...prevEvents, ticketAsCalendarEvent]);
+        }
+      }
+
+      setEventCreationTrigger(null);
+      setShowCreateModal(false);
       refetch();
     },
-    [refetch, tickets, updateTickets],
+    [refetch, tickets, updateTickets, updateEvents],
   );
 
-  // Handle time selection for creating new tickets
-  const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
-    if (selectInfo.start) {
-      const startMoment = moment.tz(selectInfo.startStr, "Australia/Sydney");
-      const startOfDay = startMoment.clone().startOf("day").toDate();
-      setSelectedDay(startOfDay);
-    }
+  const handleCloseCreateModal = useCallback(() => {
+    setEventCreationTrigger(null);
+    setShowCreateModal(false);
+  }, []);
+
+  // Handle creating event from time selection
+  const handleCreateEventFromSelection = useCallback((startDate: Date, endDate: Date) => {
+    setEventCreationTrigger({ startDate, endDate });
+    setShowCreateModal(true);
+  }, []);
+
+  // Handle scheduling break from time selection
+  const handleScheduleBreak = useCallback((startDate: Date, endDate: Date) => {
+    // TODO: Implement schedule break functionality
+    console.log("Schedule break:", {
+      start: startDate,
+      end: endDate,
+    });
   }, []);
 
   // Unselect calendar on outside click
@@ -309,11 +343,15 @@ export default function StagePlannerPage() {
                 onEventDrop={handleEventDrop}
                 onEventResize={handleEventResize}
                 onEventReceive={handleEventReceive}
-                onDateSelect={handleDateSelect}
+                onCreateEvent={handleCreateEventFromSelection}
+                onScheduleBreak={handleScheduleBreak}
                 onDrop={handleDrop}
                 onDayHeaderClick={handleDayHeaderClick}
                 showContextMenu={showContextMenu}
                 hideContextMenu={closeContextMenu}
+                eventContextMenu={rawContextMenu}
+                onEventEdit={handleEventClickWrapper}
+                onEventDelete={(eventId) => handleContextMenuAction("delete", eventId)}
                 onTouchStart={(e, eventId) => {
                   longPressHandlers.handleTouchStart(e, eventId, (x: number, y: number) => showContextMenu(x, y, eventId), closeContextMenu);
                 }}
@@ -322,13 +360,6 @@ export default function StagePlannerPage() {
                 onDragStop={eventDragState.handleDragStop}
                 onResizeStart={eventDragState.handleResizeStart}
                 onResizeStop={eventDragState.handleResizeStop}
-              />
-
-              <CalendarContextMenu
-                contextMenu={rawContextMenu}
-                onEdit={handleEventClickWrapper}
-                onDelete={(eventId) => handleContextMenuAction("delete", eventId)}
-                onClose={closeContextMenu}
               />
             </div>
           </div>
@@ -347,6 +378,15 @@ export default function StagePlannerPage() {
         onEventUpdate={updateEvents}
         projects={projects}
         ticket={selectedTicket}
+      />
+
+      <TicketCreateModal
+        open={showCreateModal}
+        projects={projects}
+        selectedProjectKey={selectedProjectKey}
+        initialDateRange={eventCreationTrigger}
+        onClose={handleCloseCreateModal}
+        onCreateTicket={handleCreateTicket}
       />
     </div>
   );
