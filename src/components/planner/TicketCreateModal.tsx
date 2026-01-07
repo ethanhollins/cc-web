@@ -9,21 +9,24 @@ import type { Project } from "@/types/project";
 import type { Ticket, TicketType } from "@/types/ticket";
 import { Button } from "@/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogPortal, DialogTitle } from "@/ui/dialog";
+import { toTimezone } from "@/utils/date-utils";
 
 interface TicketCreateModalProps {
   open: boolean;
   projects: Project[];
   selectedProjectKey?: string;
+  initialDateRange?: { startDate: Date; endDate: Date } | null;
   onClose: () => void;
   onCreateTicket?: (ticket: Ticket, projectKey: string) => void;
 }
 
-export function TicketCreateModal({ open, projects, selectedProjectKey, onClose, onCreateTicket }: TicketCreateModalProps) {
+export function TicketCreateModal({ open, projects, selectedProjectKey, initialDateRange, onClose, onCreateTicket }: TicketCreateModalProps) {
   const [newTicketTitle, setNewTicketTitle] = React.useState("");
   const [isCreatingTicket, setIsCreatingTicket] = React.useState(false);
   const [newTicketType, setNewTicketType] = React.useState<TicketType>("task");
   const [newTicketProjectKey, setNewTicketProjectKey] = React.useState<string | undefined>(selectedProjectKey);
   const [newTicketScheduledDate, setNewTicketScheduledDate] = React.useState<string | null>(null);
+  const [newEventDateRange, setNewEventDateRange] = React.useState<{ startDate: Date; endDate: Date } | null>(null);
   const [showCalendarPicker, setShowCalendarPicker] = React.useState(false);
   const [calendarPickerPosition, setCalendarPickerPosition] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -31,11 +34,12 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
   React.useEffect(() => {
     if (!open) return;
     setNewTicketTitle("");
-    setNewTicketType("task");
+    setNewTicketType(initialDateRange ? "event" : "task");
     setNewTicketScheduledDate(null);
+    setNewEventDateRange(initialDateRange || null);
     setShowCalendarPicker(false);
     setNewTicketProjectKey(selectedProjectKey ?? projects[0]?.project_key);
-  }, [open, selectedProjectKey, projects]);
+  }, [open, selectedProjectKey, projects, initialDateRange]);
 
   const handleClose = () => {
     setShowCalendarPicker(false);
@@ -62,7 +66,13 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
           projectNotionId: project.notion_id,
           internalProjectId: project.project_id,
           type: newTicketType,
-          scheduledDate: newTicketScheduledDate ?? undefined,
+          // If we have event date range (from calendar), use start/end dates
+          ...(newEventDateRange && {
+            startDate: toTimezone(newEventDateRange.startDate),
+            endDate: toTimezone(newEventDateRange.endDate),
+          }),
+          // Only use scheduled_date if there's no event date range (manually scheduled)
+          ...(!newEventDateRange && newTicketScheduledDate && { scheduledDate: newTicketScheduledDate }),
         },
         undefined,
       );
@@ -71,6 +81,7 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
       setNewTicketTitle("");
       setNewTicketType("task");
       setNewTicketScheduledDate(null);
+      setNewEventDateRange(null);
       setShowCalendarPicker(false);
       handleClose();
     } catch (error) {
@@ -112,29 +123,30 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
-            {/* Project dropdown */}
-            <div className="flex items-center gap-1.5">
-              <Feather className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-              <div className="relative">
-                <select
-                  value={newTicketProjectKey}
-                  onChange={(e) => setNewTicketProjectKey(e.target.value)}
-                  className="w-[160px] cursor-pointer appearance-none rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1 pr-7 text-[11px] font-medium text-[var(--text)] shadow-sm outline-none hover:border-[var(--accent-soft)] hover:bg-[var(--accent-subtle)] sm:w-[220px]"
-                >
-                  {projects.map((project) => (
-                    <option key={project.project_key} value={project.project_key}>
-                      {project.title}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--text-muted)]" />
-              </div>
-            </div>
-
-            {/* Type + calendar controls */}
-            <div className="flex items-center gap-3">
+          <div className="space-y-2">
+            {/* First row: Project and Type selectors */}
+            <div className="flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
+              {/* Project dropdown */}
               <div className="flex items-center gap-1.5">
+                <Feather className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                <div className="relative">
+                  <select
+                    value={newTicketProjectKey}
+                    onChange={(e) => setNewTicketProjectKey(e.target.value)}
+                    className="w-[160px] cursor-pointer appearance-none rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1 pr-7 text-[11px] font-medium text-[var(--text)] shadow-sm outline-none hover:border-[var(--accent-soft)] hover:bg-[var(--accent-subtle)] sm:w-[220px]"
+                  >
+                    {projects.map((project) => (
+                      <option key={project.project_key} value={project.project_key}>
+                        {project.title}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--text-muted)]" />
+                </div>
+              </div>
+
+              {/* Type selector + calendar picker */}
+              <div className="flex items-center gap-3">
                 <div className="relative">
                   <select
                     value={newTicketType}
@@ -148,26 +160,8 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--accent)]" />
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                {newTicketScheduledDate && newTicketType !== "event" && (
-                  <button
-                    type="button"
-                    onClick={() => setNewTicketScheduledDate(null)}
-                    className="hover:text-[var(--accent)]/90 flex cursor-pointer items-center gap-1 text-[11px] font-medium text-[var(--accent)]"
-                  >
-                    <span>
-                      {new Date(newTicketScheduledDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <span className="text-[10px] text-[var(--text-muted)]">×</span>
-                  </button>
-                )}
-
-                {newTicketType !== "event" && (
+                {newTicketType !== "event" && !newEventDateRange && !newTicketScheduledDate && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -206,6 +200,54 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
                 )}
               </div>
             </div>
+
+            {/* Second row: Date/Time display on the right */}
+            {(newEventDateRange || (newTicketScheduledDate && newTicketType !== "event")) && (
+              <div className="flex justify-end">
+                {newEventDateRange && (
+                  <button
+                    type="button"
+                    onClick={() => setNewEventDateRange(null)}
+                    className="hover:text-[var(--accent)]/90 flex cursor-pointer items-center gap-1 text-[11px] font-medium text-[var(--accent)]"
+                  >
+                    <span>
+                      {newEventDateRange.startDate.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      {newEventDateRange.startDate.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: false,
+                      })}{" "}
+                      -{" "}
+                      {newEventDateRange.endDate.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: false,
+                      })}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)]">×</span>
+                  </button>
+                )}
+
+                {newTicketScheduledDate && newTicketType !== "event" && !newEventDateRange && (
+                  <button
+                    type="button"
+                    onClick={() => setNewTicketScheduledDate(null)}
+                    className="hover:text-[var(--accent)]/90 flex cursor-pointer items-center gap-1 text-[11px] font-medium text-[var(--accent)]"
+                  >
+                    <span>
+                      {new Date(newTicketScheduledDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)]">×</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="pt-1">

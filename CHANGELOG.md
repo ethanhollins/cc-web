@@ -14,6 +14,19 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### CC-55: Calendar Time Selection for Event Creation - 2026-01-07
+
+- Implement time selection context menu with "Create Event" and "Schedule Break" actions
+- Add `useCalendarSelection` hook for managing calendar time selection state
+- Create reusable `ContextMenuButton` component for context menu actions
+- Refactor `CalendarContextMenu` to support both event and selection menu types (union type)
+- Add optimistic UI updates for newly created calendar events
+- Integrate time selection into planner page with `TicketCreateModal` support
+- Add date-time utilities (`toTimezone`, `parseInTimezone`) for timezone handling
+- Support creating events directly from calendar time selection drag
+- Update API client to handle event creation with start/end dates
+- Display visual indicators for optimistic events (loading state overlay)
+
 ### CC-48: Soft Light/Dark Theming for Planner - 2026-01-02
 
 - Define soft light/dark global theme tokens and planner-specific CSS variables, and load them via the app root layout
@@ -27,12 +40,14 @@ This is a living document maintained to track feature additions, bug fixes, and 
 - Add toggle behavior to CalendarCard popup in TicketCard schedule button
 
 ### Project Setup & Configuration - 2025-12-31
+
 - Added CHANGELOG.md for tracking project changes
 - Created GitHub Copilot instructions document
 - Installed shadcn/ui dependencies (class-variance-authority, lucide-react)
 - Configured shadcn/ui with New York style and Tailwind CSS 4
 
 ### CC-45: Refactor Planner Page with New Component Library - 2026-01-01
+
 - [x] Migrate planner page from legacy components to shadcn/ui architecture
 - [x] Create reusable calendar component wrapper around FullCalendar
 - [x] Support multiple calendar views (week, day) with configurable options

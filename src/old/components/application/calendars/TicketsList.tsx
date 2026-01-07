@@ -585,16 +585,20 @@ export default function TicketsList({
           const ticketId = eventEl.dataset.ticketId;
           const ticket = sorted.find((t) => t.ticket_id === ticketId);
           if (ticket) {
+            const project = projects.find((p) => p.project_key === projectKey);
             return {
               id: ticket.ticket_id,
               title: ticket.title,
               duration: "00:30:00", // Default 30 minutes duration
               extendedProps: {
-                showBand: false,
+                showBand: ticket.epic !== null && ticket.epic !== "" && ticket.epic !== undefined,
+                bandColor: ticket.colour,
+                ticket_id: ticket.ticket_id,
                 ticket_key: ticket.ticket_key,
                 ticket_type: ticket.ticket_type,
                 ticket_status: ticket.ticket_status,
-                project: projects.find((p) => p.project_key === projectKey),
+                completed: false,
+                project: project,
               },
             };
           }

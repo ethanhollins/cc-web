@@ -21,11 +21,14 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
   const bandColor = extendedProps?.bandColor || "var(--accent)";
   const showBand = extendedProps?.showBand !== false;
   const isCompleted = extendedProps?.ticket_status === "Done" || extendedProps?.ticket_status === "Removed" || extendedProps?.completed === true;
+  const isOptimistic = extendedProps?.isOptimistic === true;
 
   // All-day events: render as a compact header-only chip
   if (event.allDay) {
     return (
       <div className="relative flex h-full items-center overflow-hidden px-1.5 py-0.5">
+        {/* Optimistic overlay */}
+        {isOptimistic && <div className="pointer-events-none absolute inset-0 cursor-wait bg-gray-400/30" />}
         <div className="truncate text-[11px] font-semibold leading-tight sm:text-xs">{event.title}</div>
       </div>
     );
@@ -39,6 +42,9 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
       <div className="relative flex h-full items-center justify-between gap-1 overflow-hidden px-1.5 py-0.5">
         {/* Color band */}
         {showBand && <div className="absolute left-0 top-0 h-full w-1 flex-shrink-0 rounded-l" style={{ backgroundColor: bandColor }} />}
+
+        {/* Optimistic overlay */}
+        {isOptimistic && <div className="pointer-events-none absolute inset-0 cursor-wait bg-gray-400/30" />}
 
         {/* Completed overlay */}
         {isCompleted && (
@@ -70,6 +76,9 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
     <div className="relative h-full overflow-hidden p-1.5">
       {/* Color band */}
       {showBand && <div className="absolute left-0 top-0 h-full w-1 flex-shrink-0 rounded-l" style={{ backgroundColor: bandColor }} />}
+
+      {/* Optimistic overlay */}
+      {isOptimistic && <div className="pointer-events-none absolute inset-0 cursor-wait bg-gray-400/30" />}
 
       {/* Completed overlay */}
       {isCompleted && (
