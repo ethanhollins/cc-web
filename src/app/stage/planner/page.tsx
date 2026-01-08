@@ -263,13 +263,32 @@ export default function StagePlannerPage() {
   }, []);
 
   // Handle scheduling break from time selection
-  const handleScheduleBreak = useCallback((startDate: Date, endDate: Date) => {
-    // TODO: Implement schedule break functionality
-    console.log("Schedule break:", {
-      start: startDate,
-      end: endDate,
-    });
-  }, []);
+  const handleScheduleBreak = useCallback(
+    (startDate: Date, endDate: Date) => {
+      // Create a break event locally (no backend call yet)
+      const breakEvent: CalendarEvent = {
+        google_id: `break-${Date.now()}`,
+        ticket_id: "",
+        ticket_key: "",
+        ticket_type: "task",
+        title: "Break",
+        ticket_status: "In Progress",
+        project_id: "",
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        colour: "",
+        epic: "",
+        google_calendar_id: "",
+        all_day: false,
+        completed: false,
+        isBreak: true,
+      };
+
+      // Add break event to calendar
+      updateEvents?.((prev) => [...prev, breakEvent]);
+    },
+    [updateEvents],
+  );
 
   // Unselect calendar on outside click
   const handleUnselectCalendar = useCallback(() => {
