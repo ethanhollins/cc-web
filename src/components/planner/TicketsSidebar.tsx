@@ -11,6 +11,7 @@ import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
 import { ScrollArea } from "@/ui/scroll-area";
+import { sortTickets } from "@/utils/ticket-sort";
 
 interface TicketsSidebarProps {
   tickets: Record<string, Ticket[]>;
@@ -93,39 +94,23 @@ export function TicketsSidebar({
     // Never show epic-type tickets in the sidebar lists
     const visibleTickets = currentTickets.filter((t) => getType(t) !== "epic");
 
-    const statusRank: Record<string, number> = {
-      "In Progress": 0,
-      "In Review": 1,
-      Ongoing: 2,
-      Blocked: 3,
-      Todo: 4,
-      Backlog: 5,
-      Done: 6,
-      Removed: 7,
-    };
-
-    const sortTickets = (list: Ticket[]) => {
-      return [...list].sort((a, b) => {
-        const rankA = statusRank[a.ticket_status] ?? 999;
-        const rankB = statusRank[b.ticket_status] ?? 999;
-        if (rankA !== rankB) return rankA - rankB;
-        return a.ticket_key.localeCompare(b.ticket_key);
-      });
-    };
-
     if (activeTab === "today") {
       // Use selectedDay when provided; otherwise default to today
       const day = selectedDay ? new Date(selectedDay) : new Date();
       day.setHours(0, 0, 0, 0);
 
-      // Determine which tickets have calendar events on this day
+      // Determine which tickets have calendar events on or before the selected day
+      let eventTicketIdsOnOrBeforeDay: Set<string> | undefined;
       let eventTicketIdsForDay: Set<string> | undefined;
+      let ticketEventDateRanges: Map<string, { firstEventDate: Date; lastEventDate: Date }> | undefined;
+
       if (events && events.length > 0) {
         const dayStart = new Date(day);
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(day);
         dayEnd.setHours(23, 59, 59, 999);
 
+        // Tickets with events on the selected day (for event-type tickets)
         eventTicketIdsForDay = new Set(
           events
             .filter((event) => {
@@ -136,6 +121,41 @@ export function TicketsSidebar({
             .map((event) => event.ticket_id)
             .filter((id): id is string => Boolean(id)),
         );
+
+        // Tickets with events on or before the selected day (for filtering)
+        eventTicketIdsOnOrBeforeDay = new Set(
+          events
+            .filter((event) => {
+              const start = new Date(event.start_date);
+              start.setHours(0, 0, 0, 0);
+              return start <= day;
+            })
+            .map((event) => event.ticket_id)
+            .filter((id): id is string => Boolean(id)),
+        );
+
+        // Calculate first and last event dates for each ticket (for Done tickets)
+        ticketEventDateRanges = new Map();
+        events.forEach((event) => {
+          if (!event.ticket_id) return;
+          const eventDate = new Date(event.start_date);
+          eventDate.setHours(0, 0, 0, 0);
+
+          const existing = ticketEventDateRanges!.get(event.ticket_id);
+          if (!existing) {
+            ticketEventDateRanges!.set(event.ticket_id, {
+              firstEventDate: new Date(eventDate),
+              lastEventDate: new Date(eventDate),
+            });
+          } else {
+            if (eventDate < existing.firstEventDate) {
+              existing.firstEventDate = new Date(eventDate);
+            }
+            if (eventDate > existing.lastEventDate) {
+              existing.lastEventDate = new Date(eventDate);
+            }
+          }
+        });
       }
 
       const todayTickets = visibleTickets.filter((t) => {
@@ -146,21 +166,35 @@ export function TicketsSidebar({
         // Exclude removed / backlog / blocked tickets from today view
         if (["removed", "backlog", "blocked"].includes(statusLower)) return false;
 
-        // Event-type tickets: only show when there is a calendar event on this day
+        // Check if ticket has calendar event on or before selected day
+        const hasEventOnOrBeforeDay = eventTicketIdsOnOrBeforeDay?.has(t.ticket_id);
+        const hasEventForDay = eventTicketIdsForDay?.has(t.ticket_id);
+        const eventDateRange = ticketEventDateRanges?.get(t.ticket_id);
+
+        // For event-type tickets: only show when there is a calendar event on this specific day
         if (getType(t) === "event") {
-          if (!eventTicketIdsForDay) return false;
-          return eventTicketIdsForDay.has(t.ticket_id);
+          return hasEventForDay || false;
         }
+
+        // For Done tickets with events: show from first event date through last event date
+        if (isDone && eventDateRange) {
+          return day >= eventDateRange.firstEventDate && day <= eventDateRange.lastEventDate;
+        }
+
+        // For Done tickets with only scheduled_date: show only on exact scheduled date
+        if (isDone && t.scheduled_date) {
+          const scheduledDate = new Date(t.scheduled_date);
+          scheduledDate.setHours(0, 0, 0, 0);
+          return scheduledDate.getTime() === day.getTime();
+        }
+
+        // For non-Done, non-event tickets: show if they have a calendar event OR a scheduled_date
+        if (hasEventOnOrBeforeDay) return true;
 
         if (!t.scheduled_date) return false;
 
         const scheduledDate = new Date(t.scheduled_date);
         scheduledDate.setHours(0, 0, 0, 0);
-
-        if (isDone) {
-          // Done tickets: only show on their exact scheduled date
-          return scheduledDate.getTime() === day.getTime();
-        }
 
         // Non-done tickets: show when scheduled for selected day or earlier
         return scheduledDate <= day;

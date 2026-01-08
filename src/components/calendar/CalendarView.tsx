@@ -176,8 +176,9 @@ export function CalendarView({
         selectable
         selectMirror
         unselectAuto={false}
-        longPressDelay={1200}
-        selectLongPressDelay={1200}
+        longPressDelay={500}
+        selectLongPressDelay={500}
+        selectMinDistance={0}
         // Mobile-friendly day header
         dayHeaderFormat={{ weekday: "short", day: "numeric" }}
         dayHeaderContent={(args) => {

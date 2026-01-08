@@ -164,10 +164,32 @@ export default function StagePlannerPage() {
     [events],
   );
 
-  const handleTicketClick = useCallback((ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setSelectedEventId(null); // Clear event ID when opening from ticket list
-  }, []);
+  const handleTicketClick = useCallback(
+    (ticket: Ticket) => {
+      setSelectedTicket(ticket);
+
+      // If there's a selected day and the ticket has events, find the event for that day
+      if (selectedDay && events.length > 0) {
+        const dayStart = new Date(selectedDay);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(selectedDay);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // Find event for this ticket on the selected day
+        const eventForDay = events.find((event) => {
+          if (event.ticket_id !== ticket.ticket_id) return false;
+          const start = new Date(event.start_date);
+          const end = new Date(event.end_date);
+          return start <= dayEnd && end >= dayStart;
+        });
+
+        setSelectedEventId(eventForDay?.google_id || null);
+      } else {
+        setSelectedEventId(null); // Clear event ID when no selected day
+      }
+    },
+    [selectedDay, events],
+  );
 
   // Handle day header click for filtering
   const handleDayHeaderClick = useCallback((date: Date) => {

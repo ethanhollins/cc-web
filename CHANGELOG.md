@@ -14,6 +14,18 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### CC-58: Fix Today Tickets Filter Logic - 2026-01-08
+
+- Fix today tab to show tickets with events on selected day or previous days (excluding Backlog status)
+- Update filter logic to correctly categorize tickets with calendar events into today tab instead of unscheduled tab
+- Event-type tickets now only show on days with actual events (not future days)
+- Done tickets with events show from first event date through last event date
+- Extract ticket sorting logic to reusable utility function in `src/utils/ticket-sort.ts`
+- Sort tickets by: Done status (bottom), type (Story→Task→Bug→Event), status (In Review→In Progress→Todo→Ongoing→Blocked), then ticket key
+- Add spacing to ticket cards with empty bottom sections for consistent layout
+- Fix ticket modal to show correct event instance when clicking from sidebar (use selected day's event)
+- Improve mobile calendar selection with reduced long press delay (500ms) and `selectMinDistance=0`
+
 ### CC-57: Schedule Break UI with Zigzag Edges - 2026-01-08
 
 - Implement "Schedule Break" button in calendar time selection context menu
