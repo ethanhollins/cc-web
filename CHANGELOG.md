@@ -14,6 +14,18 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### CC-57: Schedule Break UI with Zigzag Edges - 2026-01-08
+
+- Implement "Schedule Break" button in calendar time selection context menu
+- Create break event component with distinctive visual design (zigzag edges, flat appearance)
+- Add CSS-based zigzag pattern using conic gradients for consistent frequency at any height
+- Support both short (<30 min) and regular break event layouts
+- Add theme-aware styling with light/dark mode support via CSS custom properties
+- Create break events locally without backend integration (placeholder for future API)
+- Style break events to blend with calendar background (no border, square corners, subtle colors)
+- Add `isBreak` property to CalendarEvent type for break event identification
+- Implement break-specific styling in calendar event transformation
+
 ### CC-55: Calendar Time Selection for Event Creation - 2026-01-07
 
 - Implement time selection context menu with "Create Event" and "Schedule Break" actions
