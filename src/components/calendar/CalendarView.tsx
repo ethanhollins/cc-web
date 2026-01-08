@@ -249,6 +249,17 @@ export function CalendarView({
         eventResizableFromStart
         // Events with project colors
         events={events.map((event) => {
+          // Break events: blend with calendar background
+          if (event.extendedProps?.isBreak) {
+            return {
+              ...event,
+              borderColor: "transparent",
+              backgroundColor: "#71717b",
+              textColor: "#6b7280",
+              className: "event-break",
+            };
+          }
+          // Regular events with project colors
           if (event.extendedProps?.project?.colour) {
             return {
               ...event,

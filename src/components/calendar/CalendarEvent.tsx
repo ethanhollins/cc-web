@@ -22,6 +22,66 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
   const showBand = extendedProps?.showBand !== false;
   const isCompleted = extendedProps?.ticket_status === "Done" || extendedProps?.ticket_status === "Removed" || extendedProps?.completed === true;
   const isOptimistic = extendedProps?.isOptimistic === true;
+  const isBreak = extendedProps?.isBreak === true;
+
+  // Break events: blend with calendar background
+  if (isBreak) {
+    const zigzagStyle = {
+      "--a": "90deg",
+      "--s": "13px",
+      "--b": "1px",
+      background: "var(--break-zigzag)",
+      width: "calc(var(--b) + var(--s)/(2*tan(var(--a)/2)))",
+      "--_g": "100% var(--s) repeat-y conic-gradient(from calc(90deg - var(--a)/2) at left, #0000, #000 1deg calc(var(--a) - 1deg), #0000 var(--a))",
+      mask: "var(--b) 50%/var(--_g) exclude, 0 50%/var(--_g)",
+    } as React.CSSProperties;
+
+    // Short break events
+    if (isEventShort) {
+      const durationText = `${Math.round(durationMinutes)}m`;
+
+      return (
+        <div className="relative flex h-full items-center justify-between gap-1 overflow-hidden">
+          {/* Zigzag left border */}
+          <div className="absolute left-2 top-0 h-[100%]" style={zigzagStyle} />
+
+          {/* Zigzag right border */}
+          <div className="absolute right-2 top-0 h-[100%]" style={zigzagStyle} />
+
+          {/* Content */}
+          <div className="flex-1 px-5 py-0.5">
+            <span className="text-[11px] leading-tight sm:text-[10px]" style={{ color: "var(--break-text)" }}>
+              Break
+            </span>
+          </div>
+          <div className="whitespace-nowrap pr-6 text-[10px] sm:text-xs" style={{ color: "var(--break-text)" }}>
+            {durationText}
+          </div>
+        </div>
+      );
+    }
+
+    // Regular break events
+    return (
+      <div className="relative h-full w-full overflow-hidden">
+        {/* Zigzag left border */}
+        <div className="absolute left-2 top-0 h-[100%]" style={zigzagStyle} />
+
+        {/* Zigzag right border */}
+        <div className="absolute right-2 top-0 h-[100%]" style={zigzagStyle} />
+
+        {/* Content aligned top-left like normal events */}
+        <div className="h-full px-5 py-1">
+          <div className="text-[11px] font-medium leading-tight sm:text-[10px]" style={{ color: "var(--break-text)" }}>
+            Break
+          </div>
+          <div className="mt-0.5 text-[10px] sm:text-[9px]" style={{ color: "var(--break-text)" }}>
+            {eventInfo.timeText}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // All-day events: render as a compact header-only chip
   if (event.allDay) {

@@ -12,6 +12,7 @@ export interface CalendarEvent extends Ticket {
   all_day?: boolean;
   completed?: boolean;
   isOptimistic?: boolean;
+  isBreak?: boolean;
 }
 
 export interface EventsResponse {
@@ -21,12 +22,13 @@ export interface EventsResponse {
 export interface CalendarEventExtendedProps {
   showBand?: boolean;
   bandColor?: string;
-  ticket_id: string;
-  ticket_key: string;
-  ticket_status: string;
-  google_calendar_id: string;
+  ticket_id?: string;
+  ticket_key?: string;
+  ticket_status?: string;
+  google_calendar_id?: string;
   completed?: boolean;
   project?: Project;
+  isBreak?: boolean;
 }
 
 export type CalendarView = "timeGridWeek" | "timeGridDay" | "dayGridMonth";
