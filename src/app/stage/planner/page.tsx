@@ -4,7 +4,15 @@ import { useCallback, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
 import { createBreak, createEvent } from "@/api/calendar";
-import { scheduleTicket, unscheduleTicket, updateTicketStatus } from "@/api/tickets";
+import {
+  scheduleTicket,
+  unscheduleTicket,
+  updateTicketEpic,
+  updateTicketPriority,
+  updateTicketProject,
+  updateTicketStatus,
+  updateTicketType,
+} from "@/api/tickets";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { TicketModal } from "@/components/modals/TicketModal";
@@ -40,7 +48,10 @@ export default function StagePlannerPage() {
 
   // Projects and tickets
   const { projects, selectedProjectKey, selectProject } = useProjects();
-  const { tickets, updateTickets } = useTickets(selectedProjectKey, projects);
+  const { tickets, updateTickets, fetchTicketsForProject } = useTickets(selectedProjectKey, projects);
+
+  // Flatten all tickets for the modal (so epics can be found across all projects)
+  const allTickets = Object.values(tickets).flat();
 
   // Calendar date navigation
   const { selectedDate, goToPreviousPeriod, goToNextPeriod, goToToday, handleDatesSet } = useCalendarDate(calendarRef);
@@ -63,8 +74,8 @@ export default function StagePlannerPage() {
     [handleDatesSet],
   );
 
-  // Calendar events with caching
-  const { events, isLoading: _isLoading, updateEvent, deleteEvent, updateEvents, refetch } = useCalendarEvents(selectedDate);
+  // Calendar events with caching (and automatic ticket fetching)
+  const { events, isLoading: _isLoading, updateEvent, deleteEvent, updateEvents, refetch } = useCalendarEvents(selectedDate, fetchTicketsForProject);
 
   // Calendar interactions (drag/drop, context menu, long press)
   const {
@@ -269,6 +280,88 @@ export default function StagePlannerPage() {
     [refetch, selectedProjectKey, tickets, updateTickets],
   );
 
+  const handleTypeChange = useCallback(
+    async (ticketId: string, newType: string) => {
+      try {
+        await updateTicketType(ticketId, newType);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, ticket_type: newType as Ticket["ticket_type"] } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to update ticket type:", error);
+      }
+    },
+    [refetch, selectedProjectKey, tickets, updateTickets],
+  );
+
+  const handleProjectChange = useCallback(
+    async (ticketId: string, newProjectId: string) => {
+      try {
+        await updateTicketProject(ticketId, newProjectId || null);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, project_id: newProjectId || undefined } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to update ticket project:", error);
+      }
+    },
+    [refetch, selectedProjectKey, tickets, updateTickets],
+  );
+
+  const handleEpicChange = useCallback(
+    async (ticketId: string, newEpicId: string) => {
+      try {
+        await updateTicketEpic(ticketId, newEpicId || null);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, epic: newEpicId || undefined } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to update ticket epic:", error);
+      }
+    },
+    [refetch, selectedProjectKey, tickets, updateTickets],
+  );
+
+  const handlePriorityChange = useCallback(
+    async (ticketId: string, newPriority: string) => {
+      try {
+        // Send lowercase priority to API
+        const priorityValue = newPriority ? newPriority.toLowerCase() : null;
+        await updateTicketPriority(ticketId, priorityValue);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, priority: priorityValue || undefined } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to update ticket priority:", error);
+      }
+    },
+    [refetch, selectedProjectKey, tickets, updateTickets],
+  );
+
   const handleCreateTicket = useCallback(
     (ticket: Ticket, projectKey: string) => {
       // Update tickets list
@@ -373,7 +466,7 @@ export default function StagePlannerPage() {
   const title = getWeekRangeTitle(selectedDate);
 
   // Transform events to FullCalendar format
-  const calendarEvents = transformEventsToCalendarFormat(events, projects);
+  const calendarEvents = transformEventsToCalendarFormat(events, projects, tickets);
 
   return (
     <div className="h-full w-full">
@@ -451,7 +544,13 @@ export default function StagePlannerPage() {
         events={events}
         onEventUpdate={updateEvents}
         projects={projects}
+        tickets={allTickets}
         ticket={selectedTicket}
+        onStatusChange={handleStatusChange}
+        onTypeChange={handleTypeChange}
+        onProjectChange={handleProjectChange}
+        onEpicChange={handleEpicChange}
+        onPriorityChange={handlePriorityChange}
       />
 
       <TicketCreateModal

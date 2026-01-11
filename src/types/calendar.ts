@@ -29,6 +29,8 @@ export interface CalendarEventExtendedProps {
   completed?: boolean;
   project?: Project;
   is_break?: boolean;
+  epic?: string; // Legacy epic name
+  epic_id?: string; // Epic ticket_id
 }
 
 export type CalendarView = "timeGridWeek" | "timeGridDay" | "dayGridMonth";

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AlertCircle, BookOpen, CalendarDays, CalendarMinus, CalendarPlus, Check, CheckSquare, Diamond, Video } from "lucide-react";
+import { useEpicName } from "@/hooks/useEpics";
 import { cn } from "@/lib/utils";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { Badge } from "@/ui/badge";
@@ -12,6 +13,7 @@ import { StatusSelect } from "./StatusSelect";
 
 interface TicketCardProps {
   ticket: Ticket;
+  tickets: Ticket[];
   isDone: boolean;
   isEventToday: boolean;
   onTicketClick: (ticket: Ticket) => void;
@@ -77,6 +79,7 @@ function meetingPlatformLabel(platform?: Ticket["meeting_platform"]): string {
 
 export function TicketCard({
   ticket,
+  tickets,
   isDone,
   isEventToday,
   onTicketClick,
@@ -88,6 +91,7 @@ export function TicketCard({
   const isEventTicket = ticket.ticket_type.toLowerCase() === "event";
   const codeLength = ticket.ticket_key.length;
   const codeTranslateY = codeLength * 7.3; // px offset to keep different lengths visually balanced
+  const epicName = useEpicName(ticket, tickets);
 
   const handleStatusChange = (newStatus: TicketStatus) => {
     if (onStatusChange) {
@@ -148,12 +152,12 @@ export function TicketCard({
           {/* Epic + status / meeting row */}
           <div className="mb-2 flex items-start justify-between">
             <div className="flex min-h-4 min-w-0 flex-shrink items-center gap-2">
-              {ticket.epic && (
+              {epicName && (
                 <>
                   <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
                     <Diamond className={cn("h-3 w-3", isDone ? "text-[var(--text-muted)]" : "text-[var(--accent)]")} />
                   </span>
-                  <span className={cn("truncate text-xs", isDone ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]")}>{ticket.epic}</span>
+                  <span className={cn("truncate text-xs", isDone ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]")}>{epicName}</span>
                 </>
               )}
             </div>

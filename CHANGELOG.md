@@ -14,6 +14,16 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Refactor: Ticket Modal Compact Mode - CC-59 - 2026-01-11
+
+- Add dynamic mode switching between "compact" and "full" views based on content
+- Implement compact mode for tickets with minimal information (no description/linked tickets/documents)
+- Add pill-shaped "+" buttons for adding description, linked tickets, and related documents
+- Redesign layout: single column in compact mode, two-column in full mode
+- Display linked tickets and related documents in main content area with proper icons
+- Improve mobile-responsive behavior for both modes
+- Status badge changes to rounded-full in compact mode for cleaner look
+
 ### Refactor: API Migration & UI Enhancements - 2026-01-11
 
 - Rename `isBreak` to `is_break` for API consistency across all calendar event references

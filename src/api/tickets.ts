@@ -100,6 +100,86 @@ export async function updateTicketStatus(ticketId: string, status: string, signa
   return response.data as Ticket;
 }
 
+export async function updateTicketType(ticketId: string, type: string, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      ticket_type: type,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket type: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
+export async function updateTicketProject(ticketId: string, projectId: string | null, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      project_id: projectId,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket project: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
+export async function updateTicketEpic(ticketId: string, epicId: string | null, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      epic_id: epicId,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket epic: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
+export async function updateTicketPriority(ticketId: string, priority: string | null, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      priority: priority,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket priority: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
+export async function updateTicketDescription(ticketId: string, description: string, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      description: description,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket description: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
 export async function fetchTicketDetails(ticketId: string, signal?: AbortSignal): Promise<TicketDetailsResponse> {
   const response = await apiClient.get(`/tickets/${ticketId}/details`, { signal });
 
@@ -108,4 +188,12 @@ export async function fetchTicketDetails(ticketId: string, signal?: AbortSignal)
   }
 
   return response.data as TicketDetailsResponse;
+}
+
+export async function deleteTicket(ticketId: string, signal?: AbortSignal): Promise<void> {
+  const response = await apiClient.delete(`/tickets/${ticketId}`, { signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to delete ticket: ${response.status}`);
+  }
 }

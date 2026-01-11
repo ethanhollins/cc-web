@@ -15,10 +15,12 @@ export interface Ticket {
   title: string;
   ticket_status: TicketStatus;
   assignee?: string;
-  epic?: string;
+  epic?: string; // Legacy: epic name (kept for backwards compatibility)
+  epic_id?: string; // Current: epic ticket_id
   project_id?: string;
   project?: Project;
   notion_url?: string;
+  notion_id?: string;
   colour?: string;
   google_id?: string;
   scheduled_date?: string; // ISO date string for when ticket is scheduled
@@ -50,5 +52,7 @@ export interface TicketDetailsResponse {
     google_calendar_id?: string;
     completion_date?: string;
     description?: string;
+    meeting_url?: string;
+    meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
   };
 }

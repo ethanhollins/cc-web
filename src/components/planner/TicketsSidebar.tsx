@@ -230,13 +230,18 @@ export function TicketsSidebar({
       // Show non-event tickets: (no scheduled_date) OR (Blocked status ignoring scheduled_date)
       return sortTickets(
         visibleTickets.filter(
-          (t) => getType(t) !== "event" && !["Done", "Removed", "Backlog"].includes(t.ticket_status) && (!t.scheduled_date || t.ticket_status === "Blocked"),
+          (t) =>
+            getType(t) !== "event" &&
+            !["done", "removed", "backlog"].includes(t.ticket_status.toLowerCase()) &&
+            (!t.scheduled_date || t.ticket_status.toLowerCase() === "blocked"),
         ),
       );
     } else {
       // backlog - show non-event tickets with Backlog status (ignoring scheduled_date)
       return sortTickets(
-        visibleTickets.filter((t) => getType(t) !== "event" && t.ticket_status === "Backlog" && !["Done", "Removed"].includes(t.ticket_status)),
+        visibleTickets.filter(
+          (t) => getType(t) !== "event" && t.ticket_status.toLowerCase() === "backlog" && !["done", "removed"].includes(t.ticket_status.toLowerCase()),
+        ),
       );
     }
   }, [currentTickets, activeTab, selectedDay, events]);
@@ -381,6 +386,7 @@ export function TicketsSidebar({
                 <TicketCard
                   key={ticket.ticket_id}
                   ticket={ticket}
+                  tickets={currentTickets}
                   isDone={isDone}
                   isEventToday={isEventToday}
                   eventTimeRange={eventTimeRange}

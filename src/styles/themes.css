@@ -39,6 +39,7 @@
   --surface: #ffffff;
   --surface-muted: #e5e7eb;
   --surface-elevated: #ffffff;
+  --surface-hover: #f3f4f6; /* subtle grey hover state */
 
   /* Borders & outlines */
   --border-subtle: #e4e4e7;
@@ -124,6 +125,7 @@
   --surface: #050505; /* main panels/cards - deep near-black */
   --surface-muted: #0a0a0a; /* muted chips, subtle controls */
   --surface-elevated: #1f1f23; /* elevated cards, headers, grid */
+  --surface-hover: #1a1a1e; /* subtle hover state */
 
   /* Borders & outlines */
   --border-subtle: #2b2b32; /* soft outline between surfaces */
