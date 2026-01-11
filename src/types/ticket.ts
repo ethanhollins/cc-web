@@ -50,5 +50,7 @@ export interface TicketDetailsResponse {
     google_calendar_id?: string;
     completion_date?: string;
     description?: string;
+    meeting_url?: string;
+    meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
   };
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { fetchTicketDetails } from "@/api/tickets";
-import type { TicketDetailsResponse } from "@/types/ticket";
 import { isAbortError } from "@/utils/error-utils";
 
 export interface TicketDataResponse {
@@ -17,6 +16,8 @@ export interface TicketDataResponse {
   subtasks: string[];
   linked_tickets: string[];
   project_title: string;
+  meeting_url?: string;
+  meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
 }
 
 export interface TicketContentResponse {
@@ -74,6 +75,8 @@ export function useTicketData(ticketId: string | null) {
           subtasks: [], // Will be handled separately
           linked_tickets: [], // Will be handled separately
           project_title: "", // Not provided in this endpoint
+          meeting_url: ticketData.meeting_url,
+          meeting_platform: ticketData.meeting_platform,
         });
       } catch (err: unknown) {
         if (isAbortError(err)) return;
