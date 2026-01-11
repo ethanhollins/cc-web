@@ -26,7 +26,7 @@ export function transformEventsToCalendarFormat(events: CalendarEvent[], project
         completed: event.completed || false,
         project: event.project || projects.find((p) => p.project_id === event.project_id),
         isOptimistic: event.isOptimistic,
-        isBreak: event.isBreak,
+        is_break: event.is_break,
       },
     };
 

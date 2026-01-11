@@ -3,8 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
-import { createEvent } from "@/api/calendar";
-import { scheduleTicket, unscheduleTicket } from "@/api/tickets";
+import { createBreak, createEvent } from "@/api/calendar";
+import { scheduleTicket, unscheduleTicket, updateTicketStatus } from "@/api/tickets";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { TicketModal } from "@/components/modals/TicketModal";
@@ -164,10 +164,32 @@ export default function StagePlannerPage() {
     [events],
   );
 
-  const handleTicketClick = useCallback((ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setSelectedEventId(null); // Clear event ID when opening from ticket list
-  }, []);
+  const handleTicketClick = useCallback(
+    (ticket: Ticket) => {
+      setSelectedTicket(ticket);
+
+      // If there's a selected day and the ticket has events, find the event for that day
+      if (selectedDay && events.length > 0) {
+        const dayStart = new Date(selectedDay);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(selectedDay);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // Find event for this ticket on the selected day
+        const eventForDay = events.find((event) => {
+          if (event.ticket_id !== ticket.ticket_id) return false;
+          const start = new Date(event.start_date);
+          const end = new Date(event.end_date);
+          return start <= dayEnd && end >= dayStart;
+        });
+
+        setSelectedEventId(eventForDay?.google_id || null);
+      } else {
+        setSelectedEventId(null); // Clear event ID when no selected day
+      }
+    },
+    [selectedDay, events],
+  );
 
   // Handle day header click for filtering
   const handleDayHeaderClick = useCallback((date: Date) => {
@@ -227,6 +249,26 @@ export default function StagePlannerPage() {
     [refetch, selectedProjectKey, tickets, updateTickets],
   );
 
+  const handleStatusChange = useCallback(
+    async (ticketId: string, newStatus: string) => {
+      try {
+        await updateTicketStatus(ticketId, newStatus);
+
+        if (selectedProjectKey && tickets[selectedProjectKey]) {
+          const updatedTickets = tickets[selectedProjectKey].map((ticket) =>
+            ticket.ticket_id === ticketId ? { ...ticket, ticket_status: newStatus as Ticket["ticket_status"] } : ticket,
+          );
+          updateTickets(selectedProjectKey, updatedTickets);
+        }
+
+        await refetch();
+      } catch (error) {
+        console.error("Failed to update ticket status:", error);
+      }
+    },
+    [refetch, selectedProjectKey, tickets, updateTickets],
+  );
+
   const handleCreateTicket = useCallback(
     (ticket: Ticket, projectKey: string) => {
       // Update tickets list
@@ -264,28 +306,40 @@ export default function StagePlannerPage() {
 
   // Handle scheduling break from time selection
   const handleScheduleBreak = useCallback(
-    (startDate: Date, endDate: Date) => {
-      // Create a break event locally (no backend call yet)
-      const breakEvent: CalendarEvent = {
-        google_id: `break-${Date.now()}`,
-        ticket_id: "",
-        ticket_key: "",
-        ticket_type: "task",
-        title: "Break",
-        ticket_status: "In Progress",
-        project_id: "",
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-        colour: "",
-        epic: "",
-        google_calendar_id: "",
-        all_day: false,
-        completed: false,
-        isBreak: true,
-      };
+    async (startDate: Date, endDate: Date) => {
+      try {
+        // Call the API to create the break event
+        const result = await createBreak({
+          title: "Break",
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+        });
 
-      // Add break event to calendar
-      updateEvents?.((prev) => [...prev, breakEvent]);
+        // Create a break event locally with the returned event_id
+        const breakEvent: CalendarEvent = {
+          google_id: result.event_id,
+          ticket_id: "",
+          ticket_key: "",
+          ticket_type: "task",
+          title: "Break",
+          ticket_status: "In Progress",
+          project_id: "",
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          colour: "",
+          epic: "",
+          google_calendar_id: "",
+          all_day: false,
+          completed: false,
+          is_break: true,
+        };
+
+        // Add break event to calendar
+        updateEvents?.((prev) => [...prev, breakEvent]);
+      } catch (error) {
+        console.error("Failed to create break:", error);
+        // Optionally show an error notification to the user
+      }
     },
     [updateEvents],
   );
@@ -335,6 +389,7 @@ export default function StagePlannerPage() {
             onTicketClick={handleTicketClick}
             onScheduleTicket={handleScheduleTicket}
             onUnscheduleTicket={handleUnscheduleTicket}
+            onStatusChange={handleStatusChange}
             onCreateTicket={handleCreateTicket}
             onUnselectCalendar={handleUnselectCalendar}
           />

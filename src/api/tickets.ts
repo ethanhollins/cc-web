@@ -1,4 +1,4 @@
-import type { Ticket, TicketsResponse } from "@/types/ticket";
+import type { Ticket, TicketDetailsResponse, TicketsResponse } from "@/types/ticket";
 import { apiClient } from "./client";
 
 export const DEFAULT_CALENDAR_ID = "ethanjohol@gmail.com";
@@ -21,9 +21,8 @@ export async function fetchTickets(projectId: string, signal?: AbortSignal): Pro
 export async function createTicket(
   data: {
     title: string;
-    projectNotionId: string;
-    internalProjectId: string;
-    type?: string;
+    projectId: string;
+    ticketType?: string;
     scheduledDate?: string;
     startDate?: string;
     endDate?: string;
@@ -32,10 +31,9 @@ export async function createTicket(
 ): Promise<Ticket> {
   const payload = {
     title: data.title,
-    project_id: data.projectNotionId,
-    internal_project_id: data.internalProjectId,
+    project_id: data.projectId,
     // API expects capitalized type strings like "Task" / "Event"
-    type: (data.type ?? "task").charAt(0).toUpperCase() + (data.type ?? "task").slice(1),
+    ticket_type: (data.ticketType ?? "task").charAt(0).toUpperCase() + (data.ticketType ?? "task").slice(1),
     ...(data.scheduledDate && { scheduled_date: data.scheduledDate }),
     ...(data.startDate &&
       data.endDate && {
@@ -84,4 +82,30 @@ export async function unscheduleTicket(ticketId: string, signal?: AbortSignal): 
   }
 
   return response.data as Ticket;
+}
+
+export async function updateTicketStatus(ticketId: string, status: string, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      ticket_status: status,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket status: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
+export async function fetchTicketDetails(ticketId: string, signal?: AbortSignal): Promise<TicketDetailsResponse> {
+  const response = await apiClient.get(`/tickets/${ticketId}/details`, { signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch ticket details: ${response.status}`);
+  }
+
+  return response.data as TicketDetailsResponse;
 }

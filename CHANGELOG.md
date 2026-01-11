@@ -14,6 +14,39 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Refactor: API Migration & UI Enhancements - 2026-01-11
+
+- Rename `isBreak` to `is_break` for API consistency across all calendar event references
+- Add break event creation API integration with proper backend support
+- Implement status change functionality with inline status select dropdown in ticket cards
+- Add `StatusSelect` component with grouped status options (To-do, In progress, Complete)
+- Create `ticket-status-utils.ts` with reusable status styling utilities
+- Update ticket filtering to show Done/Removed tickets until completion_date
+- Add `completion_date` field to Ticket type for tracking when tickets were completed
+- Refactor ticket sorting to prioritize Blocked tickets at top, Done/Removed at bottom
+- Improve unscheduled tab filter to include Blocked status tickets
+- Migrate ticket modal from `useTicketNotionData` to new `useTicketData` hook
+- Add `updateTicketStatus` and `fetchTicketDetails` API functions
+- Consolidate API type definitions with `TicketDetailsResponse` interface
+- Implement WebSocket message listener pattern to avoid unnecessary re-renders
+- Update context menu for break events with "Rename Break" and "Remove Break" options
+- Fix break event deletion to handle empty calendar_id
+- Simplify ticket creation API with unified `projectId` and `ticketType` parameters
+- Remove unused `WebSocketProvider` from old layout
+- Add dark mode support to ticket type strip colors and status select
+
+### CC-58: Fix Today Tickets Filter Logic - 2026-01-08
+
+- Fix today tab to show tickets with events on selected day or previous days (excluding Backlog status)
+- Update filter logic to correctly categorize tickets with calendar events into today tab instead of unscheduled tab
+- Event-type tickets now only show on days with actual events (not future days)
+- Done tickets with events show from first event date through last event date
+- Extract ticket sorting logic to reusable utility function in `src/utils/ticket-sort.ts`
+- Sort tickets by: Done status (bottom), type (Story→Task→Bug→Event), status (In Review→In Progress→Todo→Ongoing→Blocked), then ticket key
+- Add spacing to ticket cards with empty bottom sections for consistent layout
+- Fix ticket modal to show correct event instance when clicking from sidebar (use selected day's event)
+- Improve mobile calendar selection with reduced long press delay (500ms) and `selectMinDistance=0`
+
 ### CC-57: Schedule Break UI with Zigzag Edges - 2026-01-08
 
 - Implement "Schedule Break" button in calendar time selection context menu

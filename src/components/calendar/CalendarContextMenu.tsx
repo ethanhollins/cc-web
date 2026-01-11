@@ -5,7 +5,7 @@ import { Card } from "@/ui/card";
 
 // Union type for different context menu types
 export type CalendarContextMenuState =
-  | { show: boolean; x: number; y: number; type: "event"; eventId?: string; googleCalendarId?: string }
+  | { show: boolean; x: number; y: number; type: "event"; eventId?: string; googleCalendarId?: string; is_break?: boolean }
   | { show: boolean; x: number; y: number; type: "selection"; startDate?: Date; endDate?: Date };
 
 interface CalendarContextMenuProps {
@@ -70,7 +70,11 @@ export function CalendarContextMenu({ contextMenu, onClose, children }: Calendar
   if (!contextMenu.show) return null;
 
   return (
-    <Card ref={menuRef} className="fixed z-50 w-48 rounded border border-gray-200 bg-white p-1 shadow-lg" style={{ left: contextMenu.x, top: contextMenu.y }}>
+    <Card
+      ref={menuRef}
+      className="fixed z-50 w-48 rounded border border-[var(--border-subtle)] bg-[var(--surface)] p-1 shadow-lg"
+      style={{ left: contextMenu.x, top: contextMenu.y }}
+    >
       {children}
     </Card>
   );

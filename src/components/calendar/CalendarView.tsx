@@ -31,7 +31,7 @@ interface CalendarViewProps {
   isDragging?: boolean;
   editableEventId?: string | null;
   // Event context menu props
-  showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string) => void;
+  showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string, is_break?: boolean) => void;
   hideContextMenu?: () => void;
   eventContextMenu?: CalendarContextMenuState;
   onEventEdit?: (eventId: string) => void;
@@ -176,8 +176,9 @@ export function CalendarView({
         selectable
         selectMirror
         unselectAuto={false}
-        longPressDelay={1200}
-        selectLongPressDelay={1200}
+        longPressDelay={500}
+        selectLongPressDelay={500}
+        selectMinDistance={0}
         // Mobile-friendly day header
         dayHeaderFormat={{ weekday: "short", day: "numeric" }}
         dayHeaderContent={(args) => {
@@ -250,7 +251,7 @@ export function CalendarView({
         // Events with project colors
         events={events.map((event) => {
           // Break events: blend with calendar background
-          if (event.extendedProps?.isBreak) {
+          if (event.extendedProps?.is_break) {
             return {
               ...event,
               borderColor: "transparent",
@@ -287,6 +288,12 @@ export function CalendarView({
             return;
           }
           info.jsEvent.preventDefault();
+
+          // Break events should not open ticket modal, they should just be selectable for editing
+          if (info.event.extendedProps?.is_break) {
+            return;
+          }
+
           onEventClick?.(info.event.id);
         }}
         eventDrop={onEventDrop}
@@ -301,7 +308,7 @@ export function CalendarView({
             if (isDragging) return;
             e.preventDefault();
             e.stopPropagation();
-            showContextMenu?.(e.clientX, e.clientY, info.event.id, info.event.extendedProps?.google_calendar_id);
+            showContextMenu?.(e.clientX, e.clientY, info.event.id, info.event.extendedProps?.google_calendar_id, info.event.extendedProps?.is_break);
           };
 
           info.el.addEventListener("contextmenu", handleEventContextMenu);
@@ -327,26 +334,55 @@ export function CalendarView({
       {/* Event context menu (right-click on event) - only show if it has an eventId */}
       {eventContextMenu && eventContextMenu.show && eventContextMenu.type === "event" && eventContextMenu.eventId && (
         <CalendarContextMenu contextMenu={eventContextMenu} onClose={() => hideContextMenu?.()}>
-          <ContextMenuButton
-            icon={Edit}
-            onClick={() => {
-              if (eventContextMenu.eventId && onEventEdit) onEventEdit(eventContextMenu.eventId);
-              hideContextMenu?.();
-            }}
-          >
-            Open Ticket
-          </ContextMenuButton>
+          {eventContextMenu.is_break ? (
+            // Break event menu items
+            <>
+              <ContextMenuButton
+                icon={Edit}
+                onClick={() => {
+                  // TODO: Implement rename break functionality
+                  hideContextMenu?.();
+                }}
+              >
+                Rename Break
+              </ContextMenuButton>
 
-          <ContextMenuButton
-            icon={Trash2}
-            variant="destructive"
-            onClick={() => {
-              if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
-              hideContextMenu?.();
-            }}
-          >
-            Delete Event
-          </ContextMenuButton>
+              <ContextMenuButton
+                icon={Trash2}
+                variant="destructive"
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Remove Break
+              </ContextMenuButton>
+            </>
+          ) : (
+            // Regular event menu items
+            <>
+              <ContextMenuButton
+                icon={Edit}
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventEdit) onEventEdit(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Open Ticket
+              </ContextMenuButton>
+
+              <ContextMenuButton
+                icon={Trash2}
+                variant="destructive"
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Delete Event
+              </ContextMenuButton>
+            </>
+          )}
         </CalendarContextMenu>
       )}
 

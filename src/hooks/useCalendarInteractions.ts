@@ -17,6 +17,7 @@ export interface ContextMenu {
   type: "event";
   eventId?: string;
   googleCalendarId?: string;
+  is_break?: boolean;
 }
 
 /**
@@ -62,7 +63,7 @@ export function useCalendarContextMenu(isDragging?: boolean) {
   });
 
   const showContextMenu = useCallback(
-    (x: number, y: number, eventId?: string, googleCalendarId?: string) => {
+    (x: number, y: number, eventId?: string, googleCalendarId?: string, is_break?: boolean) => {
       // Don't show context menu if an event is being dragged
       if (isDragging) {
         return;
@@ -75,6 +76,7 @@ export function useCalendarContextMenu(isDragging?: boolean) {
         type: "event",
         eventId,
         googleCalendarId,
+        is_break,
       });
     },
     [isDragging],
@@ -228,7 +230,13 @@ export function useCalendarInteractions({
       info.jsEvent.preventDefault();
       info.jsEvent.stopPropagation();
 
-      showContextMenu(info.jsEvent.clientX, info.jsEvent.clientY, info.event.id, info.event.extendedProps?.google_calendar_id);
+      showContextMenu(
+        info.jsEvent.clientX,
+        info.jsEvent.clientY,
+        info.event.id,
+        info.event.extendedProps?.google_calendar_id,
+        info.event.extendedProps?.is_break,
+      );
     },
     [showContextMenu],
   );
