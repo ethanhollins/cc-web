@@ -15,28 +15,44 @@ export const STATUS_GROUPS = [
   },
 ];
 
+export function getStatusDisplayName(status: string): string {
+  const statusMap: Record<string, string> = {
+    backlog: "Backlog",
+    todo: "Todo",
+    "in progress": "In Progress",
+    "in review": "In Review",
+    blocked: "Blocked",
+    ongoing: "Ongoing",
+    done: "Done",
+    removed: "Removed",
+  };
+  return statusMap[status.toLowerCase()] || status;
+}
+
 export function statusPillClasses(status: string): string {
-  if (status === "In Progress" || status === "In Review") return "bg-[var(--accent-soft)] text-[var(--accent)]";
-  if (status === "Todo" || status === "Backlog") return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
-  if (status === "Blocked") return "border border-[var(--danger)] bg-transparent text-[var(--danger)]";
-  if (status === "Done") return "border border-[var(--success)] bg-transparent text-[var(--success)]";
-  if (status === "Ongoing") return "bg-[var(--accent-meeting-soft)] text-[var(--accent-meeting)]";
-  if (status === "Removed") return "bg-[var(--surface-muted)] text-[var(--text-muted)] opacity-60";
+  const s = status.toLowerCase();
+  if (s === "in progress" || s === "in review") return "bg-[var(--accent-soft)] text-[var(--accent)]";
+  if (s === "todo" || s === "backlog") return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
+  if (s === "blocked") return "border border-[var(--danger)] bg-transparent text-[var(--danger)]";
+  if (s === "done") return "border border-[var(--success)] bg-transparent text-[var(--success)]";
+  if (s === "ongoing") return "bg-[var(--accent-meeting-soft)] text-[var(--accent-meeting)]";
+  if (s === "removed") return "bg-[var(--surface-muted)] text-[var(--text-muted)] opacity-60";
   return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
 }
 
 export function statusHoverClasses(status: string): string {
-  if (status === "In Progress" || status === "In Review")
+  const s = status.toLowerCase();
+  if (s === "in progress" || s === "in review")
     return "hover:bg-[var(--accent-subtle)] focus:bg-[var(--accent-subtle)] data-[state=checked]:bg-[var(--accent-subtle)]";
-  if (status === "Todo" || status === "Backlog")
+  if (s === "todo" || s === "backlog")
     return "hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 data-[state=checked]:bg-gray-100 dark:data-[state=checked]:bg-gray-800";
-  if (status === "Blocked")
+  if (s === "blocked")
     return "hover:bg-red-50 dark:hover:bg-red-950/30 focus:bg-red-50 dark:focus:bg-red-950/30 data-[state=checked]:bg-red-50 dark:data-[state=checked]:bg-red-950/30";
-  if (status === "Done")
+  if (s === "done")
     return "hover:bg-green-50 dark:hover:bg-green-950/30 focus:bg-green-50 dark:focus:bg-green-950/30 data-[state=checked]:bg-green-50 dark:data-[state=checked]:bg-green-950/30";
-  if (status === "Ongoing")
+  if (s === "ongoing")
     return "hover:bg-[var(--accent-meeting-soft)] focus:bg-[var(--accent-meeting-soft)] data-[state=checked]:bg-[var(--accent-meeting-soft)]";
-  if (status === "Removed")
+  if (s === "removed")
     return "hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 data-[state=checked]:bg-gray-100 dark:data-[state=checked]:bg-gray-800";
   return "hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 data-[state=checked]:bg-gray-100 dark:data-[state=checked]:bg-gray-800";
 }

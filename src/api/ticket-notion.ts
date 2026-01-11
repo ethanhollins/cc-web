@@ -1,4 +1,4 @@
-import type { DocumentHierarchyResponse, TicketContentResponse, TicketDataResponse } from "@/hooks/useTicketData";
+import type { DocumentHierarchyResponse, TicketContentResponse, TicketDataResponse } from "@/hooks/useTickets";
 import { apiClient } from "./client";
 
 export async function fetchTicketNotionData(ticketId: string, signal?: AbortSignal): Promise<TicketDataResponse> {

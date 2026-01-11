@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clock, FileStack, FileText, Link as LinkIcon, MapPin, Plus, Video } from "lucide-react";
+import { Check, Clock, FileStack, FileText, Link as LinkIcon, MapPin, Plus, Trash2, Video, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useTicketContent, useTicketData, useTicketDocuments } from "@/hooks/useTicketData";
+import { deleteTicket, updateTicketDescription } from "@/api/tickets";
+import { useTicketContent, useTicketData, useTicketDocuments } from "@/hooks/useTickets";
 import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
-import type { Ticket } from "@/types/ticket";
+import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/ui/dialog";
+import { VerticalDotsMenu } from "@/ui/vertical-dots-menu";
 import { generateColorFromString } from "@/utils/color-utils";
+import { EpicSelect } from "../planner/EpicSelect";
+import { PrioritySelect } from "../planner/PrioritySelect";
+import { ProjectSelect } from "../planner/ProjectSelect";
+import { StatusSelect } from "../planner/StatusSelect";
+import { TypeSelect } from "../planner/TypeSelect";
 
 interface LoadingSkeletonProps {
   className?: string;
@@ -40,37 +48,14 @@ interface TicketModalProps {
   events: CalendarEvent[];
   onEventUpdate?: (updater: (prevEvents: CalendarEvent[]) => CalendarEvent[]) => void;
   projects: Project[];
+  tickets: Ticket[];
   ticket?: Ticket | null;
-}
-
-// Map ticket type to badge styles (aligned with old modal)
-function getTicketTypeClasses(type: string | undefined) {
-  const t = (type ?? "task").toLowerCase();
-  const map: Record<string, string> = {
-    task: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-    story: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    bug: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
-    epic: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
-    subtask: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-  };
-  return map[t] ?? "bg-[var(--surface-muted)] text-[var(--text)]";
-}
-
-// Map ticket status to pill styles (aligned with old modal)
-function getStatusClasses(status: string | undefined) {
-  const s = status ?? "Unknown";
-  const map: Record<string, string> = {
-    Backlog: "bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300",
-    Todo: "bg-gray-200 text-gray-700 dark:bg-gray-700/60 dark:text-gray-300",
-    "In Progress": "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400",
-    "In Review": "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400",
-    Blocked: "bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
-    Ongoing: "bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400",
-    Done: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-    Removed: "bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400",
-    Unknown: "bg-gray-100 text-gray-800 dark:bg-gray-800/60 dark:text-gray-300",
-  };
-  return map[s] ?? map.Unknown;
+  onStatusChange?: (ticketId: string, newStatus: TicketStatus) => void;
+  onTypeChange?: (ticketId: string, newType: TicketType) => void;
+  onProjectChange?: (ticketId: string, newProjectId: string) => void;
+  onEpicChange?: (ticketId: string, newEpicId: string) => void;
+  onPriorityChange?: (ticketId: string, newPriority: string) => void;
+  onTicketDelete?: (ticketId: string) => void;
 }
 
 // Meeting block (simplified port of old MeetingUI)
@@ -192,17 +177,40 @@ function MeetingUI({ event }: { event: CalendarEvent | null }) {
 /**
  * Modal for viewing ticket/event details (ported from old implementation, using shadcn Dialog)
  */
-export function TicketModal({ open, onClose, ticketId, eventId, events, projects, ticket }: TicketModalProps) {
+export function TicketModal({
+  open,
+  onClose,
+  ticketId,
+  eventId,
+  events,
+  projects,
+  tickets,
+  ticket,
+  onStatusChange,
+  onTypeChange,
+  onProjectChange,
+  onEpicChange,
+  onPriorityChange,
+  onTicketDelete,
+}: TicketModalProps) {
   const activeTicketId = ticket?.ticket_id ?? ticketId;
 
   const { data: ticketData, loading: _ticketLoading, error: _ticketError } = useTicketData(open ? (activeTicketId ?? null) : null);
-  const { content: ticketContent, loading: contentLoading, error: contentError } = useTicketContent(open ? (activeTicketId ?? null) : null);
+  const {
+    content: ticketContent,
+    loading: contentLoading,
+    error: contentError,
+    setContent: setTicketContent,
+  } = useTicketContent(open ? (activeTicketId ?? null) : null);
   const { documents: ticketDocuments, loading: _documentsLoading, error: _documentsError } = useTicketDocuments(open ? (activeTicketId ?? null) : null);
 
   // State for tracking which sections are being added/edited
   const [isAddingDescription, setIsAddingDescription] = useState(false);
   const [isAddingLinkedTicket, setIsAddingLinkedTicket] = useState(false);
   const [isAddingDocument, setIsAddingDocument] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const currentEvent = useMemo(() => {
     if (!events.length) return null;
@@ -221,7 +229,13 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
     if (ticket) return ticket;
     return null;
   }, [currentEvent, ticket]);
-  console.log("Current Event:", currentEvent);
+
+  // Filter tickets to only those from the current ticket's project for epic selection
+  const projectTickets = useMemo(() => {
+    if (!baseTicket?.project_id) return tickets;
+    const filtered = tickets.filter((t) => t.project_id === baseTicket.project_id);
+    return filtered;
+  }, [tickets, baseTicket]);
 
   // Determine if we have any substantial content
   const hasDescription = Boolean(ticketContent && ticketContent.trim().length > 0);
@@ -233,17 +247,20 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
   const isCompactMode =
     !hasDescription && !hasSubtasks && !hasLinkedTickets && !hasDocuments && !isAddingDescription && !isAddingLinkedTicket && !isAddingDocument;
 
-  const typeClasses = getTicketTypeClasses(baseTicket?.ticket_type);
-  const statusClasses = getStatusClasses(baseTicket?.ticket_status);
-
-  const projectForTicket = useMemo(() => {
-    if (!baseTicket) return null;
-    if (baseTicket.project) return baseTicket.project;
-    if (baseTicket.project_id) {
-      return projects.find((p) => p.project_id === baseTicket.project_id) ?? null;
+  // Initialize edited description when content loads or when adding description
+  useEffect(() => {
+    if (ticketContent !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEditedDescription(ticketContent || "");
     }
-    return null;
-  }, [baseTicket, projects]);
+  }, [ticketContent]);
+
+  useEffect(() => {
+    if (isAddingDescription && !hasDescription) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsEditingDescription(true);
+    }
+  }, [isAddingDescription, hasDescription]);
 
   const assigneeInitials = (name?: string) =>
     (name ?? "")
@@ -257,15 +274,115 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
   const assigneeName = baseTicket?.assignee ?? "Ethan Hollins"; // Placeholder for assignee name
   const avatarColor = generateColorFromString(assigneeName);
 
+  const handleStatusChange = (newStatus: TicketStatus) => {
+    if (onStatusChange && activeTicketId) {
+      onStatusChange(activeTicketId, newStatus);
+    }
+  };
+
+  const handleTypeChange = (newType: TicketType) => {
+    if (onTypeChange && activeTicketId) {
+      onTypeChange(activeTicketId, newType);
+    }
+  };
+
+  const handleProjectChange = (newProjectId: string) => {
+    if (onProjectChange && activeTicketId) {
+      const projectId = newProjectId === "none" ? "" : newProjectId;
+      onProjectChange(activeTicketId, projectId);
+    }
+  };
+
+  const handleEpicChange = (newEpicId: string | null) => {
+    if (onEpicChange && activeTicketId) {
+      const epicId = newEpicId === "none" || !newEpicId ? "" : newEpicId;
+      onEpicChange(activeTicketId, epicId);
+    }
+  };
+
+  const handlePriorityChange = (newPriority: string | null) => {
+    if (onPriorityChange && activeTicketId) {
+      const priority = newPriority === "none" || !newPriority ? "" : newPriority;
+      onPriorityChange(activeTicketId, priority);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    if (!activeTicketId) return;
+
+    // Store previous content for rollback on error
+    const previousContent = ticketContent;
+
+    try {
+      // Optimistically update the content
+      setTicketContent(editedDescription);
+
+      // Exit editing mode immediately for responsive UI
+      setIsEditingDescription(false);
+      setIsAddingDescription(false);
+
+      // Make the API call
+      await updateTicketDescription(activeTicketId, editedDescription);
+    } catch (error) {
+      console.error("Error updating description:", error);
+      // Rollback to previous content on error
+      setTicketContent(previousContent);
+      // TODO: Show error toast/notification
+    }
+  };
+
+  const handleCancelDescription = () => {
+    // Revert to original content
+    setEditedDescription(ticketContent || "");
+    setIsEditingDescription(false);
+
+    // If there's no description, go back to compact mode
+    if (!hasDescription) {
+      setIsAddingDescription(false);
+    }
+  };
+
+  const handleDescriptionClick = () => {
+    if (hasDescription && !isEditingDescription) {
+      setIsEditingDescription(true);
+    }
+  };
+
+  const handleDeleteTicket = async () => {
+    if (!activeTicketId) return;
+
+    try {
+      await deleteTicket(activeTicketId);
+      // Close the modal first
+      onClose();
+      // Notify parent component to remove from list
+      onTicketDelete?.(activeTicketId);
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+      // TODO: Show error toast/notification
+    }
+  };
+
+  const menuItems = [
+    {
+      label: "Permanently Delete",
+      icon: <Trash2 className="h-4 w-4" />,
+      variant: "danger" as const,
+      onClick: () => setShowDeleteConfirm(true),
+    },
+  ];
+
   return (
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          // Reset "adding" states when modal closes
+          // Reset "adding" and "editing" states when modal closes
           setIsAddingDescription(false);
           setIsAddingLinkedTicket(false);
           setIsAddingDocument(false);
+          setIsEditingDescription(false);
+          setEditedDescription("");
           onClose();
         }
       }}
@@ -273,7 +390,12 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
       <DialogContent
         className={`h-[100svh] max-h-[100svh] w-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-0 ${
           isCompactMode ? "max-w-[100vw] sm:h-auto sm:max-h-[92vh] sm:max-w-[420px]" : "max-w-[100vw] sm:h-auto sm:max-h-[92vh] sm:max-w-[920px]"
-        } overflow-hidden`}
+        } overflow-hidden [&>button]:hidden`}
+        onInteractOutside={(e) => {
+          // Prevent dialog from closing when interacting with select dropdowns
+          // which are portaled outside the dialog
+          e.preventDefault();
+        }}
       >
         {isCompactMode ? (
           // COMPACT MODE: Single column
@@ -282,9 +404,9 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
             <div className="mb-3 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 {baseTicket?.ticket_type && (
-                  <span className={`inline-flex h-6 items-center justify-center rounded-md px-2 text-xs font-semibold ${typeClasses}`}>
-                    {baseTicket.ticket_type}
-                  </span>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <TypeSelect type={baseTicket.ticket_type} onTypeChange={handleTypeChange} />
+                  </div>
                 )}
                 {baseTicket?.ticket_key && (
                   <span className="inline-flex h-6 flex-shrink-0 items-center justify-center rounded-sm bg-[var(--surface-muted)] px-2 text-xs font-semibold text-[var(--text)]">
@@ -292,12 +414,20 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                   </span>
                 )}
               </div>
-              <div
-                role="status"
-                aria-label={`Status: ${baseTicket?.ticket_status ?? "Unknown"}`}
-                className={`mr-4 inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${statusClasses}`}
-              >
-                {baseTicket?.ticket_status ?? "Unknown"}
+              <div className="flex items-center gap-1">
+                {baseTicket?.ticket_status && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <StatusSelect status={baseTicket.ticket_status} onStatusChange={handleStatusChange} />
+                  </div>
+                )}
+                <VerticalDotsMenu items={menuItems} />
+                <button
+                  onClick={onClose}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
             </div>
 
@@ -347,15 +477,21 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
               <div className="flex min-w-0 flex-col gap-2 rounded-md bg-[var(--surface-muted)] p-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Project:</span>
-                  <span className="min-w-0 truncate font-medium text-[var(--text)]">{projectForTicket?.title ?? "-"}</span>
+                  <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                    <ProjectSelect projectId={baseTicket?.project_id} projects={projects} onProjectChange={handleProjectChange} />
+                  </div>
                 </div>
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Epic:</span>
-                  <span className="min-w-0 truncate font-medium text-[var(--text)]">{baseTicket?.epic ?? "-"}</span>
+                  <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                    <EpicSelect epicId={baseTicket?.epic_id} tickets={tickets} projectId={baseTicket?.project_id} onEpicChange={handleEpicChange} />
+                  </div>
                 </div>
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Priority:</span>
-                  <span className="min-w-0 truncate font-medium text-[var(--text)]">{baseTicket?.priority ?? "-"}</span>
+                  <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                    <PrioritySelect priority={baseTicket?.priority} onPriorityChange={handlePriorityChange} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -397,9 +533,9 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
             <div className="flex min-w-0 flex-1 flex-col overflow-auto p-6">
               <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
                 {baseTicket?.ticket_type && (
-                  <span className={`inline-flex h-6 items-center justify-center rounded-md px-2 text-xs font-semibold ${typeClasses}`}>
-                    {baseTicket.ticket_type}
-                  </span>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <TypeSelect type={baseTicket.ticket_type} onTypeChange={handleTypeChange} />
+                  </div>
                 )}
                 {baseTicket?.ticket_key && (
                   <span className="inline-flex h-6 flex-shrink-0 items-center justify-center rounded-sm bg-[var(--surface-muted)] px-2 text-xs font-semibold text-[var(--text)]">
@@ -420,19 +556,42 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                 <div className="mb-4">
                   <div className="mb-2 flex items-center justify-between">
                     <h4 className="text-sm font-semibold text-[var(--text-muted)]">Description</h4>
-                    {isAddingDescription && !hasDescription && (
-                      <button onClick={() => setIsAddingDescription(false)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)]">
-                        Cancel
-                      </button>
-                    )}
                   </div>
                   {contentLoading ? (
                     <DescriptionContentSkeleton />
                   ) : contentError ? (
                     <p className="text-sm text-[var(--danger)]">Error loading description: {contentError}</p>
+                  ) : isEditingDescription ? (
+                    <div className="relative">
+                      <textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        className="min-h-[200px] w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        placeholder="Add a description..."
+                        autoFocus
+                      />
+                      <div className="mt-2 flex justify-end gap-2">
+                        <button
+                          onClick={handleCancelDescription}
+                          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--danger)] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--danger)]"
+                          aria-label="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={handleSaveDescription}
+                          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--accent)] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                          aria-label="Save"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   ) : hasDescription ? (
-                    <div className="prose prose-sm max-w-none [&>*]:text-[var(--text)]">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{ticketContent}</ReactMarkdown>
+                    <div onClick={handleDescriptionClick} className="cursor-pointer rounded-md p-3 transition-colors hover:bg-[var(--surface-muted)]">
+                      <div className="prose prose-sm max-w-none [&>*]:text-[var(--text)]">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{ticketContent}</ReactMarkdown>
+                      </div>
                     </div>
                   ) : (
                     <div className="rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--surface-muted)] p-4 text-center">
@@ -576,14 +735,22 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
 
             {/* Right: sidebar */}
             <aside className="flex w-full flex-shrink-0 flex-col border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] p-4 md:w-80 md:border-l md:border-t-0 md:pb-4 md:pt-4">
-              {/* Status pill */}
-              <div className="mb-4 flex items-start">
-                <div
-                  role="status"
-                  aria-label={`Status: ${baseTicket?.ticket_status ?? "Unknown"}`}
-                  className={`inline-flex max-w-[180px] items-center justify-center rounded-md px-3 py-1 text-sm font-semibold ${statusClasses}`}
-                >
-                  {baseTicket?.ticket_status ?? "Unknown"}
+              {/* Status pill and menu */}
+              <div className="mb-4 flex items-start justify-between">
+                {baseTicket?.ticket_status && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <StatusSelect status={baseTicket.ticket_status} onStatusChange={handleStatusChange} />
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <VerticalDotsMenu items={menuItems} />
+                  <button
+                    onClick={onClose}
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    aria-label="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
 
@@ -605,15 +772,21 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                 <div className="mt-3 flex min-w-0 flex-col gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Project:</span>
-                    <span className="min-w-0 truncate font-medium text-[var(--text)]">{projectForTicket?.title ?? "-"}</span>
+                    <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                      <ProjectSelect projectId={baseTicket?.project_id} projects={projects} onProjectChange={handleProjectChange} />
+                    </div>
                   </div>
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Epic:</span>
-                    <span className="min-w-0 truncate font-medium text-[var(--text)]">{baseTicket?.epic ?? "-"}</span>
+                    <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                      <EpicSelect epicId={baseTicket?.epic_id} tickets={projectTickets} projectId={baseTicket?.project_id} onEpicChange={handleEpicChange} />
+                    </div>
                   </div>
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Priority:</span>
-                    <span className="min-w-0 truncate font-medium text-[var(--text)]">{baseTicket?.priority ?? "-"}</span>
+                    <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                      <PrioritySelect priority={baseTicket?.priority} onPriorityChange={handlePriorityChange} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -651,6 +824,17 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
           </div>
         )}
       </DialogContent>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Ticket"
+        description="Are you sure you want to permanently delete this ticket? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDeleteTicket}
+      />
     </Dialog>
   );
 }
