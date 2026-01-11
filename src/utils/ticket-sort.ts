@@ -1,11 +1,13 @@
 import type { Ticket } from "@/types/ticket";
 
 /**
- * Sort tickets by Done status (last), type, status, and ticket key
+ * Sort tickets by status priority, type, and ticket key
  * Order:
+ * - Blocked tickets at the very top
+ * - Active tickets (In Review → In Progress → Todo → Ongoing)
  * - Done tickets at the bottom
+ * - Removed tickets below Done (very bottom)
  * - By type: Story → Task → Bug → Event
- * - By status: In Review → In Progress → Todo → Ongoing → Blocked
  * - Finally by ticket key
  */
 export function sortTickets(list: Ticket[]): Ticket[] {
@@ -30,10 +32,22 @@ export function sortTickets(list: Ticket[]): Ticket[] {
     const aTypeLower = (a.ticket_type || "").toLowerCase();
     const bTypeLower = (b.ticket_type || "").toLowerCase();
 
-    // Done tickets at the bottom
+    // Blocked tickets at the very top
+    const aIsBlocked = aStatusLower === "blocked";
+    const bIsBlocked = bStatusLower === "blocked";
+    if (aIsBlocked && !bIsBlocked) return -1; // a is Blocked, goes to top
+    if (!aIsBlocked && bIsBlocked) return 1; // b is Blocked, goes to top
+
+    // Done and Removed tickets at the bottom (Removed below Done)
     const aIsDone = aStatusLower === "done";
     const bIsDone = bStatusLower === "done";
-    if (aIsDone !== bIsDone) return aIsDone ? 1 : -1;
+    const aIsRemoved = aStatusLower === "removed";
+    const bIsRemoved = bStatusLower === "removed";
+
+    if (aIsRemoved && !bIsRemoved) return 1; // a is Removed, goes to bottom
+    if (!aIsRemoved && bIsRemoved) return -1; // b is Removed, goes to bottom
+    if (aIsDone && !bIsDone && !bIsRemoved) return 1; // a is Done, goes below non-completed
+    if (!aIsDone && bIsDone && !aIsRemoved) return -1; // b is Done, goes below non-completed
 
     // Then by type: Story, Task, Bug, Event
     const aTypeRank = typeRank[aTypeLower] ?? 999;

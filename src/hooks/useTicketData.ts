@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { fetchTicketDocuments, fetchTicketNotionContent, fetchTicketNotionData } from "@/api/ticket-notion";
+import { fetchTicketDetails } from "@/api/tickets";
+import type { TicketDetailsResponse } from "@/types/ticket";
 import { isAbortError } from "@/utils/error-utils";
 
-export interface TicketNotionResponse {
+export interface TicketDataResponse {
   title: string;
   ticket_key: string;
   ticket_status: string;
@@ -37,8 +38,8 @@ export interface DocumentHierarchyResponse {
   }>;
 }
 
-export function useTicketNotionData(ticketId: string | null) {
-  const [data, setData] = useState<TicketNotionResponse | null>(null);
+export function useTicketData(ticketId: string | null) {
+  const [data, setData] = useState<TicketDataResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +57,28 @@ export function useTicketNotionData(ticketId: string | null) {
         setLoading(true);
         setError(null);
 
-        const result = await fetchTicketNotionData(ticketId, controller.signal);
-        setData(result);
+        const result = await fetchTicketDetails(ticketId, controller.signal);
+        // Map the detailed response to the expected format
+        const ticketData = result.ticket;
+        setData({
+          title: ticketData.title,
+          ticket_key: ticketData.ticket_key,
+          ticket_status: ticketData.ticket_status,
+          ticket_type: ticketData.ticket_type,
+          epic: ticketData.epic_id || "",
+          notion_url: "", // Not provided in this endpoint
+          assignee: "", // Not provided in this endpoint
+          priority: "Medium", // Not provided in this endpoint
+          created_time: "", // Not provided in this endpoint
+          last_edited_time: "", // Not provided in this endpoint
+          subtasks: [], // Will be handled separately
+          linked_tickets: [], // Will be handled separately
+          project_title: "", // Not provided in this endpoint
+        });
       } catch (err: unknown) {
         if (isAbortError(err)) return;
-        console.error("Error fetching ticket notion data:", err);
-        setError(err instanceof Error ? err.message : "Unknown error fetching ticket notion data");
+        console.error("Error fetching ticket data:", err);
+        setError(err instanceof Error ? err.message : "Unknown error fetching ticket data");
       } finally {
         setLoading(false);
       }
@@ -75,7 +92,7 @@ export function useTicketNotionData(ticketId: string | null) {
   return { data, loading, error };
 }
 
-export function useTicketNotionContent(ticketId: string | null) {
+export function useTicketContent(ticketId: string | null) {
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,17 +111,15 @@ export function useTicketNotionContent(ticketId: string | null) {
         setLoading(true);
         setError(null);
 
-        const result = await fetchTicketNotionContent(ticketId, controller.signal);
+        const result = await fetchTicketDetails(ticketId, controller.signal);
 
-        if (result.content.startsWith("## Description\n\n")) {
-          result.content = result.content.replace("## Description\n\n", "");
-        }
-
-        setContent(result.content);
+        // Use description directly from API response
+        const descriptionValue = result.ticket.description || null;
+        setContent(descriptionValue);
       } catch (err: unknown) {
         if (isAbortError(err)) return;
-        console.error("Error fetching ticket notion content:", err);
-        setError(err instanceof Error ? err.message : "Unknown error fetching ticket notion content");
+        console.error("Error fetching ticket content:", err);
+        setError(err instanceof Error ? err.message : "Unknown error fetching ticket content");
       } finally {
         setLoading(false);
       }
@@ -137,8 +152,12 @@ export function useTicketDocuments(ticketId: string | null) {
         setLoading(true);
         setError(null);
 
-        const result = await fetchTicketDocuments(ticketId, controller.signal);
-        setDocuments(result);
+        // Documents will be handled separately, return empty for now
+        setDocuments({
+          project: [],
+          epic: [],
+          ticket: [],
+        });
       } catch (err: unknown) {
         if (isAbortError(err)) return;
         console.error("Error fetching ticket documents:", err);

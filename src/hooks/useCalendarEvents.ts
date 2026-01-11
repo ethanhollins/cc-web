@@ -191,16 +191,24 @@ export function useCalendarEvents(selectedDate: Date) {
       try {
         const event = events.find((e) => e.google_id === eventId);
 
-        if (!event || !event.google_calendar_id) {
-          console.warn("Event or calendar ID not found for deletion:", eventId);
+        if (!event) {
+          console.warn("Event not found for deletion:", eventId);
           return;
         }
+
+        // Break events don't require calendar_id, regular events do
+        if (!event.is_break && !event.google_calendar_id) {
+          console.warn("Calendar ID not found for non-break event deletion:", eventId);
+          return;
+        }
+
         // Optimistically remove from local state first
         const previousEvents = events;
         updateEvents((prevEvents) => prevEvents.filter((e) => e.google_id !== eventId));
 
         try {
-          await apiDeleteEvent(event.google_id as string, event.google_calendar_id);
+          // For break events, calendar_id can be empty string
+          await apiDeleteEvent(event.google_id as string, event.google_calendar_id || "");
         } catch (apiError) {
           console.error("Failed to delete event on server, reverting local delete:", apiError);
           // Revert optimistic delete on failure

@@ -63,9 +63,8 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, initialD
       const created = await createTicket(
         {
           title: newTicketTitle.trim(),
-          projectNotionId: project.notion_id,
-          internalProjectId: project.project_id,
-          type: newTicketType,
+          projectId: project.project_id,
+          ticketType: newTicketType,
           // If we have event date range (from calendar), use start/end dates
           ...(newEventDateRange && {
             startDate: toTimezone(newEventDateRange.startDate),

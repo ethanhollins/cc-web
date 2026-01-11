@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Clock, MapPin, Video } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useTicketDocuments, useTicketNotionContent, useTicketNotionData } from "@/hooks/useTicketNotionData";
+import { useTicketContent, useTicketData, useTicketDocuments } from "@/hooks/useTicketData";
 import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
@@ -193,9 +193,9 @@ function MeetingUI({ event }: { event: CalendarEvent | null }) {
 export function TicketModal({ open, onClose, ticketId, eventId, events, projects, ticket }: TicketModalProps) {
   const activeTicketId = ticket?.ticket_id ?? ticketId;
 
-  const { data: ticketData, loading: ticketLoading, error: ticketError } = useTicketNotionData(open ? (activeTicketId ?? null) : null);
-  const { content: ticketContent, loading: contentLoading, error: contentError } = useTicketNotionContent(open ? (activeTicketId ?? null) : null);
-  const { documents: ticketDocuments, loading: documentsLoading, error: documentsError } = useTicketDocuments(open ? (activeTicketId ?? null) : null);
+  const { data: ticketData, loading: _ticketLoading, error: _ticketError } = useTicketData(open ? (activeTicketId ?? null) : null);
+  const { content: ticketContent, loading: contentLoading, error: contentError } = useTicketContent(open ? (activeTicketId ?? null) : null);
+  const { documents: ticketDocuments, loading: _documentsLoading, error: _documentsError } = useTicketDocuments(open ? (activeTicketId ?? null) : null);
   const currentEvent = useMemo(() => {
     if (!events.length) return null;
     if (eventId) {
@@ -234,10 +234,6 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
       .slice(0, 2)
       .join("")
       .toUpperCase();
-
-  // Prefer canonical Notion timestamps when available (aligned with old modal)
-  const createdTime = ticketData?.created_time ?? baseTicket?.created_time;
-  const lastEditedTime = ticketData?.last_edited_time ?? baseTicket?.last_edited_time;
 
   return (
     <Dialog
@@ -286,18 +282,10 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
               )}
             </div>
 
-            {/* Subtasks */}
-            <div className="mb-4">
-              <h4 className="mb-2 text-sm font-semibold text-gray-600">Subtasks</h4>
-              {ticketLoading ? (
-                <div className="space-y-2">
-                  <LoadingSkeleton className="w-full" />
-                  <LoadingSkeleton className="w-5/6" />
-                  <LoadingSkeleton className="w-4/5" />
-                </div>
-              ) : ticketError ? (
-                <p className="text-sm text-red-600">Error loading subtasks: {ticketError}</p>
-              ) : ticketData && ticketData.subtasks && ticketData.subtasks.length > 0 ? (
+            {/* Subtasks - will be handled separately, hidden for now */}
+            {ticketData && ticketData.subtasks && ticketData.subtasks.length > 0 && (
+              <div className="mb-4">
+                <h4 className="mb-2 text-sm font-semibold text-gray-600">Subtasks</h4>
                 <ul className="space-y-2">
                   {ticketData.subtasks.map((subtask, index) => (
                     <li key={index} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
@@ -307,23 +295,13 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="text-sm text-gray-400">No subtasks.</p>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Linked tickets */}
-            <div className="mb-4">
-              <h4 className="mb-2 text-sm font-semibold text-gray-600">Linked tickets</h4>
-              {ticketLoading ? (
-                <div className="space-y-2">
-                  <LoadingSkeleton className="w-full" />
-                  <LoadingSkeleton className="w-5/6" />
-                  <LoadingSkeleton className="w-4/5" />
-                </div>
-              ) : ticketError ? (
-                <p className="text-sm text-red-600">Error loading linked tickets: {ticketError}</p>
-              ) : ticketData && ticketData.linked_tickets && ticketData.linked_tickets.length > 0 ? (
+            {/* Linked tickets - will be handled separately, hidden for now */}
+            {ticketData && ticketData.linked_tickets && ticketData.linked_tickets.length > 0 && (
+              <div className="mb-4">
+                <h4 className="mb-2 text-sm font-semibold text-gray-600">Linked tickets</h4>
                 <ul className="space-y-2">
                   {ticketData.linked_tickets.map((linked, index) => (
                     <li key={index} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm">
@@ -333,23 +311,13 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="text-sm text-gray-400">No linked tickets.</p>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Related documents */}
-            <div className="mb-4">
-              <h4 className="mb-2 text-sm font-semibold text-gray-600">Related documents</h4>
-              {documentsLoading ? (
-                <div className="space-y-2">
-                  <LoadingSkeleton className="w-full" />
-                  <LoadingSkeleton className="w-5/6" />
-                  <LoadingSkeleton className="w-4/5" />
-                </div>
-              ) : documentsError ? (
-                <p className="text-sm text-red-600">Error loading documents: {documentsError}</p>
-              ) : ticketDocuments && (ticketDocuments.project.length > 0 || ticketDocuments.epic.length > 0 || ticketDocuments.ticket.length > 0) ? (
+            {/* Related documents - will be handled separately, hidden for now */}
+            {ticketDocuments && (ticketDocuments.project.length > 0 || ticketDocuments.epic.length > 0 || ticketDocuments.ticket.length > 0) && (
+              <div className="mb-4">
+                <h4 className="mb-2 text-sm font-semibold text-gray-600">Related documents</h4>
                 <div className="space-y-2">
                   {ticketDocuments.project.length > 0 && (
                     <div>
@@ -396,10 +364,8 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                     </div>
                   )}
                 </div>
-              ) : (
-                <p className="text-sm text-gray-400">No related documents.</p>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Right: sidebar (stacked below on mobile) */}
@@ -458,14 +424,9 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
               <div className="text-xs text-gray-400">No notes yet</div>
             </div>
 
-            {/* Created / Updated meta + Go to Notion */}
-            <div className="mt-auto">
-              <div className="mb-4 text-xs text-gray-500">
-                <div>Created: {createdTime ? new Date(createdTime).toLocaleString() : "-"}</div>
-                <div className="mt-1">Updated: {lastEditedTime ? new Date(lastEditedTime).toLocaleString() : "-"}</div>
-              </div>
-
-              {baseTicket?.notion_url && (
+            {/* Go to Notion - hidden for now since notion_url isn't in API response */}
+            {baseTicket?.notion_url && (
+              <div className="mt-auto">
                 <a
                   href={baseTicket.notion_url}
                   target="_blank"
@@ -475,8 +436,8 @@ export function TicketModal({ open, onClose, ticketId, eventId, events, projects
                 >
                   Go to Notion
                 </a>
-              )}
-            </div>
+              </div>
+            )}
           </aside>
         </div>
       </DialogContent>

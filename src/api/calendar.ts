@@ -63,3 +63,21 @@ export async function deleteEvent(eventId: string, calendarId: string, signal?: 
     throw new Error(`Failed to delete event: ${response.status}`);
   }
 }
+
+export async function createBreak(
+  breakData: {
+    title: string;
+    start_date: string;
+    end_date: string;
+    calendar_id?: string;
+  },
+  signal?: AbortSignal,
+): Promise<{ event_id: string }> {
+  const response = await apiClient.post("/events/breaks", breakData, { signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to create break: ${response.status}`);
+  }
+
+  return response.data as { event_id: string };
+}

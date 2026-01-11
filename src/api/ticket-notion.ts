@@ -1,14 +1,14 @@
-import type { DocumentHierarchyResponse, TicketContentResponse, TicketNotionResponse } from "@/hooks/useTicketNotionData";
+import type { DocumentHierarchyResponse, TicketContentResponse, TicketDataResponse } from "@/hooks/useTicketData";
 import { apiClient } from "./client";
 
-export async function fetchTicketNotionData(ticketId: string, signal?: AbortSignal): Promise<TicketNotionResponse> {
+export async function fetchTicketNotionData(ticketId: string, signal?: AbortSignal): Promise<TicketDataResponse> {
   const response = await apiClient.get(`/tickets/${ticketId}/notion`, { signal });
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch ticket data: ${response.status}`);
   }
 
-  return response.data as TicketNotionResponse;
+  return response.data as TicketDataResponse;
 }
 
 export async function fetchTicketNotionContent(ticketId: string, signal?: AbortSignal): Promise<TicketContentResponse> {

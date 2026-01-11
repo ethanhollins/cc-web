@@ -3,10 +3,12 @@
 import React from "react";
 import { AlertCircle, BookOpen, CalendarDays, CalendarMinus, CalendarPlus, Check, CheckSquare, Diamond, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Ticket, TicketType } from "@/types/ticket";
+import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { Badge } from "@/ui/badge";
 import { Card } from "@/ui/card";
 import { getAnchoredPopoverPosition } from "@/utils/calendar-popover-position";
+import { statusPillClasses } from "@/utils/ticket-status-utils";
+import { StatusSelect } from "./StatusSelect";
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -15,15 +17,8 @@ interface TicketCardProps {
   onTicketClick: (ticket: Ticket) => void;
   onUnscheduleTicket?: (ticketId: string) => void;
   onOpenSchedulePicker?: (ticketId: string, position: { x: number; y: number }) => void;
+  onStatusChange?: (ticketId: string, newStatus: TicketStatus) => void;
   eventTimeRange?: string | null;
-}
-
-function statusPillClasses(status: string) {
-  if (status === "In Progress" || status === "In Review") return "bg-[var(--accent-soft)] text-[var(--accent)]";
-  if (status === "Todo" || status === "Backlog") return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
-  if (status === "Blocked") return "border border-[var(--danger)] bg-transparent text-[var(--danger)]";
-  if (status === "Done") return "border border-[var(--success)] bg-transparent text-[var(--success)]";
-  return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
 }
 
 function ticketTypeIcon(type: TicketType, isDone: boolean) {
@@ -51,15 +46,15 @@ function ticketTypeStripClasses(type: TicketType, isDone: boolean) {
 
   switch (type.toLowerCase()) {
     case "bug":
-      return "bg-red-50 text-[var(--danger)]";
+      return "bg-red-50 dark:bg-red-950/30 text-[var(--danger)]";
     case "story":
-      return "bg-emerald-50 text-[var(--success)]";
+      return "bg-green-50 dark:bg-green-950/30 text-[var(--success)]";
     case "epic":
-      return "bg-indigo-50 text-[var(--accent)]";
+      return "bg-[var(--accent-subtle)] text-[var(--accent)]";
     case "subtask":
-      return "bg-sky-50 text-[var(--accent)]";
+      return "bg-[var(--accent-subtle)] text-[var(--accent)]";
     case "event":
-      return "bg-slate-50 text-[var(--text-muted)]";
+      return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
     default:
       return "bg-[var(--accent-subtle)] text-[var(--accent)]";
   }
@@ -80,10 +75,25 @@ function meetingPlatformLabel(platform?: Ticket["meeting_platform"]): string {
   }
 }
 
-export function TicketCard({ ticket, isDone, isEventToday, onTicketClick, onUnscheduleTicket, onOpenSchedulePicker, eventTimeRange }: TicketCardProps) {
+export function TicketCard({
+  ticket,
+  isDone,
+  isEventToday,
+  onTicketClick,
+  onUnscheduleTicket,
+  onOpenSchedulePicker,
+  onStatusChange,
+  eventTimeRange,
+}: TicketCardProps) {
   const isEventTicket = ticket.ticket_type.toLowerCase() === "event";
   const codeLength = ticket.ticket_key.length;
   const codeTranslateY = codeLength * 7.3; // px offset to keep different lengths visually balanced
+
+  const handleStatusChange = (newStatus: TicketStatus) => {
+    if (onStatusChange) {
+      onStatusChange(ticket.ticket_id, newStatus);
+    }
+  };
 
   return (
     <Card
@@ -154,9 +164,12 @@ export function TicketCard({ ticket, isDone, isEventToday, onTicketClick, onUnsc
                 <span>{meetingPlatformLabel(ticket.meeting_platform)}</span>
               </div>
             ) : (
-              !isEventToday && (
+              !isEventToday &&
+              (onStatusChange ? (
+                <StatusSelect status={ticket.ticket_status} onStatusChange={handleStatusChange} />
+              ) : (
                 <Badge className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusPillClasses(ticket.ticket_status))}>{ticket.ticket_status}</Badge>
-              )
+              ))
             )}
           </div>
 

@@ -9,7 +9,7 @@ import { TicketCard } from "@/components/planner/TicketCard";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
-import type { Ticket } from "@/types/ticket";
+import type { Ticket, TicketStatus } from "@/types/ticket";
 import { ScrollArea } from "@/ui/scroll-area";
 import { sortTickets } from "@/utils/ticket-sort";
 
@@ -23,6 +23,7 @@ interface TicketsSidebarProps {
   onTicketClick: (ticket: Ticket) => void;
   onScheduleTicket?: (ticketId: string, scheduledDate: string) => void;
   onUnscheduleTicket?: (ticketId: string) => void;
+  onStatusChange?: (ticketId: string, newStatus: TicketStatus) => void;
   onCreateTicket?: (ticket: Ticket, projectKey: string) => void;
   onUnselectCalendar?: () => void;
 }
@@ -43,6 +44,7 @@ export function TicketsSidebar({
   onTicketClick,
   onScheduleTicket,
   onUnscheduleTicket,
+  onStatusChange,
   onCreateTicket,
   onUnselectCalendar,
 }: TicketsSidebarProps) {
@@ -162,9 +164,11 @@ export function TicketsSidebar({
         const status = t.ticket_status;
         const statusLower = status.toLowerCase();
         const isDone = statusLower === "done";
+        const isRemoved = statusLower === "removed";
+        const isCompletedStatus = isDone || isRemoved;
 
-        // Exclude removed / backlog / blocked tickets from today view
-        if (["removed", "backlog", "blocked"].includes(statusLower)) return false;
+        // Exclude backlog / blocked tickets from today view
+        if (["backlog", "blocked"].includes(statusLower)) return false;
 
         // Check if ticket has calendar event on or before selected day
         const hasEventOnOrBeforeDay = eventTicketIdsOnOrBeforeDay?.has(t.ticket_id);
@@ -176,19 +180,40 @@ export function TicketsSidebar({
           return hasEventForDay || false;
         }
 
-        // For Done tickets with events: show from first event date through last event date
-        if (isDone && eventDateRange) {
-          return day >= eventDateRange.firstEventDate && day <= eventDateRange.lastEventDate;
+        // For Done/Removed tickets:
+        if (isCompletedStatus) {
+          // If has completion_date, show up until completion_date
+          if (t.completion_date) {
+            const completionDate = new Date(t.completion_date);
+            completionDate.setHours(0, 0, 0, 0);
+
+            // If has calendar events, show from first event through completion_date
+            if (eventDateRange) {
+              return day >= eventDateRange.firstEventDate && day <= completionDate;
+            }
+
+            // If no calendar events, show only on completion_date
+            return completionDate.getTime() === day.getTime();
+          }
+
+          // If no completion_date, use existing behavior
+          // With events: show from first event date through last event date
+          if (eventDateRange) {
+            return day >= eventDateRange.firstEventDate && day <= eventDateRange.lastEventDate;
+          }
+
+          // With only scheduled_date: show only on exact scheduled date
+          if (t.scheduled_date) {
+            const scheduledDate = new Date(t.scheduled_date);
+            scheduledDate.setHours(0, 0, 0, 0);
+            return scheduledDate.getTime() === day.getTime();
+          }
+
+          // No events, no scheduled_date, no completion_date: don't show
+          return false;
         }
 
-        // For Done tickets with only scheduled_date: show only on exact scheduled date
-        if (isDone && t.scheduled_date) {
-          const scheduledDate = new Date(t.scheduled_date);
-          scheduledDate.setHours(0, 0, 0, 0);
-          return scheduledDate.getTime() === day.getTime();
-        }
-
-        // For non-Done, non-event tickets: show if they have a calendar event OR a scheduled_date
+        // For non-Done, non-Removed, non-event tickets: show if they have a calendar event OR a scheduled_date
         if (hasEventOnOrBeforeDay) return true;
 
         if (!t.scheduled_date) return false;
@@ -202,16 +227,16 @@ export function TicketsSidebar({
 
       return sortTickets(todayTickets);
     } else if (activeTab === "unscheduled") {
-      // Show non-event tickets with no scheduled_date and not in backlog/blocked/done/removed
-      return sortTickets(
-        visibleTickets.filter((t) => getType(t) !== "event" && !t.scheduled_date && !["Backlog", "Blocked", "Done", "Removed"].includes(t.ticket_status)),
-      );
-    } else {
-      // backlog - show non-event tickets with backlog or blocked status (excluding done/removed)
+      // Show non-event tickets: (no scheduled_date) OR (Blocked status ignoring scheduled_date)
       return sortTickets(
         visibleTickets.filter(
-          (t) => getType(t) !== "event" && ["Backlog", "Blocked"].includes(t.ticket_status) && !["Done", "Removed"].includes(t.ticket_status),
+          (t) => getType(t) !== "event" && !["Done", "Removed", "Backlog"].includes(t.ticket_status) && (!t.scheduled_date || t.ticket_status === "Blocked"),
         ),
+      );
+    } else {
+      // backlog - show non-event tickets with Backlog status (ignoring scheduled_date)
+      return sortTickets(
+        visibleTickets.filter((t) => getType(t) !== "event" && t.ticket_status === "Backlog" && !["Done", "Removed"].includes(t.ticket_status)),
       );
     }
   }, [currentTickets, activeTab, selectedDay, events]);
@@ -349,7 +374,7 @@ export function TicketsSidebar({
             <div className="p-4 text-center text-sm text-[var(--text-muted)]">{!selectedProjectKey ? "Select a project" : "No tickets available"}</div>
           ) : (
             filteredTickets.map((ticket) => {
-              const isDone = ticket.ticket_status?.toLowerCase() === "done";
+              const isDone = ["done", "removed"].includes(ticket.ticket_status?.toLowerCase());
               const isEventToday = activeTab === "today" && ticket.ticket_type?.toLowerCase() === "event";
               const eventTimeRange = isEventToday && ticket.ticket_type?.toLowerCase() === "event" ? getEventTimeRangeForTicket(ticket.ticket_id) : null;
               return (
@@ -361,6 +386,7 @@ export function TicketsSidebar({
                   eventTimeRange={eventTimeRange}
                   onTicketClick={onTicketClick}
                   onUnscheduleTicket={onUnscheduleTicket}
+                  onStatusChange={onStatusChange}
                   onOpenSchedulePicker={
                     onScheduleTicket
                       ? (ticketId, position) => {

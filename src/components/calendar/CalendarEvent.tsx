@@ -22,7 +22,7 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
   const showBand = extendedProps?.showBand !== false;
   const isCompleted = extendedProps?.ticket_status === "Done" || extendedProps?.ticket_status === "Removed" || extendedProps?.completed === true;
   const isOptimistic = extendedProps?.isOptimistic === true;
-  const isBreak = extendedProps?.isBreak === true;
+  const isBreak = extendedProps?.is_break === true;
 
   // Break events: blend with calendar background
   if (isBreak) {
