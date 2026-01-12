@@ -21,7 +21,8 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
   // bandColor should be passed through extendedProps from the epic ticket's colour
   const bandColor = extendedProps?.bandColor || "var(--accent)";
   const showBand = extendedProps?.showBand;
-  const isCompleted = extendedProps?.ticket_status === "Done" || extendedProps?.ticket_status === "Removed" || extendedProps?.completed === true;
+  const isCompleted =
+    extendedProps?.ticket_status?.toLowerCase() === "done" || extendedProps?.ticket_status?.toLowerCase() === "removed" || extendedProps?.completed === true;
   const isOptimistic = extendedProps?.isOptimistic === true;
   const isBreak = extendedProps?.is_break === true;
 

@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Clock, FileStack, FileText, Link as LinkIcon, MapPin, Plus, Trash2, Video, X } from "lucide-react";
+import { Clock, FileStack, FileText, Link as LinkIcon, MapPin, Plus, Trash2, Video, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { deleteTicket, updateTicketDescription } from "@/api/tickets";
+import { deleteTicket, updateTicketDescription, updateTicketTitle } from "@/api/tickets";
 import { useTicketContent, useTicketData, useTicketDocuments } from "@/hooks/useTickets";
 import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/ui/dialog";
+import { EditableInput, EditableTextarea } from "@/ui/editable-field";
 import { VerticalDotsMenu } from "@/ui/vertical-dots-menu";
 import { generateColorFromString } from "@/utils/color-utils";
 import { EpicSelect } from "../planner/EpicSelect";
@@ -210,6 +211,8 @@ export function TicketModal({
   const [isAddingDocument, setIsAddingDocument] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const currentEvent = useMemo(() => {
@@ -254,6 +257,14 @@ export function TicketModal({
       setEditedDescription(ticketContent || "");
     }
   }, [ticketContent]);
+
+  // Initialize edited title when modal opens or baseTicket changes
+  useEffect(() => {
+    if (baseTicket?.title) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEditedTitle(baseTicket.title);
+    }
+  }, [baseTicket?.title]);
 
   useEffect(() => {
     if (isAddingDescription && !hasDescription) {
@@ -348,6 +359,40 @@ export function TicketModal({
     }
   };
 
+  const handleSaveTitle = async () => {
+    if (!activeTicketId || !editedTitle.trim()) return;
+
+    // Store previous title for rollback on error
+    const previousTitle = baseTicket?.title;
+
+    try {
+      // Exit editing mode immediately for responsive UI
+      setIsEditingTitle(false);
+
+      // Make the API call
+      await updateTicketTitle(activeTicketId, editedTitle.trim());
+    } catch (error) {
+      console.error("Error updating title:", error);
+      // Rollback to previous title on error
+      if (previousTitle) {
+        setEditedTitle(previousTitle);
+      }
+      // TODO: Show error toast/notification
+    }
+  };
+
+  const handleCancelTitle = () => {
+    // Revert to original title
+    setEditedTitle(baseTicket?.title || "");
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleClick = () => {
+    if (!isEditingTitle) {
+      setIsEditingTitle(true);
+    }
+  };
+
   const handleDeleteTicket = async () => {
     if (!activeTicketId) return;
 
@@ -383,6 +428,8 @@ export function TicketModal({
           setIsAddingDocument(false);
           setIsEditingDescription(false);
           setEditedDescription("");
+          setIsEditingTitle(false);
+          setEditedTitle("");
           onClose();
         }
       }}
@@ -405,7 +452,7 @@ export function TicketModal({
               <div className="flex items-center gap-2">
                 {baseTicket?.ticket_type && (
                   <div onClick={(e) => e.stopPropagation()}>
-                    <TypeSelect type={baseTicket.ticket_type} onTypeChange={handleTypeChange} />
+                    <TypeSelect type={baseTicket.ticket_type} onTypeChange={handleTypeChange} disabled={baseTicket.ticket_type?.toLowerCase() === "epic"} />
                   </div>
                 )}
                 {baseTicket?.ticket_key && (
@@ -432,7 +479,24 @@ export function TicketModal({
             </div>
 
             {/* Title */}
-            <DialogTitle className="mb-4 text-xl font-semibold text-[var(--text)]">{baseTicket?.title ?? "Ticket"}</DialogTitle>
+            {isEditingTitle ? (
+              <div className="mb-4">
+                <EditableInput
+                  value={editedTitle}
+                  onChange={setEditedTitle}
+                  onSave={handleSaveTitle}
+                  onCancel={handleCancelTitle}
+                  placeholder="Enter ticket title..."
+                />
+              </div>
+            ) : (
+              <DialogTitle
+                onClick={handleTitleClick}
+                className="mb-4 cursor-pointer rounded-md p-2 text-xl font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)]"
+              >
+                {baseTicket?.title ?? "Ticket"}
+              </DialogTitle>
+            )}
 
             {/* Pill buttons to add content */}
             <div className="mb-6 flex flex-wrap gap-2">
@@ -481,12 +545,14 @@ export function TicketModal({
                     <ProjectSelect projectId={baseTicket?.project_id} projects={projects} onProjectChange={handleProjectChange} />
                   </div>
                 </div>
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Epic:</span>
-                  <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-                    <EpicSelect epicId={baseTicket?.epic_id} tickets={tickets} projectId={baseTicket?.project_id} onEpicChange={handleEpicChange} />
+                {baseTicket?.ticket_type?.toLowerCase() !== "epic" && (
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Epic:</span>
+                    <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                      <EpicSelect epicId={baseTicket?.epic_id} tickets={tickets} projectId={baseTicket?.project_id} onEpicChange={handleEpicChange} />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Priority:</span>
                   <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -534,7 +600,7 @@ export function TicketModal({
               <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
                 {baseTicket?.ticket_type && (
                   <div onClick={(e) => e.stopPropagation()}>
-                    <TypeSelect type={baseTicket.ticket_type} onTypeChange={handleTypeChange} />
+                    <TypeSelect type={baseTicket.ticket_type} onTypeChange={handleTypeChange} disabled={baseTicket.ticket_type?.toLowerCase() === "epic"} />
                   </div>
                 )}
                 {baseTicket?.ticket_key && (
@@ -546,8 +612,23 @@ export function TicketModal({
 
               {/* Header */}
               <div className="mb-4 flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <DialogTitle className="truncate text-xl font-semibold text-[var(--text)]">{baseTicket?.title ?? "Ticket"}</DialogTitle>
+                <div className="min-w-0 flex-1">
+                  {isEditingTitle ? (
+                    <EditableInput
+                      value={editedTitle}
+                      onChange={setEditedTitle}
+                      onSave={handleSaveTitle}
+                      onCancel={handleCancelTitle}
+                      placeholder="Enter ticket title..."
+                    />
+                  ) : (
+                    <DialogTitle
+                      onClick={handleTitleClick}
+                      className="cursor-pointer truncate rounded-md p-2 text-xl font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)]"
+                    >
+                      {baseTicket?.title ?? "Ticket"}
+                    </DialogTitle>
+                  )}
                 </div>
               </div>
 
@@ -562,31 +643,13 @@ export function TicketModal({
                   ) : contentError ? (
                     <p className="text-sm text-[var(--danger)]">Error loading description: {contentError}</p>
                   ) : isEditingDescription ? (
-                    <div className="relative">
-                      <textarea
-                        value={editedDescription}
-                        onChange={(e) => setEditedDescription(e.target.value)}
-                        className="min-h-[200px] w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                        placeholder="Add a description..."
-                        autoFocus
-                      />
-                      <div className="mt-2 flex justify-end gap-2">
-                        <button
-                          onClick={handleCancelDescription}
-                          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--danger)] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--danger)]"
-                          aria-label="Cancel"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={handleSaveDescription}
-                          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--accent)] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                          aria-label="Save"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
+                    <EditableTextarea
+                      value={editedDescription}
+                      onChange={setEditedDescription}
+                      onSave={handleSaveDescription}
+                      onCancel={handleCancelDescription}
+                      placeholder="Add a description..."
+                    />
                   ) : hasDescription ? (
                     <div onClick={handleDescriptionClick} className="cursor-pointer rounded-md p-3 transition-colors hover:bg-[var(--surface-muted)]">
                       <div className="prose prose-sm max-w-none [&>*]:text-[var(--text)]">
@@ -776,12 +839,14 @@ export function TicketModal({
                       <ProjectSelect projectId={baseTicket?.project_id} projects={projects} onProjectChange={handleProjectChange} />
                     </div>
                   </div>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Epic:</span>
-                    <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-                      <EpicSelect epicId={baseTicket?.epic_id} tickets={projectTickets} projectId={baseTicket?.project_id} onEpicChange={handleEpicChange} />
+                  {baseTicket?.ticket_type?.toLowerCase() !== "epic" && (
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Epic:</span>
+                      <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                        <EpicSelect epicId={baseTicket?.epic_id} tickets={projectTickets} projectId={baseTicket?.project_id} onEpicChange={handleEpicChange} />
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="flex-shrink-0 text-xs text-[var(--text-muted)]">Priority:</span>
                     <div className="min-w-0" onClick={(e) => e.stopPropagation()}>

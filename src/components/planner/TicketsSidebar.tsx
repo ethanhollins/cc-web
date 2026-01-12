@@ -162,7 +162,7 @@ export function TicketsSidebar({
 
       const todayTickets = visibleTickets.filter((t) => {
         const status = t.ticket_status;
-        const statusLower = status.toLowerCase();
+        const statusLower = status?.toLowerCase();
         const isDone = statusLower === "done";
         const isRemoved = statusLower === "removed";
         const isCompletedStatus = isDone || isRemoved;
@@ -232,15 +232,15 @@ export function TicketsSidebar({
         visibleTickets.filter(
           (t) =>
             getType(t) !== "event" &&
-            !["done", "removed", "backlog"].includes(t.ticket_status.toLowerCase()) &&
-            (!t.scheduled_date || t.ticket_status.toLowerCase() === "blocked"),
+            !["done", "removed", "backlog"].includes(t.ticket_status?.toLowerCase()) &&
+            (!t.scheduled_date || t.ticket_status?.toLowerCase() === "blocked"),
         ),
       );
     } else {
       // backlog - show non-event tickets with Backlog status (ignoring scheduled_date)
       return sortTickets(
         visibleTickets.filter(
-          (t) => getType(t) !== "event" && t.ticket_status.toLowerCase() === "backlog" && !["done", "removed"].includes(t.ticket_status.toLowerCase()),
+          (t) => getType(t) !== "event" && t.ticket_status?.toLowerCase() === "backlog" && !["done", "removed"].includes(t.ticket_status?.toLowerCase()),
         ),
       );
     }
@@ -290,7 +290,7 @@ export function TicketsSidebar({
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--planner-sidebar-icon-bg)] text-[var(--accent)] shadow-[var(--planner-sidebar-icon-shadow)]">
             <Feather className="h-4 w-4" />
           </div>
-          <h3 className="text-lg font-semibold text-[var(--text)]">Project Tickets</h3>
+          <h3 className="text-lg font-semibold text-[var(--text)]">Focus Tickets</h3>
         </div>
         {selectedDay && (
           <div className="text-sm text-[var(--text-muted)]">
@@ -314,11 +314,15 @@ export function TicketsSidebar({
               .filter((p) => p.project_status?.toLowerCase() === "in progress")
               .sort((a, b) => a.project_key.localeCompare(b.project_key))
               .map((p) => (
-                <option key={p.project_key} value={p.project_key}>
+                <option key={`project-${p.project_key}`} value={p.project_key}>
                   {p.project_key} — {p.title}
                 </option>
               ))}
-            {projects.length === 0 && <option value="">No projects</option>}
+            {projects.length === 0 && (
+              <option key="no-domains" value="">
+                No focuses
+              </option>
+            )}
           </select>
           <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
         </div>
@@ -376,15 +380,15 @@ export function TicketsSidebar({
       <ScrollArea className="flex-1">
         <div ref={ticketsListRef} className="space-y-2 p-2">
           {filteredTickets.length === 0 ? (
-            <div className="p-4 text-center text-sm text-[var(--text-muted)]">{!selectedProjectKey ? "Select a project" : "No tickets available"}</div>
+            <div className="p-4 text-center text-sm text-[var(--text-muted)]">{!selectedProjectKey ? "Select a focus" : "No tickets available"}</div>
           ) : (
-            filteredTickets.map((ticket) => {
+            filteredTickets.map((ticket, index) => {
               const isDone = ["done", "removed"].includes(ticket.ticket_status?.toLowerCase());
               const isEventToday = activeTab === "today" && ticket.ticket_type?.toLowerCase() === "event";
               const eventTimeRange = isEventToday && ticket.ticket_type?.toLowerCase() === "event" ? getEventTimeRangeForTicket(ticket.ticket_id) : null;
               return (
                 <TicketCard
-                  key={ticket.ticket_id}
+                  key={ticket.ticket_id || `ticket-${index}`}
                   ticket={ticket}
                   tickets={currentTickets}
                   isDone={isDone}

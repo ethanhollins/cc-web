@@ -72,6 +72,27 @@
   --warning: #fbbf24; /* amber */
   --danger: #fb7185; /* rose */
 
+  /* Ticket type colors */
+  --type-task-bg: #dbeafe;
+  --type-task-text: #2563eb;
+  --type-task-hover: #eff6ff;
+
+  --type-story-bg: #d1fae5;
+  --type-story-text: #047857;
+  --type-story-hover: #ecfdf5;
+
+  --type-bug-bg: #ffe4e6;
+  --type-bug-text: #e11d48;
+  --type-bug-hover: #fff1f2;
+
+  --type-epic-bg: #f3e8ff;
+  --type-epic-text: #9333ea;
+  --type-epic-hover: #faf5ff;
+
+  --type-event-bg: #f3f4f6;
+  --type-event-text: #4b5563;
+  --type-event-hover: #f9fafb;
+
   /* Application-specific derived tokens */
   /*
    * Planner derived tokens
@@ -157,6 +178,27 @@
   --success: #4ade80; /* brighter green */
   --warning: #facc15;
   --danger: #fb7185;
+
+  /* Ticket type colors - dark mode values */
+  --type-task-bg: rgba(37, 99, 235, 0.15);
+  --type-task-text: #60a5fa;
+  --type-task-hover: rgba(37, 99, 235, 0.25);
+
+  --type-story-bg: rgba(16, 185, 129, 0.15);
+  --type-story-text: #6ee7b7;
+  --type-story-hover: rgba(16, 185, 129, 0.25);
+
+  --type-bug-bg: rgba(225, 29, 72, 0.15);
+  --type-bug-text: #fb7185;
+  --type-bug-hover: rgba(225, 29, 72, 0.25);
+
+  --type-epic-bg: rgba(147, 51, 234, 0.15);
+  --type-epic-text: #c084fc;
+  --type-epic-hover: rgba(147, 51, 234, 0.25);
+
+  --type-event-bg: rgba(75, 85, 99, 0.25);
+  --type-event-text: #9ca3af;
+  --type-event-hover: rgba(75, 85, 99, 0.35);
 
   /* Planner derived tokens */
   /*

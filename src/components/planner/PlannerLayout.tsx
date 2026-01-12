@@ -1,14 +1,16 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { Feather } from "lucide-react";
+import { Feather, Target } from "lucide-react";
+import { MobileTab, MobileTabMenu } from "@/components/planner/MobileTabMenu";
 import { PlannerNavBar } from "@/components/planner/PlannerNavBar";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePlannerTheme } from "@/hooks/usePlannerTheme";
 import { cn } from "@/lib/utils";
 
 interface PlannerLayoutProps {
-  sidebar: ReactNode;
+  ticketsSidebar: ReactNode;
+  focusesSidebar: ReactNode;
   calendar: ReactNode;
   navigation?: ReactNode;
 }
@@ -22,12 +24,13 @@ const OPEN_HEIGHT_VH = 50; // Default open height (1/2 of screen)
  * Mobile: Full-screen calendar with drawer sidebar
  * Desktop: Side-by-side with collapsible sidebar
  */
-export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutProps) {
+export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, navigation }: PlannerLayoutProps) {
   const { theme, containerClass, setTheme } = usePlannerTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
   const [activePanelId, setActivePanelId] = useState<string | null>("tickets");
+  const [mobileActiveTab, setMobileActiveTab] = useState<MobileTab>("tickets");
   const [drawerHeight, setDrawerHeight] = useState(CLOSED_HEIGHT);
   const [isDragging, setIsDragging] = useState(false);
   const isMobile = useIsMobile();
@@ -123,6 +126,16 @@ export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutPr
 
   const isDark = theme === "soft-dark";
 
+  // Map of sidebar content by id
+  const sidebarMap: Record<string, ReactNode> = {
+    tickets: ticketsSidebar,
+    domains: focusesSidebar,
+  };
+
+  // Determine which sidebar to show based on mobile tab or desktop panel
+  const activeKey = isMobile ? mobileActiveTab : activePanelId;
+  const currentSidebar = activeKey ? sidebarMap[activeKey] : null;
+
   return (
     <div className={cn(containerClass, "flex h-full w-full flex-col bg-[var(--planner-bg)]")}>
       {/* Optional top navigation bar; omit entirely when no navigation is provided */}
@@ -189,8 +202,25 @@ export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutPr
                   </div>
                 </div>
 
+                {/* Mobile: Tab menu for switching between tickets/focuses */}
+                <div className="px-3">
+                  <MobileTabMenu
+                    activeTab={mobileActiveTab}
+                    onTabChange={setMobileActiveTab}
+                    isDark={isDark}
+                    onToggleTheme={() => setTheme(isDark ? "soft-light" : "soft-dark")}
+                    isDrawerOpen={sidebarOpen}
+                    onOpenDrawer={() => {
+                      const vh = window.innerHeight / 100;
+                      const openHeightPx = OPEN_HEIGHT_VH * vh;
+                      setSidebarOpen(true);
+                      setDrawerHeight(openHeightPx);
+                    }}
+                  />
+                </div>
+
                 {/* Drawer content */}
-                <div className="flex-1 overflow-hidden">{sidebar}</div>
+                <div className="flex-1 overflow-hidden">{currentSidebar}</div>
               </div>
             </div>
           </div>
@@ -207,7 +237,7 @@ export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutPr
           >
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.16),transparent_35%)]" />
             <div className="relative z-10 flex h-full flex-col">
-              {!desktopSidebarCollapsed && activePanelId === "tickets" && <div className="flex-1 overflow-hidden">{sidebar}</div>}
+              {!desktopSidebarCollapsed && <div className="flex-1 overflow-hidden">{currentSidebar}</div>}
             </div>
           </div>
 
@@ -217,7 +247,12 @@ export function PlannerLayout({ sidebar, calendar, navigation }: PlannerLayoutPr
               {
                 id: "tickets",
                 icon: <Feather className="h-5 w-5" />,
-                label: "Project tickets",
+                label: "Focus tickets",
+              },
+              {
+                id: "domains",
+                icon: <Target className="h-5 w-5" />,
+                label: "Focuses",
               },
             ]}
             activeId={!desktopSidebarCollapsed ? activePanelId : null}
