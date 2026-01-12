@@ -10,9 +10,10 @@ interface TypeSelectProps {
   type: TicketType;
   onTypeChange: (newType: TicketType) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function TypeSelect({ type, onTypeChange, className }: TypeSelectProps) {
+export function TypeSelect({ type, onTypeChange, className, disabled }: TypeSelectProps) {
   return (
     <PillSelect
       value={type}
@@ -24,6 +25,7 @@ export function TypeSelect({ type, onTypeChange, className }: TypeSelectProps) {
       align="start"
       className={cn("h-6 rounded-sm", className)}
       showShadow={false}
+      disabled={disabled}
     />
   );
 }

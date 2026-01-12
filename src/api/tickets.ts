@@ -164,6 +164,22 @@ export async function updateTicketPriority(ticketId: string, priority: string | 
   return response.data as Ticket;
 }
 
+export async function updateTicketTitle(ticketId: string, title: string, signal?: AbortSignal): Promise<Ticket> {
+  const response = await apiClient.patch(
+    `/tickets/${ticketId}`,
+    {
+      title: title,
+    },
+    { signal },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket title: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
 export async function updateTicketDescription(ticketId: string, description: string, signal?: AbortSignal): Promise<Ticket> {
   const response = await apiClient.patch(
     `/tickets/${ticketId}`,

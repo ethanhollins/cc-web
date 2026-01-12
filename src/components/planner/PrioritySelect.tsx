@@ -20,7 +20,7 @@ const PRIORITY_OPTIONS = [
 ];
 
 function getPriorityIcon(priority: string | undefined) {
-  const option = PRIORITY_OPTIONS.find((opt) => opt.value.toLowerCase() === priority?.toLowerCase());
+  const option = PRIORITY_OPTIONS.find((opt) => opt.value?.toLowerCase() === priority?.toLowerCase());
   if (!option?.icon) return null;
   const Icon = option.icon;
   return <Icon className={cn("h-4 w-4", getPriorityColor(priority))} />;
@@ -44,13 +44,13 @@ export function PrioritySelect({ priority, onPriorityChange, className }: Priori
     setOptimisticPriority(priority);
   }, [priority]);
 
-  const currentOption = PRIORITY_OPTIONS.find((opt) => opt.value.toLowerCase() === optimisticPriority?.toLowerCase());
+  const currentOption = PRIORITY_OPTIONS.find((opt) => opt.value?.toLowerCase() === optimisticPriority?.toLowerCase());
 
   const handleValueChange = (newValue: string) => {
     // Immediately update the UI optimistically
-    setOptimisticPriority(newValue.toLowerCase());
+    setOptimisticPriority(newValue?.toLowerCase());
     // Send lowercase value to API in the background
-    onPriorityChange(newValue.toLowerCase());
+    onPriorityChange(newValue?.toLowerCase());
   };
 
   const handleClear = (e: React.MouseEvent) => {

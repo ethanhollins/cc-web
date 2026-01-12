@@ -15,7 +15,9 @@ import {
 } from "@/api/tickets";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { FocusModal } from "@/components/modals/FocusModal";
 import { TicketModal } from "@/components/modals/TicketModal";
+import { FocusesSidebar } from "@/components/planner/FocusesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketCreateModal } from "@/components/planner/TicketCreateModal";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
@@ -25,6 +27,7 @@ import { useCalendarInteractions } from "@/hooks/useCalendarInteractions";
 import { useProjects } from "@/hooks/useProjects";
 import { useTickets } from "@/hooks/useTickets";
 import type { CalendarEvent } from "@/types/calendar";
+import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
 import { transformEventsToCalendarFormat } from "@/utils/calendar-transform";
 import { getWeekRangeTitle } from "@/utils/calendar-utils";
@@ -164,6 +167,9 @@ export default function StagePlannerPage() {
   // Ticket modal state
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  // Domain modal state
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   // Handle opening ticket from event click
   const handleEventClickWrapper = useCallback(
@@ -391,6 +397,11 @@ export default function StagePlannerPage() {
     setShowCreateModal(false);
   }, []);
 
+  // Handle opening domain modal
+  const handleProjectEdit = useCallback((project: Project) => {
+    setSelectedProject(project);
+  }, []);
+
   // Handle creating event from time selection
   const handleCreateEventFromSelection = useCallback((startDate: Date, endDate: Date) => {
     setEventCreationTrigger({ startDate, endDate });
@@ -471,8 +482,9 @@ export default function StagePlannerPage() {
   return (
     <div className="h-full w-full">
       <PlannerLayout
-        sidebar={
+        ticketsSidebar={
           <TicketsSidebar
+            key="tickets-sidebar"
             tickets={tickets}
             projects={projects}
             selectedProjectKey={selectedProjectKey}
@@ -485,6 +497,18 @@ export default function StagePlannerPage() {
             onStatusChange={handleStatusChange}
             onCreateTicket={handleCreateTicket}
             onUnselectCalendar={handleUnselectCalendar}
+          />
+        }
+        focusesSidebar={
+          <FocusesSidebar
+            key="focuses-sidebar"
+            projects={projects}
+            tickets={tickets}
+            selectedProjectKey={selectedProjectKey}
+            onProjectChange={selectProject}
+            onTicketClick={handleTicketClick}
+            onStatusChange={handleStatusChange}
+            onProjectEdit={handleProjectEdit}
           />
         }
         calendar={
@@ -561,6 +585,8 @@ export default function StagePlannerPage() {
         onClose={handleCloseCreateModal}
         onCreateTicket={handleCreateTicket}
       />
+
+      <FocusModal open={selectedProject !== null} onClose={() => setSelectedProject(null)} project={selectedProject} />
     </div>
   );
 }

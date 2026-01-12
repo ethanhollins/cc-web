@@ -27,8 +27,8 @@ export function sortTickets(list: Ticket[]): Ticket[] {
   };
 
   return [...list].sort((a, b) => {
-    const aStatusLower = a.ticket_status.toLowerCase();
-    const bStatusLower = b.ticket_status.toLowerCase();
+    const aStatusLower = a.ticket_status?.toLowerCase();
+    const bStatusLower = b.ticket_status?.toLowerCase();
     const aTypeLower = (a.ticket_type || "").toLowerCase();
     const bTypeLower = (b.ticket_type || "").toLowerCase();
 

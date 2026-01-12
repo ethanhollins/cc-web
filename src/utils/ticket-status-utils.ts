@@ -26,11 +26,11 @@ export function getStatusDisplayName(status: string): string {
     done: "Done",
     removed: "Removed",
   };
-  return statusMap[status.toLowerCase()] || status;
+  return statusMap[status?.toLowerCase()] || status;
 }
 
 export function statusPillClasses(status: string): string {
-  const s = status.toLowerCase();
+  const s = status?.toLowerCase();
   if (s === "in progress" || s === "in review") return "bg-[var(--accent-soft)] text-[var(--accent)]";
   if (s === "todo" || s === "backlog") return "bg-[var(--surface-muted)] text-[var(--text-muted)]";
   if (s === "blocked") return "border border-[var(--danger)] bg-transparent text-[var(--danger)]";
@@ -41,7 +41,7 @@ export function statusPillClasses(status: string): string {
 }
 
 export function statusHoverClasses(status: string): string {
-  const s = status.toLowerCase();
+  const s = status?.toLowerCase();
   if (s === "in progress" || s === "in review")
     return "hover:bg-[var(--accent-subtle)] focus:bg-[var(--accent-subtle)] data-[state=checked]:bg-[var(--accent-subtle)]";
   if (s === "todo" || s === "backlog")

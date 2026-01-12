@@ -19,6 +19,7 @@ interface PillSelectProps<T extends string> {
   align?: "start" | "center" | "end";
   className?: string;
   showShadow?: boolean;
+  disabled?: boolean;
 }
 
 export function PillSelect<T extends string>({
@@ -31,9 +32,10 @@ export function PillSelect<T extends string>({
   align = "end",
   className,
   showShadow = true,
+  disabled = false,
 }: PillSelectProps<T>) {
   // Normalize value to lowercase for case-insensitive comparison
-  const normalizedValue = value.toLowerCase() as T;
+  const normalizedValue = value?.toLowerCase() as T;
   const [optimisticValue, setOptimisticValue] = useState<T>(value);
 
   // Sync optimistic value with prop changes (in case of API errors or external updates)
@@ -42,7 +44,9 @@ export function PillSelect<T extends string>({
   }, [value]);
 
   const handleChange = (newValue: string) => {
-    const normalizedNewValue = newValue.toLowerCase();
+    if (disabled) return; // Prevent changes when disabled
+
+    const normalizedNewValue = newValue?.toLowerCase();
     if (normalizedNewValue !== normalizedValue) {
       // Immediately update the UI optimistically
       setOptimisticValue(normalizedNewValue as T);
@@ -57,6 +61,7 @@ export function PillSelect<T extends string>({
         className={cn(
           "h-auto w-auto rounded-full border-0 px-2 py-0.5 text-xs font-semibold [&>svg]:hidden",
           showShadow ? "shadow-sm" : "shadow-none",
+          disabled && "pointer-events-none cursor-default",
           getPillClasses(optimisticValue),
           className,
         )}
@@ -74,7 +79,7 @@ export function PillSelect<T extends string>({
             {groupIndex > 0 && <div className="my-2 h-px bg-[var(--border-subtle)]" />}
             {group.label && <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{group.label}</div>}
             {group.options?.map((option) => {
-              const normalizedOption = option.toLowerCase() as T;
+              const normalizedOption = option?.toLowerCase() as T;
               return (
                 <SelectItem
                   key={option}

@@ -14,6 +14,30 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Refactor: Consolidate Ticket Type Colors - 2026-01-12
+
+- Consolidate all ticket type color definitions into themes.css CSS variables
+- Create comprehensive color tokens for all ticket types (task, story, bug, epic, event)
+- Add light and dark mode color variants for backgrounds, text, and hover states
+- Update ticket-type-utils.ts to use CSS variables instead of hardcoded Tailwind colors
+- Fix dark mode display issues where ticket type colors weren't showing
+- Update TicketCard component to use consolidated color system
+- Update epic Diamond icon to use purple color from theme variables
+- Simplify code by removing redundant dark mode class suffixes
+
+### Feature: Domains Sidebar & Mobile Navigation - CC-61 - 2026-01-12
+
+- Created domains sidebar with project/domain selection and epic management
+- Added tab menu for epics in domains sidebar
+- Implemented domain edit modal with compact/full modes similar to ticket modal
+- Added domain status dropdown with proper status groups
+- Renamed "Project" to "Domain" and "Projects" to "Focuses" throughout the application UI
+- Added mobile tab menu above header with tickets, domains, and theme toggle buttons
+- Improved mobile navigation with drawer experience for both tickets and domains
+- Updated PlannerLayout to support multiple sidebars
+- Added TypeSelect disabled state that looks normal but isn't clickable
+- Hidden Epic property row when viewing epic-type tickets
+
 ### Refactor: Ticket Modal Compact Mode - CC-59 - 2026-01-11
 
 - Add dynamic mode switching between "compact" and "full" views based on content
