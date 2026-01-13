@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { Draggable } from "@fullcalendar/interaction";
 import { Archive, CalendarDays, ChevronDown, Clock, Feather, Plus } from "lucide-react";
 import { CalendarCard } from "@/components/calendar/CalendarCard";
-import { TicketCreateModal } from "@/components/modals/TicketCreateModal";
+import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { TicketCard } from "@/components/planner/TicketCard";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/calendar";
@@ -45,7 +45,7 @@ export function TicketsSidebar({
   onScheduleTicket,
   onUnscheduleTicket,
   onStatusChange,
-  onCreateTicket,
+  onCreateTicket: _onCreateTicket,
   onUnselectCalendar,
 }: TicketsSidebarProps) {
   const ticketsListRef = useRef<HTMLDivElement>(null);
@@ -417,13 +417,7 @@ export function TicketsSidebar({
         </div>
       </ScrollArea>
 
-      <TicketCreateModal
-        open={isCreateModalOpen}
-        projects={projects}
-        selectedProjectKey={selectedProjectKey}
-        onClose={() => setIsCreateModalOpen(false)}
-        onCreateTicket={onCreateTicket}
-      />
+      <CreationHotbar open={isCreateModalOpen} projects={projects} selectedProjectKey={selectedProjectKey} onClose={() => setIsCreateModalOpen(false)} />
 
       {ticketSchedulePicker && (
         <div

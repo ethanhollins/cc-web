@@ -39,6 +39,7 @@ interface CalendarViewProps {
   // Selection context menu props
   onCreateEvent?: (startDate: Date, endDate: Date) => void;
   onScheduleBreak?: (startDate: Date, endDate: Date) => void;
+  onRenameBreak?: (eventId: string) => void;
   // Touch and drag handlers
   onTouchStart?: (e: TouchEvent, eventId: string) => void;
   onTouchEnd?: () => void;
@@ -76,6 +77,7 @@ export function CalendarView({
   onEventDelete,
   onCreateEvent,
   onScheduleBreak,
+  onRenameBreak,
   onTouchStart,
   onTouchEnd,
   onDragStart,
@@ -340,7 +342,9 @@ export function CalendarView({
               <ContextMenuButton
                 icon={Edit}
                 onClick={() => {
-                  // TODO: Implement rename break functionality
+                  if (eventContextMenu.eventId && onRenameBreak) {
+                    onRenameBreak(eventContextMenu.eventId);
+                  }
                   hideContextMenu?.();
                 }}
               >

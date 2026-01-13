@@ -9,6 +9,7 @@ export interface Project {
   notion_id: string;
   title: string;
   colour?: string;
+  description?: string;
 }
 
 export interface ProjectsResponse {

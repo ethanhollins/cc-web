@@ -17,30 +17,37 @@ export async function fetchTickets(projectId: string, signal?: AbortSignal): Pro
   return response.data as TicketsResponse;
 }
 
-// TODO: Extend payload to support scheduled tickets and calendar events
 export async function createTicket(
   data: {
     title: string;
+    description?: string;
     projectId: string;
     ticketType?: string;
+    ticketStatus?: string;
+    priority?: string;
+    colour?: string;
+    epicId?: string;
     scheduledDate?: string;
     startDate?: string;
     endDate?: string;
+    googleCalendarId?: string;
   },
   signal?: AbortSignal,
 ): Promise<Ticket> {
   const payload = {
     title: data.title,
+    ...(data.description && { description: data.description }),
     project_id: data.projectId,
-    // API expects capitalized type strings like "Task" / "Event"
-    ticket_type: (data.ticketType ?? "task").charAt(0).toUpperCase() + (data.ticketType ?? "task").slice(1),
+    // Backend expects lowercase type strings and normalizes them
+    ticket_type: (data.ticketType ?? "task").toLowerCase(),
+    ...(data.ticketStatus && { ticket_status: data.ticketStatus }),
+    ...(data.priority && { priority: data.priority.toLowerCase() }),
+    ...(data.colour && { colour: data.colour }),
+    ...(data.epicId && { epic_id: data.epicId }),
     ...(data.scheduledDate && { scheduled_date: data.scheduledDate }),
-    ...(data.startDate &&
-      data.endDate && {
-        start_date: data.startDate,
-        end_date: data.endDate,
-        google_calendar_id: DEFAULT_CALENDAR_ID,
-      }),
+    ...(data.startDate && { start_date: data.startDate }),
+    ...(data.endDate && { end_date: data.endDate }),
+    ...(data.googleCalendarId && { google_calendar_id: data.googleCalendarId }),
   };
 
   const response = await apiClient.post("/tickets", payload, { signal });
@@ -49,7 +56,9 @@ export async function createTicket(
     throw new Error(`Failed to create ticket: ${response.status}`);
   }
 
-  return response.data as Ticket;
+  // API returns { ticket: <ticket data> }
+  const responseData = response.data as { ticket: Ticket };
+  return responseData.ticket;
 }
 
 export async function scheduleTicket(ticketId: string, scheduledDate: string, signal?: AbortSignal): Promise<Ticket> {
