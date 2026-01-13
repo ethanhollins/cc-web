@@ -11,14 +11,17 @@ interface TypeSelectProps {
   onTypeChange: (newType: TicketType) => void;
   className?: string;
   disabled?: boolean;
+  includeEpic?: boolean;
 }
 
-export function TypeSelect({ type, onTypeChange, className, disabled }: TypeSelectProps) {
+export function TypeSelect({ type, onTypeChange, className, disabled, includeEpic = false }: TypeSelectProps) {
+  const options = includeEpic ? ([...TYPE_OPTIONS, "epic"] as TicketType[]) : TYPE_OPTIONS;
+
   return (
     <PillSelect
       value={type}
       onChange={onTypeChange}
-      groups={[{ label: "Ticket Type", options: TYPE_OPTIONS }]}
+      groups={[{ label: "Ticket Type", options }]}
       getPillClasses={typePillClasses}
       getHoverClasses={typeHoverClasses}
       getDisplayName={getTypeDisplayName}

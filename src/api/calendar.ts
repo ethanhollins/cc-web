@@ -1,4 +1,4 @@
-import type { EventsResponse } from "@/types/calendar";
+import type { CreateBreakResponse, EventsResponse } from "@/types/calendar";
 import { apiClient } from "./client";
 
 /**
@@ -72,12 +72,12 @@ export async function createBreak(
     calendar_id?: string;
   },
   signal?: AbortSignal,
-): Promise<{ event_id: string }> {
+): Promise<CreateBreakResponse> {
   const response = await apiClient.post("/events/breaks", breakData, { signal });
 
   if (response.status !== 200) {
     throw new Error(`Failed to create break: ${response.status}`);
   }
 
-  return response.data as { event_id: string };
+  return response.data as CreateBreakResponse;
 }

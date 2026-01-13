@@ -17,13 +17,14 @@ import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { FocusModal } from "@/components/modals/FocusModal";
 import { TicketModal } from "@/components/modals/TicketModal";
+import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { FocusesSidebar } from "@/components/planner/FocusesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
-import { TicketCreateModal } from "@/components/planner/TicketCreateModal";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useCalendarInteractions } from "@/hooks/useCalendarInteractions";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { useProjects } from "@/hooks/useProjects";
 import { useTickets } from "@/hooks/useTickets";
 import type { CalendarEvent } from "@/types/calendar";
@@ -48,13 +49,30 @@ export default function StagePlannerPage() {
   // Event creation trigger state (for calendar time selection)
   const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [breakEventId, setBreakEventId] = useState<string | null>(null);
+  const [creationMode, setCreationMode] = useState<"ticket" | "focus" | "break">("ticket");
 
   // Projects and tickets
-  const { projects, selectedProjectKey, selectProject } = useProjects();
+  const { projects, selectedProjectKey, selectProject, updateProject } = useProjects();
   const { tickets, updateTickets, fetchTicketsForProject } = useTickets(selectedProjectKey, projects);
 
   // Flatten all tickets for the modal (so epics can be found across all projects)
   const allTickets = Object.values(tickets).flat();
+
+  // Hotkeys
+  useHotkeys([
+    {
+      key: " ", // Space
+      shiftKey: true,
+      callback: () => {
+        setShowCreateModal(true);
+        setCreationMode("ticket");
+        setEventCreationTrigger(null);
+        setBreakEventId(null);
+      },
+      preventDefault: true,
+    },
+  ]);
 
   // Calendar date navigation
   const { selectedDate, goToPreviousPeriod, goToNextPeriod, goToToday, handleDatesSet } = useCalendarDate(calendarRef);
@@ -395,6 +413,8 @@ export default function StagePlannerPage() {
   const handleCloseCreateModal = useCallback(() => {
     setEventCreationTrigger(null);
     setShowCreateModal(false);
+    setCreationMode("ticket");
+    setBreakEventId(null);
   }, []);
 
   // Handle opening domain modal
@@ -405,6 +425,7 @@ export default function StagePlannerPage() {
   // Handle creating event from time selection
   const handleCreateEventFromSelection = useCallback((startDate: Date, endDate: Date) => {
     setEventCreationTrigger({ startDate, endDate });
+    setCreationMode("ticket");
     setShowCreateModal(true);
   }, []);
 
@@ -421,7 +442,7 @@ export default function StagePlannerPage() {
 
         // Create a break event locally with the returned event_id
         const breakEvent: CalendarEvent = {
-          google_id: result.event_id,
+          google_id: result.break.google_id,
           ticket_id: "",
           ticket_key: "",
           ticket_type: "task",
@@ -440,12 +461,63 @@ export default function StagePlannerPage() {
 
         // Add break event to calendar
         updateEvents?.((prev) => [...prev, breakEvent]);
+
+        // Open hotbar in break mode with the event ID for editing
+        setBreakEventId(result.break.google_id);
+        setEventCreationTrigger({ startDate, endDate });
+        setCreationMode("break");
+        setShowCreateModal(true);
+
+        console.log("Break created with ID:", result.break.google_id);
       } catch (error) {
         console.error("Failed to create break:", error);
         // Optionally show an error notification to the user
       }
     },
     [updateEvents],
+  );
+
+  // Handle renaming existing break
+  const handleRenameBreak = useCallback(
+    (eventId: string) => {
+      // Find the break event
+      const breakEvent = events.find((e) => e.google_id === eventId && e.is_break);
+      if (!breakEvent) return;
+
+      // Open hotbar in break mode with the event's existing title
+      setBreakEventId(eventId);
+      setEventCreationTrigger({
+        startDate: new Date(breakEvent.start_date),
+        endDate: new Date(breakEvent.end_date),
+      });
+      setCreationMode("break");
+      setShowCreateModal(true);
+    },
+    [events],
+  );
+
+  // Handle updating break event
+  const handleBreakUpdate = useCallback(
+    async (eventId: string, title: string, startDate?: Date, endDate?: Date) => {
+      console.log("Updating break event:", { eventId, title, startDate, endDate });
+      // Optimistically update the local state
+      updateEvents?.((prev) =>
+        prev.map((event) =>
+          event.google_id === eventId
+            ? {
+                ...event,
+                title,
+                ...(startDate && { start_date: startDate.toISOString() }),
+                ...(endDate && { end_date: endDate.toISOString() }),
+              }
+            : event,
+        ),
+      );
+
+      // Then refetch to ensure consistency
+      await refetch();
+    },
+    [updateEvents, refetch],
   );
 
   // Unselect calendar on outside click
@@ -536,6 +608,7 @@ export default function StagePlannerPage() {
                 onEventReceive={handleEventReceive}
                 onCreateEvent={handleCreateEventFromSelection}
                 onScheduleBreak={handleScheduleBreak}
+                onRenameBreak={handleRenameBreak}
                 onDrop={handleDrop}
                 onDayHeaderClick={handleDayHeaderClick}
                 showContextMenu={showContextMenu}
@@ -577,16 +650,42 @@ export default function StagePlannerPage() {
         onPriorityChange={handlePriorityChange}
       />
 
-      <TicketCreateModal
+      <CreationHotbar
         open={showCreateModal}
         projects={projects}
+        allTickets={allTickets}
         selectedProjectKey={selectedProjectKey}
         initialDateRange={eventCreationTrigger}
+        defaultMode={creationMode}
+        breakEventId={breakEventId}
+        disableModeSwitch={creationMode === "break"}
+        initialTitle={creationMode === "break" && breakEventId ? events.find((e) => e.google_id === breakEventId)?.title : undefined}
         onClose={handleCloseCreateModal}
-        onCreateTicket={handleCreateTicket}
+        onClearDateRange={() => setEventCreationTrigger(null)}
+        onBreakCreate={refetch}
+        onBreakUpdate={handleBreakUpdate}
+        onTicketAdd={(ticket) => {
+          if (selectedProjectKey && tickets[selectedProjectKey]) {
+            updateTickets(selectedProjectKey, [...tickets[selectedProjectKey], ticket]);
+          }
+        }}
+        onTicketRemove={(ticketId) => {
+          if (selectedProjectKey && tickets[selectedProjectKey]) {
+            updateTickets(
+              selectedProjectKey,
+              tickets[selectedProjectKey].filter((t) => t.ticket_id !== ticketId),
+            );
+          }
+        }}
+        onEventAdd={(event) => {
+          updateEvents((prev) => [...prev, event]);
+        }}
+        onEventRemove={(eventId) => {
+          updateEvents((prev) => prev.filter((e) => e.google_id !== eventId));
+        }}
       />
 
-      <FocusModal open={selectedProject !== null} onClose={() => setSelectedProject(null)} project={selectedProject} />
+      <FocusModal open={selectedProject !== null} onClose={() => setSelectedProject(null)} project={selectedProject} onProjectUpdate={updateProject} />
     </div>
   );
 }

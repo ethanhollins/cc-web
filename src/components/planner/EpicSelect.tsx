@@ -13,9 +13,10 @@ interface EpicSelectProps {
   projectId?: string;
   onEpicChange: (epicId: string | null) => void;
   className?: string;
+  placeholder?: string;
 }
 
-export function EpicSelect({ epicId, tickets, projectId, onEpicChange, className }: EpicSelectProps) {
+export function EpicSelect({ epicId, tickets, projectId, onEpicChange, className, placeholder = "-" }: EpicSelectProps) {
   const [optimisticEpicId, setOptimisticEpicId] = useState(epicId);
   const { epics } = useEpics(tickets, projectId);
 
@@ -33,8 +34,8 @@ export function EpicSelect({ epicId, tickets, projectId, onEpicChange, className
   };
 
   const getEpicTitle = (id: string | undefined) => {
-    if (!id) return "-";
-    return getEpic(id)?.title ?? "-";
+    if (!id) return placeholder;
+    return getEpic(id)?.title ?? placeholder;
   };
 
   const handleValueChange = (newValue: string) => {
@@ -56,20 +57,22 @@ export function EpicSelect({ epicId, tickets, projectId, onEpicChange, className
       <Select value={optimisticEpicId || "__none__"} onValueChange={handleValueChange}>
         <SelectTrigger
           className={cn(
-            "h-auto w-auto rounded-md border-0 px-2 py-1 text-sm font-medium shadow-none transition-colors hover:bg-[var(--surface-hover)] focus:ring-0 [&>svg]:hidden",
-            optimisticEpicId && "pr-7",
+            "h-auto w-auto max-w-[200px] rounded-md border-0 px-2 py-1 text-sm font-medium shadow-none transition-colors hover:bg-[var(--surface-hover)] focus:ring-0 [&>svg]:hidden",
+            optimisticEpicId && "pr-8",
             className,
           )}
           onClick={(e) => e.stopPropagation()}
         >
           <SelectValue>
             {optimisticEpicId ? (
-              <div className="flex items-center gap-2">
-                {getEpic(optimisticEpicId)?.colour && <div className="h-4 w-1 rounded-full" style={{ backgroundColor: getEpic(optimisticEpicId)?.colour }} />}
-                <span>{getEpicTitle(optimisticEpicId)}</span>
+              <div className="flex max-w-full items-center gap-2 overflow-hidden pr-3">
+                {getEpic(optimisticEpicId)?.colour && (
+                  <div className="h-4 w-1 flex-shrink-0 rounded-full" style={{ backgroundColor: getEpic(optimisticEpicId)?.colour }} />
+                )}
+                <span className="truncate">{getEpicTitle(optimisticEpicId)}</span>
               </div>
             ) : (
-              "-"
+              <span>{placeholder}</span>
             )}
           </SelectValue>
         </SelectTrigger>
@@ -95,7 +98,7 @@ export function EpicSelect({ epicId, tickets, projectId, onEpicChange, className
         <button
           onClick={handleClear}
           onMouseDown={(e) => e.preventDefault()}
-          className="absolute right-2 rounded-sm opacity-50 transition-opacity hover:opacity-100"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-sm opacity-50 transition-opacity hover:opacity-100"
           aria-label="Clear epic"
         >
           <X className="h-3 w-3" />

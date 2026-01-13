@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchProjects } from "@/api/projects";
+import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import type { Project } from "@/types/project";
 import { isAbortError } from "@/utils/error-utils";
 
@@ -12,6 +13,9 @@ export function useProjects() {
   const [selectedProjectKey, setSelectedProjectKey] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // WebSocket integration: trigger project refetches when messages arrive
+  const { lastMessage } = useWebSocketMessages();
 
   useEffect(() => {
     const ac = new AbortController();
@@ -44,10 +48,18 @@ export function useProjects() {
 
     loadProjects();
     return () => ac.abort();
-  }, [selectedProjectKey]);
+  }, [selectedProjectKey, lastMessage]);
 
   const selectProject = (projectKey: string) => {
     setSelectedProjectKey(projectKey);
+  };
+
+  const updateProject = (projectId: string, updates: Partial<Project>) => {
+    setProjects((prev) => prev.map((project) => (project.project_id === projectId ? { ...project, ...updates } : project)));
+  };
+
+  const updateProjects = (updater: (prev: Project[]) => Project[]) => {
+    setProjects(updater);
   };
 
   return {
@@ -56,5 +68,7 @@ export function useProjects() {
     loading,
     error,
     selectProject,
+    updateProject,
+    updateProjects,
   };
 }

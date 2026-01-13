@@ -14,6 +14,16 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Hotbar Creation Interface - CC-66 - 2026-01-14
+
+- Redesign ticket/focus creation from modal to hotbar-style popup
+- Add toggle between "Ticket" and "Focus" creation modes
+- Implement horizontal scrollable expandable options with caret indicators
+- Position hotbar centered with no background blur or shading
+- Support default type detection ("Event" from calendar, "Task" from + button)
+- Add image icon button for future "create from image" flow
+- Maintain quick, temporary feel with click-outside-to-dismiss behavior
+
 ### Refactor: Consolidate Ticket Type Colors - 2026-01-12
 
 - Consolidate all ticket type color definitions into themes.css CSS variables

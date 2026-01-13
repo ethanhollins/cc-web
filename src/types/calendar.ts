@@ -19,6 +19,18 @@ export interface EventsResponse {
   events: CalendarEvent[];
 }
 
+export interface BreakEvent {
+  google_id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  is_break: true;
+}
+
+export interface CreateBreakResponse {
+  break: BreakEvent;
+}
+
 export interface CalendarEventExtendedProps {
   showBand?: boolean;
   bandColor?: string;

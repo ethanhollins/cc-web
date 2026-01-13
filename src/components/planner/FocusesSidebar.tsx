@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronDown, ClipboardList, Diamond, FolderKanban, Plus, Target } from "lucide-react";
+import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { TicketCard } from "@/components/planner/TicketCard";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/types/project";
@@ -27,7 +28,7 @@ type TabType = "epics" | "programs";
  */
 export function FocusesSidebar({ projects, tickets, selectedProjectKey, onProjectChange, onTicketClick, onStatusChange, onProjectEdit }: FocusesSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabType>("epics");
-  // const [isCreateEpicModalOpen, setIsCreateEpicModalOpen] = useState(false); // TODO: Implement epic creation modal
+  const [isCreateHotbarOpen, setIsCreateHotbarOpen] = useState(false);
 
   const currentTickets = React.useMemo(() => (selectedProjectKey ? tickets[selectedProjectKey] || [] : []), [selectedProjectKey, tickets]);
 
@@ -38,10 +39,9 @@ export function FocusesSidebar({ projects, tickets, selectedProjectKey, onProjec
 
   const selectedProject = projects.find((p) => p.project_key === selectedProjectKey);
 
-  const handleOpenCreateEpicModal = () => {
+  const handleOpenCreateHotbar = () => {
     if (!selectedProjectKey && projects.length === 0) return;
-    // setIsCreateEpicModalOpen(true); // TODO: Implement epic creation modal
-    console.log("Create epic modal not yet implemented");
+    setIsCreateHotbarOpen(true);
   };
 
   const handleEditProject = () => {
@@ -100,7 +100,7 @@ export function FocusesSidebar({ projects, tickets, selectedProjectKey, onProjec
         <div className="flex items-center justify-between">
           {/* Create epic button */}
           <button
-            onClick={handleOpenCreateEpicModal}
+            onClick={handleOpenCreateHotbar}
             disabled={!selectedProjectKey}
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
@@ -164,7 +164,13 @@ export function FocusesSidebar({ projects, tickets, selectedProjectKey, onProjec
         </div>
       </ScrollArea>
 
-      {/* TODO: Add TicketCreateModal for epics when needed */}
+      <CreationHotbar
+        open={isCreateHotbarOpen}
+        projects={projects}
+        selectedProjectKey={selectedProjectKey}
+        defaultType="epic"
+        onClose={() => setIsCreateHotbarOpen(false)}
+      />
     </div>
   );
 }

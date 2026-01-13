@@ -9,6 +9,7 @@ interface PrioritySelectProps {
   priority: string | undefined;
   onPriorityChange: (priority: string | null) => void;
   className?: string;
+  placeholder?: string;
 }
 
 const PRIORITY_OPTIONS = [
@@ -36,7 +37,7 @@ function getPriorityColor(priority: string | undefined): string {
   return "text-[var(--text-muted)]";
 }
 
-export function PrioritySelect({ priority, onPriorityChange, className }: PrioritySelectProps) {
+export function PrioritySelect({ priority, onPriorityChange, className, placeholder = "-" }: PrioritySelectProps) {
   const [optimisticPriority, setOptimisticPriority] = useState(priority);
 
   // Sync optimistic value with prop changes (in case of API errors or external updates)
@@ -65,16 +66,16 @@ export function PrioritySelect({ priority, onPriorityChange, className }: Priori
       <Select value={optimisticPriority || "__none__"} onValueChange={handleValueChange}>
         <SelectTrigger
           className={cn(
-            "h-auto w-auto rounded-md border-0 px-2 py-1 text-sm font-medium shadow-none transition-colors hover:bg-[var(--surface-hover)] focus:ring-0 [&>svg]:hidden",
-            optimisticPriority && "pr-7",
+            "h-auto w-auto max-w-[200px] rounded-md border-0 px-2 py-1 text-sm font-medium shadow-none transition-colors hover:bg-[var(--surface-hover)] focus:ring-0 [&>svg]:hidden",
+            optimisticPriority && "pr-8",
             className,
           )}
           onClick={(e) => e.stopPropagation()}
         >
           <SelectValue>
-            <div className="flex items-center gap-1.5">
-              {optimisticPriority && getPriorityIcon(optimisticPriority)}
-              <span>{currentOption?.label ?? "-"}</span>
+            <div className={cn("flex max-w-full items-center gap-1.5 overflow-hidden", optimisticPriority && "pr-3")}>
+              {optimisticPriority && <span className="flex-shrink-0">{getPriorityIcon(optimisticPriority)}</span>}
+              <span className="truncate">{currentOption?.label ?? placeholder}</span>
             </div>
           </SelectValue>
         </SelectTrigger>
@@ -103,7 +104,7 @@ export function PrioritySelect({ priority, onPriorityChange, className }: Priori
         <button
           onClick={handleClear}
           onMouseDown={(e) => e.preventDefault()}
-          className="absolute right-2 rounded-sm opacity-50 transition-opacity hover:opacity-100"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-sm opacity-50 transition-opacity hover:opacity-100"
           aria-label="Clear priority"
         >
           <X className="h-3 w-3" />

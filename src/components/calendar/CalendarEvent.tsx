@@ -43,7 +43,7 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
       const durationText = `${Math.round(durationMinutes)}m`;
 
       return (
-        <div className="relative flex h-full items-center justify-between gap-1 overflow-hidden">
+        <div className="relative flex h-full items-start justify-between gap-1 overflow-hidden">
           {/* Zigzag left border */}
           <div className="absolute left-2 top-0 h-[100%]" style={zigzagStyle} />
 
@@ -51,12 +51,12 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
           <div className="absolute right-2 top-0 h-[100%]" style={zigzagStyle} />
 
           {/* Content */}
-          <div className="flex-1 px-5 py-0.5">
-            <span className="text-[11px] leading-tight sm:text-[10px]" style={{ color: "var(--break-text)" }}>
-              Break
+          <div className="flex-1 py-1 pl-5">
+            <span className="block text-[11px] leading-tight sm:text-[10px]" style={{ color: "var(--break-text)" }}>
+              {event.title || "Break"}
             </span>
           </div>
-          <div className="whitespace-nowrap pr-6 text-[10px] sm:text-xs" style={{ color: "var(--break-text)" }}>
+          <div className="whitespace-nowrap py-1 pr-5 text-[10px] sm:text-[10px]" style={{ color: "var(--break-text)" }}>
             {durationText}
           </div>
         </div>
@@ -75,7 +75,7 @@ export function CalendarEvent({ eventInfo }: CalendarEventProps) {
         {/* Content aligned top-left like normal events */}
         <div className="h-full px-5 py-1">
           <div className="text-[11px] font-medium leading-tight sm:text-[10px]" style={{ color: "var(--break-text)" }}>
-            Break
+            {event.title || "Break"}
           </div>
           <div className="mt-0.5 text-[10px] sm:text-[9px]" style={{ color: "var(--break-text)" }}>
             {eventInfo.timeText}

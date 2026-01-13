@@ -7,15 +7,15 @@ import { PillSelect } from "@/ui/pill-select";
 const STATUS_GROUPS = [
   {
     label: "To-do",
-    options: ["Inactive", "Backlog", "Not Started"],
+    options: ["inactive", "backlog", "not started"],
   },
   {
     label: "In progress",
-    options: ["In Progress"],
+    options: ["in progress"],
   },
   {
     label: "Complete",
-    options: ["Done", "Archived"],
+    options: ["done", "archived"],
   },
 ];
 
@@ -24,6 +24,14 @@ interface FocusStatusSelectProps {
   onStatusChange: (newStatus: string) => void;
   className?: string;
 }
+
+const getDisplayName = (status: string): string => {
+  // Capitalize first letter of each word
+  return status
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 const getStatusPillClasses = (status: string): string => {
   const normalized = status?.toLowerCase();
@@ -50,11 +58,12 @@ const getStatusHoverClasses = (status: string): string => {
 export function FocusStatusSelect({ status, onStatusChange, className }: FocusStatusSelectProps) {
   return (
     <PillSelect
-      value={status || "Not Started"}
+      value={status || "not started"}
       onChange={onStatusChange}
       groups={STATUS_GROUPS}
       getPillClasses={getStatusPillClasses}
       getHoverClasses={getStatusHoverClasses}
+      getDisplayName={getDisplayName}
       align="end"
       className={cn("h-6 rounded-full", className)}
     />

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FileStack, FileText, Plus, Trash2, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { updateProjectColor, updateProjectKey, updateProjectTitle } from "@/api/projects";
+import { deleteProject, updateProjectColor, updateProjectDescription, updateProjectKey, updateProjectStatus, updateProjectTitle } from "@/api/projects";
 import type { Project } from "@/types/project";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/ui/dialog";
@@ -18,13 +18,14 @@ interface FocusModalProps {
   project: Project | null;
   onStatusChange?: (projectId: string, newStatus: string) => void;
   onProjectDelete?: (projectId: string) => void;
+  onProjectUpdate?: (projectId: string, updates: Partial<Project>) => void;
 }
 
 /**
  * Focus (Project) modal for viewing and editing focus properties
  * Similar structure to TicketModal with compact/full modes
  */
-export function FocusModal({ open, onClose, project, onStatusChange, onProjectDelete }: FocusModalProps) {
+export function FocusModal({ open, onClose, project, onStatusChange, onProjectDelete, onProjectUpdate }: FocusModalProps) {
   // State for tracking which sections are being added/edited
   const [isAddingDescription, setIsAddingDescription] = useState(false);
   const [isAddingDocument, setIsAddingDocument] = useState(false);
@@ -40,22 +41,30 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
 
   // For demo purposes, we'll use local state for description
   // In production, this would come from an API
-  const [domainDescription, setDomainDescription] = useState("");
-  const [domainDocuments] = useState<Array<{ notion_url: string; title: string }>>([]);
+  const [focusDescription, setFocusDescription] = useState(project?.description || "");
+  const [focusDocuments] = useState<Array<{ notion_url: string; title: string }>>([]);
 
-  const hasDescription = Boolean(domainDescription && domainDescription.trim().length > 0);
-  const hasDocuments = domainDocuments.length > 0;
+  const hasDescription = Boolean(focusDescription && focusDescription.trim().length > 0);
+  const hasDocuments = focusDocuments.length > 0;
 
   // Compact mode: no description, no documents, and not in "adding" mode
   const isCompactMode = !hasDescription && !hasDocuments && !isAddingDescription && !isAddingDocument;
 
   // Initialize edited description when content loads or when adding description
   useEffect(() => {
-    if (domainDescription !== undefined) {
+    if (focusDescription !== undefined) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEditedDescription(domainDescription || "");
+      setEditedDescription(focusDescription || "");
     }
-  }, [domainDescription]);
+  }, [focusDescription]);
+
+  // Update description when project changes
+  useEffect(() => {
+    if (project?.description !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFocusDescription(project.description || "");
+    }
+  }, [project?.description]);
 
   // Initialize edited title when project changes
   useEffect(() => {
@@ -88,35 +97,50 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
     }
   }, [isAddingDescription, hasDescription]);
 
-  const handleStatusChange = (newStatus: string) => {
-    if (onStatusChange && project?.project_id) {
-      onStatusChange(project.project_id, newStatus);
+  const handleStatusChange = async (newStatus: string) => {
+    if (!project?.project_id) return;
+
+    // Optimistic update
+    onProjectUpdate?.(project.project_id, { project_status: newStatus });
+    onStatusChange?.(project.project_id, newStatus);
+
+    try {
+      await updateProjectStatus(project.project_id, newStatus);
+    } catch (error) {
+      console.error("Error updating project status:", error);
+      // Rollback on error
+      onProjectUpdate?.(project.project_id, { project_status: project.project_status });
+      onStatusChange?.(project.project_id, project.project_status);
     }
   };
 
   const handleSaveDescription = async () => {
     if (!project?.project_id) return;
 
+    const previousDescription = focusDescription;
+
+    // Optimistically update the content
+    setFocusDescription(editedDescription);
+    onProjectUpdate?.(project.project_id, { description: editedDescription });
+
+    // Exit editing mode immediately for responsive UI
+    setIsEditingDescription(false);
+    setIsAddingDescription(false);
+
     try {
-      // Optimistically update the content
-      setDomainDescription(editedDescription);
-
-      // Exit editing mode immediately for responsive UI
-      setIsEditingDescription(false);
-      setIsAddingDescription(false);
-
-      // In production, this would be an API call to update project description
-      // await updateProjectDescription(project.project_id, editedDescription);
+      // Make the API call
+      await updateProjectDescription(project.project_id, editedDescription);
     } catch (error) {
       console.error("Error updating description:", error);
       // Rollback to previous content on error
-      setDomainDescription(domainDescription);
+      setFocusDescription(previousDescription);
+      onProjectUpdate?.(project.project_id, { description: previousDescription });
     }
   };
 
   const handleCancelDescription = () => {
     // Revert to original content
-    setEditedDescription(domainDescription || "");
+    setEditedDescription(focusDescription || "");
     setIsEditingDescription(false);
 
     // If there's no description, go back to compact mode
@@ -135,19 +159,25 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
     if (!project?.project_id || !editedTitle.trim()) return;
 
     // Store previous title for rollback on error
-    const previousTitle = project?.title;
+    const previousTitle = editedTitle;
+    const trimmedTitle = editedTitle.trim();
+
+    // Optimistic update - update local state and parent
+    setEditedTitle(trimmedTitle);
+    onProjectUpdate?.(project.project_id, { title: trimmedTitle });
+
+    // Exit editing mode immediately for responsive UI
+    setIsEditingTitle(false);
 
     try {
-      // Exit editing mode immediately for responsive UI
-      setIsEditingTitle(false);
-
       // Make the API call
-      await updateProjectTitle(project.project_id, editedTitle.trim());
+      await updateProjectTitle(project.project_id, trimmedTitle);
     } catch (error) {
       console.error("Error updating title:", error);
       // Rollback to previous title on error
       if (previousTitle) {
         setEditedTitle(previousTitle);
+        onProjectUpdate?.(project.project_id, { title: previousTitle });
       }
       // TODO: Show error toast/notification
     }
@@ -174,15 +204,18 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
 
     const previousKey = project?.project_key;
 
-    try {
-      setIsEditingProjectKey(false);
-      setEditedProjectKey(upperKey);
+    // Optimistic update
+    setIsEditingProjectKey(false);
+    setEditedProjectKey(upperKey);
+    onProjectUpdate?.(project.project_id, { project_key: upperKey });
 
+    try {
       await updateProjectKey(project.project_id, upperKey);
     } catch (error) {
       console.error("Error updating project key:", error);
       if (previousKey) {
         setEditedProjectKey(previousKey);
+        onProjectUpdate?.(project.project_id, { project_key: previousKey });
       }
     }
   };
@@ -210,15 +243,18 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
     const formattedColor = colorValue.startsWith("#") ? colorValue : `#${colorValue}`;
     const previousColor = project?.colour;
 
-    try {
-      setIsEditingColor(false);
-      setEditedColor(formattedColor);
+    // Optimistic update
+    setIsEditingColor(false);
+    setEditedColor(formattedColor);
+    onProjectUpdate?.(project.project_id, { colour: formattedColor });
 
+    try {
       await updateProjectColor(project.project_id, formattedColor);
     } catch (error) {
       console.error("Error updating color:", error);
       if (previousColor) {
         setEditedColor(previousColor);
+        onProjectUpdate?.(project.project_id, { colour: previousColor });
       }
     }
   };
@@ -232,12 +268,14 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
     if (!project?.project_id) return;
 
     try {
-      // In production, call the API to delete project
-      // await deleteProject(project.project_id);
+      // Call the API to delete project
+      await deleteProject(project.project_id);
+
+      // Close modal and notify parent
       onClose();
       onProjectDelete?.(project.project_id);
     } catch (error) {
-      console.error("Error deleting domain:", error);
+      console.error("Error deleting project:", error);
     }
   };
 
@@ -322,7 +360,7 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                   onClick={handleTitleClick}
                   className="mb-4 cursor-pointer rounded-md p-2 text-xl font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)]"
                 >
-                  {project.title}
+                  {editedTitle || project.title}
                 </DialogTitle>
               )}
 
@@ -361,17 +399,17 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                       onCancel={handleCancelProjectKey}
                       placeholder="PROJ"
                       maxLength={4}
-                      label="Project Key:"
+                      label="Focus Key:"
                     />
                   </div>
                 ) : (
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs text-[var(--text-muted)]">Project Key:</span>
+                    <span className="text-xs text-[var(--text-muted)]">Focus Key:</span>
                     <span
                       onClick={() => setIsEditingProjectKey(true)}
                       className="cursor-pointer truncate rounded-md p-1 font-mono text-xs text-[var(--text)] transition-colors hover:bg-[var(--surface-elevated)]"
                     >
-                      {project.project_key}
+                      {editedProjectKey || project.project_key}
                     </span>
                   </div>
                 )}
@@ -386,15 +424,15 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                       label="Colour:"
                     />
                   </div>
-                ) : project.colour ? (
+                ) : editedColor || project.colour ? (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-[var(--text-muted)]">Colour:</span>
                     <div
                       onClick={() => setIsEditingColor(true)}
                       className="flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors hover:bg-[var(--surface-elevated)]"
                     >
-                      <div className="h-4 w-4 rounded-sm border border-[var(--border-subtle)]" style={{ backgroundColor: project.colour }} />
-                      <span className="font-mono text-xs text-[var(--text-muted)]">{project.colour}</span>
+                      <div className="h-4 w-4 rounded-sm border border-[var(--border-subtle)]" style={{ backgroundColor: editedColor || project.colour }} />
+                      <span className="font-mono text-xs text-[var(--text-muted)]">{editedColor || project.colour}</span>
                     </div>
                   </div>
                 ) : null}
@@ -436,9 +474,9 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                   <span className="inline-flex h-6 items-center rounded-full bg-blue-100 px-3 text-xs font-semibold text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                     Project
                   </span>
-                  {project.project_key && (
+                  {(editedProjectKey || project.project_key) && (
                     <span className="inline-flex h-6 flex-shrink-0 items-center justify-center rounded-sm bg-[var(--surface-muted)] px-2 text-xs font-semibold text-[var(--text)]">
-                      {project.project_key}
+                      {editedProjectKey || project.project_key}
                     </span>
                   )}
                 </div>
@@ -459,7 +497,7 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                         onClick={handleTitleClick}
                         className="cursor-pointer truncate rounded-md p-2 text-xl font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-muted)]"
                       >
-                        {project.title}
+                        {editedTitle || project.title}
                       </DialogTitle>
                     )}
                   </div>
@@ -482,7 +520,7 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                     ) : hasDescription ? (
                       <div onClick={handleDescriptionClick} className="cursor-pointer rounded-md p-3 transition-colors hover:bg-[var(--surface-muted)]">
                         <div className="prose prose-sm max-w-none [&>*]:text-[var(--text)]">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{domainDescription}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{focusDescription}</ReactMarkdown>
                         </div>
                       </div>
                     ) : (
@@ -507,7 +545,7 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                     </div>
                     {hasDocuments ? (
                       <ul className="space-y-1.5">
-                        {domainDocuments.map((doc, index) => (
+                        {focusDocuments.map((doc, index) => (
                           <li key={index} className="flex items-center gap-2">
                             <FileStack className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)]" />
                             <a
@@ -600,7 +638,7 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                           onCancel={handleCancelProjectKey}
                           placeholder="PROJ"
                           maxLength={4}
-                          label="Project Key:"
+                          label="Focus Key:"
                         />
                       </div>
                     ) : (
@@ -610,7 +648,7 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                           onClick={() => setIsEditingProjectKey(true)}
                           className="cursor-pointer truncate rounded-md p-1 font-mono text-xs text-[var(--text)] transition-colors hover:bg-[var(--surface-elevated)]"
                         >
-                          {project.project_key}
+                          {editedProjectKey || project.project_key}
                         </span>
                       </div>
                     )}
@@ -625,15 +663,15 @@ export function FocusModal({ open, onClose, project, onStatusChange, onProjectDe
                           label="Colour:"
                         />
                       </div>
-                    ) : project.colour ? (
+                    ) : editedColor || project.colour ? (
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-[var(--text-muted)]">Colour:</span>
                         <div
                           onClick={() => setIsEditingColor(true)}
                           className="flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors hover:bg-[var(--surface-elevated)]"
                         >
-                          <div className="h-4 w-4 rounded-sm border border-[var(--border-subtle)]" style={{ backgroundColor: project.colour }} />
-                          <span className="font-mono text-xs text-[var(--text-muted)]">{project.colour}</span>
+                          <div className="h-4 w-4 rounded-sm border border-[var(--border-subtle)]" style={{ backgroundColor: editedColor || project.colour }} />
+                          <span className="font-mono text-xs text-[var(--text-muted)]">{editedColor || project.colour}</span>
                         </div>
                       </div>
                     ) : null}
