@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { CircleStar, Feather, Target } from "lucide-react";
+import { Bug, CircleStar, Feather, Target } from "lucide-react";
 import { MobileTab, MobileTabMenu } from "@/components/planner/MobileTabMenu";
 import { PlannerNavBar } from "@/components/planner/PlannerNavBar";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -15,6 +15,8 @@ interface PlannerLayoutProps {
   navigation?: ReactNode;
   /** Optional coaches sidebar panel rendered when the Coaches tab is active. */
   coachesSidebar?: ReactNode;
+  /** Optional debug sidebar for testing (DEV ONLY). */
+  debugSidebar?: ReactNode;
 }
 
 const MAX_HEIGHT_VH = 85; // Maximum 85vh
@@ -26,7 +28,7 @@ const OPEN_HEIGHT_VH = 50; // Default open height (1/2 of screen)
  * Mobile: Full-screen calendar with drawer sidebar
  * Desktop: Side-by-side with collapsible sidebar
  */
-export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, navigation, coachesSidebar }: PlannerLayoutProps) {
+export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, navigation, coachesSidebar, debugSidebar }: PlannerLayoutProps) {
   const { theme, containerClass, setTheme } = usePlannerTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -128,10 +130,12 @@ export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, naviga
 
   const isDark = theme === "soft-dark";
 
-  // Map of sidebar content by id
+  // Map of sidebar content by id (only include coaches if provided)
   const sidebarMap: Record<string, ReactNode> = {
     tickets: ticketsSidebar,
     domains: focusesSidebar,
+    coaches: coachesSidebar,
+    ...(debugSidebar && { debug: debugSidebar }),
   };
 
   // Determine which sidebar to show based on mobile tab or desktop panel
@@ -261,6 +265,15 @@ export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, naviga
                 icon: <CircleStar className="h-5 w-5" />,
                 label: "Coaches",
               },
+              ...(debugSidebar
+                ? [
+                    {
+                      id: "debug",
+                      icon: <Bug className="h-5 w-5" />,
+                      label: "Debug",
+                    },
+                  ]
+                : []),
             ]}
             activeId={!desktopSidebarCollapsed ? activePanelId : null}
             onSelect={(id) => {

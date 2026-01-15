@@ -9,7 +9,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import { Search } from "lucide-react";
 import { Clock, Edit, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { MOCK_COACHES } from "@/components/planner/CoachesSidebar";
+import { mockCoaches } from "@/api/mocks/coaches";
 import { useCalendarSelection } from "@/hooks/useCalendarSelection";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
@@ -156,14 +156,14 @@ export function CalendarView({
     }
   }, [calendarRef]);
 
-  const activeCoach = activeCoachIndex !== null && activeCoachIndex >= 0 && activeCoachIndex < MOCK_COACHES.length ? MOCK_COACHES[activeCoachIndex] : null;
+  const activeCoach = activeCoachIndex !== null && activeCoachIndex >= 0 && activeCoachIndex < mockCoaches.length ? mockCoaches[activeCoachIndex] : null;
 
   const toggleCoachFilter = () => {
-    if (MOCK_COACHES.length === 0) return;
+    if (mockCoaches.length === 0) return;
 
     setActiveCoachIndex((prev) => {
       if (prev === null) return 0; // Start with first coach
-      if (prev >= MOCK_COACHES.length - 1) return null; // Cycle back to "no coach"
+      if (prev >= mockCoaches.length - 1) return null; // Cycle back to "no coach"
       return prev + 1;
     });
   };

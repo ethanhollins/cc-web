@@ -1,11 +1,11 @@
 "use client";
 
-import { Feather, MoonStar, SunMedium, Target } from "lucide-react";
+import { CircleStar, Feather, MoonStar, SunMedium, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { ExpandingTabButton } from "@/ui/expanding-tab-button";
 
-export type MobileTab = "tickets" | "domains";
+export type MobileTab = "tickets" | "domains" | "coaches";
 
 interface MobileTabMenuProps {
   activeTab: MobileTab;
@@ -48,6 +48,16 @@ export function MobileTabMenu({ activeTab, onTabChange, isDark, onToggleTheme, i
           isActive={activeTab === "domains"}
           onClick={() => handleTabClick("domains")}
           variant="purple"
+          size="md"
+          labelWidth="w-18"
+          showActiveBackground={isDrawerOpen}
+        />
+        <ExpandingTabButton
+          icon={<CircleStar className="h-5 w-5" />}
+          label="Coaches"
+          isActive={activeTab === "coaches"}
+          onClick={() => handleTabClick("coaches")}
+          variant="orange"
           size="md"
           labelWidth="w-18"
           showActiveBackground={isDrawerOpen}

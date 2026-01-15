@@ -7,6 +7,7 @@ import { useCallback, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
 import { createBreak, createEvent } from "@/api/calendar";
+import { mockFarsiProgram, mockLatestCoachMessage, mockSubmitCoachPromptResponseMessage } from "@/api/mocks/programs";
 import {
   scheduleTicket,
   unscheduleTicket,
@@ -26,7 +27,6 @@ import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { FocusesSidebar } from "@/components/planner/FocusesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
-import { mockFarsiProgram, mockLatestCoachMessage, mockSubmitCoachPromptResponseMessage } from "@/data/mock-programs";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useCalendarInteractions } from "@/hooks/useCalendarInteractions";

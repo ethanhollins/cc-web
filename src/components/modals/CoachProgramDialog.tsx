@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { mockCoachCompletionMessage } from "@/api/mocks/programs";
 import { CoachDialog } from "@/components/modals/CoachDialog";
 import { CoachCommunicationInput } from "@/components/sections/CoachCommunicationInput";
 import { CoachEnvelopeView } from "@/components/sections/CoachEnvelopeView";
 import { CoachProgramView } from "@/components/sections/CoachProgramView";
-import { mockCoachCompletionMessage } from "@/data/mock-programs";
 import { cn } from "@/lib/utils";
 import type { CoachProgram } from "@/types/program";
 import type { Ticket } from "@/types/ticket";

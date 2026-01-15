@@ -2,139 +2,15 @@
 
 import { CircleStar, Plus } from "lucide-react";
 import Image from "next/image";
+import { type CoachProfile, type CoachStat, type CoachYield, mockCoaches } from "@/api/mocks/coaches";
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { ScrollArea } from "@/ui/scroll-area";
 
-export interface CoachStat {
-  id: string;
-  label: string;
-  value: number; // 0 - 100
-}
-
-export interface CoachYieldIcon {
-  id: string;
-  alt: string;
-  imageSrc: string;
-  /** How many of this yield the user currently has with this coach. */
-  count: number;
-}
-
-export interface CoachProfile {
-  id: string;
-  name: string;
-  title: string;
-  imageSrc: string;
-  /** Number of unread/active notifications for this coach. */
-  notificationsCount?: number;
-  /** Domains (projects) this coach monitors. */
-  domains: string[];
-  /**
-   * Specific project titles this coach manages in the planner.
-   * Used for calendar highlighting (coach lens) so that only
-   * events for these projects remain at full opacity.
-   */
-  managedProjectTitles?: string[];
-  /** Recent yield icons earned with this coach. */
-  yields: CoachYieldIcon[];
-  stats: CoachStat[];
-}
-
-export const MOCK_COACHES: CoachProfile[] = [
-  {
-    id: "zore",
-    name: "Zore",
-    title: "Training Coach",
-    imageSrc: "/coaches/coach_zore.png",
-    notificationsCount: 2,
-    domains: ["Training", "Health", "Recovery"],
-    managedProjectTitles: ["Command Center"],
-    yields: [
-      { id: "workouts", alt: "Workouts yield", imageSrc: "/coaches/workouts_yield.png", count: 10 },
-      { id: "streak", alt: "Streak yield", imageSrc: "/coaches/streak_yield.png", count: 4 },
-      { id: "completion", alt: "Completion yield", imageSrc: "/coaches/completion_yield.png", count: 5 },
-    ],
-    stats: [
-      { id: "commitment", label: "Commitment", value: 72 },
-      { id: "momentum", label: "Momentum", value: 69 },
-      { id: "responsiveness", label: "Responsiveness", value: 75 },
-    ],
-  },
-  {
-    id: "amari",
-    name: "Amari",
-    title: "Momentum Coach",
-    imageSrc: "/coaches/coach_amari.png",
-    notificationsCount: 3,
-    domains: ["Momentum", "Deep Work"],
-    yields: [
-      { id: "streak", alt: "Streak yield", imageSrc: "/coaches/streak_yield.png", count: 5 },
-      { id: "words", alt: "Words yield", imageSrc: "/coaches/words_yield.png", count: 12 },
-      { id: "combos", alt: "Combos yield", imageSrc: "/coaches/combos_yield.png", count: 3 },
-    ],
-    stats: [
-      { id: "commitment", label: "Commitment", value: 86 },
-      { id: "momentum", label: "Momentum", value: 78 },
-      { id: "responsiveness", label: "Responsiveness", value: 92 },
-    ],
-  },
-  {
-    id: "moksha",
-    name: "Moksha",
-    title: "Deep Work Coach",
-    imageSrc: "/coaches/coach_moksha.png",
-    notificationsCount: 1,
-    domains: ["Deep Work", "Reading"],
-    yields: [
-      { id: "books", alt: "Books read yield", imageSrc: "/coaches/books_read_yield.png", count: 4 },
-      { id: "logged", alt: "Logged yield", imageSrc: "/coaches/logged_yield.png", count: 9 },
-      { id: "mastery", alt: "Mastery yield", imageSrc: "/coaches/mastery_yield.png", count: 2 },
-    ],
-    stats: [
-      { id: "commitment", label: "Commitment", value: 64 },
-      { id: "momentum", label: "Momentum", value: 52 },
-      { id: "responsiveness", label: "Responsiveness", value: 71 },
-    ],
-  },
-  {
-    id: "pingala",
-    name: "Pingala",
-    title: "Systems Coach",
-    imageSrc: "/coaches/coach_pingala.png",
-    notificationsCount: 0,
-    domains: ["Systems", "Planning", "Execution"],
-    yields: [
-      { id: "completion", alt: "Completion yield", imageSrc: "/coaches/completion_yield.png", count: 7 },
-      { id: "milestone", alt: "Milestone yield", imageSrc: "/coaches/milestone_yield.png", count: 3 },
-      { id: "streak", alt: "Streak yield", imageSrc: "/coaches/streak_yield.png", count: 6 },
-      { id: "workouts", alt: "Workouts yield", imageSrc: "/coaches/workouts_yield.png", count: 2 },
-    ],
-    stats: [
-      { id: "commitment", label: "Commitment", value: 93 },
-      { id: "momentum", label: "Momentum", value: 88 },
-      { id: "responsiveness", label: "Responsiveness", value: 80 },
-    ],
-  },
-  {
-    id: "wealthy",
-    name: "Wealthy",
-    title: "Wealth Coach",
-    imageSrc: "/coaches/coach_wealthy.png",
-    notificationsCount: 0,
-    domains: ["Wealth", "Systems"],
-    yields: [
-      { id: "milestone", alt: "Milestone yield", imageSrc: "/coaches/milestone_yield.png", count: 2 },
-      { id: "logged", alt: "Logged yield", imageSrc: "/coaches/logged_yield.png", count: 8 },
-      { id: "combos", alt: "Combos yield", imageSrc: "/coaches/combos_yield.png", count: 1 },
-    ],
-    stats: [
-      { id: "commitment", label: "Commitment", value: 58 },
-      { id: "momentum", label: "Momentum", value: 47 },
-      { id: "responsiveness", label: "Responsiveness", value: 62 },
-    ],
-  },
-];
+// Re-export types for backwards compatibility
+export type { CoachProfile, CoachStat };
+export type CoachYieldIcon = CoachYield;
 
 function getStatGradient(value: number): string {
   // Map 0-100 into bands using theme tokens
@@ -282,7 +158,7 @@ export function CoachesSidebar() {
 
       <ScrollArea className="flex-1 px-4 pb-4">
         <div className="grid gap-3">
-          {MOCK_COACHES.map((coach) => (
+          {mockCoaches.map((coach) => (
             <CoachCard key={coach.id} coach={coach} />
           ))}
         </div>

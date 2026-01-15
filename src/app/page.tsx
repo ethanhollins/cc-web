@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
 import { createBreak, createEvent } from "@/api/calendar";
+import { mockFarsiProgram, mockLatestCoachMessage, mockSubmitCoachPromptResponseMessage } from "@/api/mocks/programs";
 import {
   scheduleTicket,
   unscheduleTicket,
@@ -15,9 +16,12 @@ import {
 } from "@/api/tickets";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { CoachProgramDialog } from "@/components/modals/CoachProgramDialog";
 import { FocusModal } from "@/components/modals/FocusModal";
 import { TicketModal } from "@/components/modals/TicketModal";
+import { CoachesSidebar } from "@/components/planner/CoachesSidebar";
 import { CreationHotbar } from "@/components/planner/CreationHotbar";
+import { DebugSidebar } from "@/components/planner/DebugSidebar";
 import { FocusesSidebar } from "@/components/planner/FocusesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
@@ -28,6 +32,7 @@ import { useHotkeys } from "@/hooks/useHotkeys";
 import { useProjects } from "@/hooks/useProjects";
 import { useTickets } from "@/hooks/useTickets";
 import type { CalendarEvent } from "@/types/calendar";
+import type { CoachProgram } from "@/types/program";
 import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
 import { transformEventsToCalendarFormat } from "@/utils/calendar-transform";
@@ -188,6 +193,12 @@ export default function StagePlannerPage() {
 
   // Domain modal state
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  // Mocked coach program + dialog state for CC-53
+  const [isCoachProgramOpen, setIsCoachProgramOpen] = useState(false);
+  const [coachProgram, _setCoachProgram] = useState<CoachProgram | null>(() => mockFarsiProgram);
+  const [latestCoachMessage, setLatestCoachMessage] = useState<string>(mockLatestCoachMessage);
+  const [isSubmittingCoachMessage, setIsSubmittingCoachMessage] = useState(false);
 
   // Handle opening ticket from event click
   const handleEventClickWrapper = useCallback(
@@ -417,6 +428,29 @@ export default function StagePlannerPage() {
     setBreakEventId(null);
   }, []);
 
+  const handleSubmitCoachPrompt = useCallback(
+    async (_message: string) => {
+      if (!coachProgram) return;
+      setIsSubmittingCoachMessage(true);
+
+      try {
+        // TODO: Replace with real backend call once available.
+        // For now, mock an updated coach message and optionally tweak program.
+        const simulatedResponseMessage = mockSubmitCoachPromptResponseMessage;
+
+        // Simulate API delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        setLatestCoachMessage(simulatedResponseMessage);
+      } catch (error) {
+        console.error("Failed to submit coach prompt:", error);
+      } finally {
+        setIsSubmittingCoachMessage(false);
+      }
+    },
+    [coachProgram],
+  );
+
   // Handle opening domain modal
   const handleProjectEdit = useCallback((project: Project) => {
     setSelectedProject(project);
@@ -583,6 +617,36 @@ export default function StagePlannerPage() {
             onProjectEdit={handleProjectEdit}
           />
         }
+        coachesSidebar={<CoachesSidebar />}
+        debugSidebar={
+          <DebugSidebar
+            actions={[
+              {
+                id: "open-program-modal",
+                label: "Open Coach Program Modal",
+                description: "Test the coach program dialog with mock data",
+                onClick: () => setIsCoachProgramOpen(true),
+              },
+              {
+                id: "open-ticket-modal",
+                label: "Open Ticket Modal",
+                description: "Test ticket modal with the first available ticket",
+                onClick: () => {
+                  const firstTicket = Object.values(tickets).flat()[0];
+                  if (firstTicket) {
+                    setSelectedTicket(firstTicket);
+                  }
+                },
+              },
+              {
+                id: "open-create-modal",
+                label: "Open Creation Hotbar",
+                description: "Test ticket/focus creation modal",
+                onClick: () => setShowCreateModal(true),
+              },
+            ]}
+          />
+        }
         calendar={
           <div ref={containerRef} className="flex h-full flex-col">
             <CalendarHeader
@@ -686,6 +750,18 @@ export default function StagePlannerPage() {
       />
 
       <FocusModal open={selectedProject !== null} onClose={() => setSelectedProject(null)} project={selectedProject} onProjectUpdate={updateProject} />
+
+      {coachProgram && (
+        <CoachProgramDialog
+          open={isCoachProgramOpen}
+          onOpenChange={setIsCoachProgramOpen}
+          program={coachProgram}
+          coachMessage={latestCoachMessage}
+          onSubmitMessage={handleSubmitCoachPrompt}
+          isSubmitting={isSubmittingCoachMessage}
+          onTicketClick={handleTicketClick}
+        />
+      )}
     </div>
   );
 }

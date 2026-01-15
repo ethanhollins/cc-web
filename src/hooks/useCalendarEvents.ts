@@ -129,7 +129,7 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
         } else {
           console.debug("Fetching events from API for week:", startDate, "to", endDate);
           const data = await fetchEvents(startDate, endDate, ac.signal);
-          items: CalendarEvent[] = (data.events || []).map((event) => attachMockYieldsAndScore(event));
+          items = (data.events || []).map((event) => attachMockYieldsAndScore(event));
           console.debug("Events fetched from API:", items);
 
           // Update cache and state
