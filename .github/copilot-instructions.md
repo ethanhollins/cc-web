@@ -120,10 +120,11 @@ When implementing new features, follow this structured approach:
 
 Once the plan is approved and project code is provided:
 
-- **Create a feature branch using conventional commits format with project code**
-  - Format: `<project-code>-<type>-<brief-description>`
+- **Create a feature branch following Conventional Commits format with project code**
+  - Format: `<type>/<project-code>-<brief-description>` (follows Conventional Commits)
   - User must provide the project code (e.g., CC-48, CC-52)
-  - Examples: `CC-48-feat-user-dashboard`, `CC-52-fix-calendar-timezone`, `CC-65-refactor-button-component`
+  - Use standard types: `feat`, `fix`, `refactor`, `docs`, `chore`, etc.
+  - Examples: `feat/CC-48-user-dashboard`, `chore/CC-52-fix-calendar-timezone`, `refactor/CC-65-button-component`
 - **Update `CHANGELOG.md` immediately**
   - Add entry to `[In Progress]` section with feature name (including project code) and TBD date
   - Include brief description of the work to be done
@@ -212,7 +213,7 @@ AI Response:
 1. [Present plan in chat]
 2. [Request project code: "What's the project/ticket code for this feature?"]
 3. [Wait for approval and project code]
-4. [Check current branch, create feature branch if on master: CC-48-feat-user-dashboard]
+4. [Check current branch, create feature branch if on master: feat/CC-48-user-dashboard]
 5. [Update CHANGELOG.md with in-progress entry including project code]
 6. [Create scaffolding with TODOs]
 7. [Summarize next steps]
@@ -229,9 +230,14 @@ AI Response:
 - **Forms:** react-hook-form
 - **Type Safety:** TypeScript
 
-## Commit Message Guidelines
+## Commit, Branch, and PR Guidelines
 
-**MUST follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification for all commits and branches.**
+**MUST follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification for all commits, branch names, and PR titles.**
+
+This applies to:
+- **Commit messages** - Every commit must follow the format
+- **Branch names** - Use format: `<type>/<project-code>-<brief-description>` (e.g., `feat/CC-48-user-dashboard`, `chore/CC-52-fix-calendar-timezone`)
+- **Pull Request titles** - Must follow the same format as commit messages (e.g., `feat(auth): add OAuth login`)
 
 Reference `CHANGELOG.md` when writing commit messages.
 

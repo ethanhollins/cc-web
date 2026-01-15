@@ -70,6 +70,15 @@
   /* Allow yield icons to hang slightly outside the event without clipping */
   overflow: visible;
 }
+
+/* Event Break */
+.event-break {
+  border-radius: 0 !important;
+  opacity: 95%;
+  background-color: #3434391f !important;
+  border: none !important;
+}
+
 /* Touch support for mobile */
 .fc {
   touch-action: manipulation;

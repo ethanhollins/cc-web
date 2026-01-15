@@ -14,8 +14,9 @@ import { attachMockYieldsAndScore } from "@/utils/ticket-yields";
  * - Debounces refetch requests (30 second minimum interval)
  * - Integrates with WebSocket for real-time updates
  * - Provides updateEvents function for optimistic updates
+ * - Automatically fetches tickets for projects found in events
  */
-export function useCalendarEvents(selectedDate: Date) {
+export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (projectId: string, signal?: AbortSignal) => Promise<boolean>) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [eventsCache, setEventsCache] = useState<Map<string, CalendarEvent[]>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +31,9 @@ export function useCalendarEvents(selectedDate: Date) {
   const [isWebSocketUpdate, setIsWebSocketUpdate] = useState(false);
   const lastUpdateTimeRef = useRef<number>(0);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track which projects have had their tickets fetched to avoid duplicate calls
+  const fetchedProjectsRef = useRef<Set<string>>(new Set());
 
   // Handle WebSocket updates and date changes with debouncing
   useEffect(() => {
@@ -114,30 +118,70 @@ export function useCalendarEvents(selectedDate: Date) {
         const endDate = fetchEnd.toISOString();
         const weekKey = getWeekCacheKey(selectedDate);
 
+        let items: CalendarEvent[] = [];
+
         // Check cache first, unless this is a WebSocket update
         if (!isWebSocketUpdate && eventsCache.has(weekKey)) {
           console.log("Using cached events for week:", weekKey);
           const cachedEvents = eventsCache.get(weekKey) || [];
           setEvents(cachedEvents);
-          return;
+          items = cachedEvents;
+        } else {
+          console.debug("Fetching events from API for week:", startDate, "to", endDate);
+          const data = await fetchEvents(startDate, endDate, ac.signal);
+          items: CalendarEvent[] = (data.events || []).map((event) => attachMockYieldsAndScore(event));
+          console.debug("Events fetched from API:", items);
+
+          // Update cache and state
+          setEventsCache((prevCache) => {
+            const newCache = new Map(prevCache);
+            newCache.set(weekKey, items);
+            return newCache;
+          });
+          setEvents(items);
+
+          // Reset WebSocket update flag after processing
+          if (isWebSocketUpdate) {
+            setIsWebSocketUpdate(false);
+          }
         }
 
-        console.debug("Fetching events from API for week:", startDate, "to", endDate);
-        const data = await fetchEvents(startDate, endDate, ac.signal);
-        const items: CalendarEvent[] = (data.events || []).map((event) => attachMockYieldsAndScore(event));
-        console.debug("Events fetched from API:", items);
+        // TODO: Implement a batch project ticket fetcher
+        // Fetch tickets for any projects that haven't been fetched yet
+        // This runs for both cached and newly fetched events
+        if (fetchTicketsForProject) {
+          // Extract unique project IDs from events
+          const projectIds = new Set<string>();
+          for (const event of items) {
+            if (event.project_id && !fetchedProjectsRef.current.has(event.project_id)) {
+              projectIds.add(event.project_id);
+            }
+          }
 
-        // Update cache and state
-        setEventsCache((prevCache) => {
-          const newCache = new Map(prevCache);
-          newCache.set(weekKey, items);
-          return newCache;
-        });
-        setEvents(items);
+          // Fetch tickets for each project (only once per project)
+          if (projectIds.size > 0) {
+            console.debug(`Fetching tickets for ${projectIds.size} projects:`, Array.from(projectIds));
 
-        // Reset WebSocket update flag after processing
-        if (isWebSocketUpdate) {
-          setIsWebSocketUpdate(false);
+            // Fetch all projects in parallel
+            const fetchPromises = Array.from(projectIds).map(async (projectId) => {
+              try {
+                const fetched = await fetchTicketsForProject(projectId, ac.signal);
+                if (fetched) {
+                  fetchedProjectsRef.current.add(projectId);
+                  console.debug(`Successfully fetched tickets for project: ${projectId}`);
+                }
+              } catch (err: unknown) {
+                if (!isAbortError(err)) {
+                  console.error(`Failed to fetch tickets for project ${projectId}:`, err);
+                }
+              }
+            });
+
+            // Wait for all ticket fetches to complete (but don't block event rendering)
+            Promise.all(fetchPromises).catch(() => {
+              // Errors already logged above
+            });
+          }
         }
       } catch (err: unknown) {
         if (isAbortError(err)) {
@@ -152,7 +196,7 @@ export function useCalendarEvents(selectedDate: Date) {
 
     loadEvents();
     return () => ac.abort();
-  }, [debouncedTrigger, selectedDate, isWebSocketUpdate, eventsCache]);
+  }, [debouncedTrigger, selectedDate, isWebSocketUpdate]);
 
   // Optimistic updates function - memoized to prevent re-renders during drag
   const updateEvents = useCallback(
@@ -192,16 +236,24 @@ export function useCalendarEvents(selectedDate: Date) {
       try {
         const event = events.find((e) => e.google_id === eventId);
 
-        if (!event || !event.google_calendar_id) {
-          console.warn("Event or calendar ID not found for deletion:", eventId);
+        if (!event) {
+          console.warn("Event not found for deletion:", eventId);
           return;
         }
+
+        // Break events don't require calendar_id, regular events do
+        if (!event.is_break && !event.google_calendar_id) {
+          console.warn("Calendar ID not found for non-break event deletion:", eventId);
+          return;
+        }
+
         // Optimistically remove from local state first
         const previousEvents = events;
         updateEvents((prevEvents) => prevEvents.filter((e) => e.google_id !== eventId));
 
         try {
-          await apiDeleteEvent(event.google_id as string, event.google_calendar_id);
+          // For break events, calendar_id can be empty string
+          await apiDeleteEvent(event.google_id as string, event.google_calendar_id || "");
         } catch (apiError) {
           console.error("Failed to delete event on server, reverting local delete:", apiError);
           // Revert optimistic delete on failure

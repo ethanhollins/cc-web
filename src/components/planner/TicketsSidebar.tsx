@@ -4,13 +4,14 @@ import React, { useEffect, useRef } from "react";
 import { Draggable } from "@fullcalendar/interaction";
 import { Archive, CalendarDays, ChevronDown, Clock, Feather, Plus } from "lucide-react";
 import { CalendarCard } from "@/components/calendar/CalendarCard";
-import { TicketCreateModal } from "@/components/modals/TicketCreateModal";
+import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { TicketCard } from "@/components/planner/TicketCard";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
-import type { Ticket } from "@/types/ticket";
+import type { Ticket, TicketStatus } from "@/types/ticket";
 import { ScrollArea } from "@/ui/scroll-area";
+import { sortTickets } from "@/utils/ticket-sort";
 
 interface TicketsSidebarProps {
   tickets: Record<string, Ticket[]>;
@@ -22,6 +23,7 @@ interface TicketsSidebarProps {
   onTicketClick: (ticket: Ticket) => void;
   onScheduleTicket?: (ticketId: string, scheduledDate: string) => void;
   onUnscheduleTicket?: (ticketId: string) => void;
+  onStatusChange?: (ticketId: string, newStatus: TicketStatus) => void;
   onCreateTicket?: (ticket: Ticket, projectKey: string) => void;
   onUnselectCalendar?: () => void;
 }
@@ -42,7 +44,8 @@ export function TicketsSidebar({
   onTicketClick,
   onScheduleTicket,
   onUnscheduleTicket,
-  onCreateTicket,
+  onStatusChange,
+  onCreateTicket: _onCreateTicket,
   onUnselectCalendar,
 }: TicketsSidebarProps) {
   const ticketsListRef = useRef<HTMLDivElement>(null);
@@ -93,39 +96,23 @@ export function TicketsSidebar({
     // Never show epic-type tickets in the sidebar lists
     const visibleTickets = currentTickets.filter((t) => getType(t) !== "epic");
 
-    const statusRank: Record<string, number> = {
-      "In Progress": 0,
-      "In Review": 1,
-      Ongoing: 2,
-      Blocked: 3,
-      Todo: 4,
-      Backlog: 5,
-      Done: 6,
-      Removed: 7,
-    };
-
-    const sortTickets = (list: Ticket[]) => {
-      return [...list].sort((a, b) => {
-        const rankA = statusRank[a.ticket_status] ?? 999;
-        const rankB = statusRank[b.ticket_status] ?? 999;
-        if (rankA !== rankB) return rankA - rankB;
-        return a.ticket_key.localeCompare(b.ticket_key);
-      });
-    };
-
     if (activeTab === "today") {
       // Use selectedDay when provided; otherwise default to today
       const day = selectedDay ? new Date(selectedDay) : new Date();
       day.setHours(0, 0, 0, 0);
 
-      // Determine which tickets have calendar events on this day
+      // Determine which tickets have calendar events on or before the selected day
+      let eventTicketIdsOnOrBeforeDay: Set<string> | undefined;
       let eventTicketIdsForDay: Set<string> | undefined;
+      let ticketEventDateRanges: Map<string, { firstEventDate: Date; lastEventDate: Date }> | undefined;
+
       if (events && events.length > 0) {
         const dayStart = new Date(day);
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(day);
         dayEnd.setHours(23, 59, 59, 999);
 
+        // Tickets with events on the selected day (for event-type tickets)
         eventTicketIdsForDay = new Set(
           events
             .filter((event) => {
@@ -136,31 +123,103 @@ export function TicketsSidebar({
             .map((event) => event.ticket_id)
             .filter((id): id is string => Boolean(id)),
         );
+
+        // Tickets with events on or before the selected day (for filtering)
+        eventTicketIdsOnOrBeforeDay = new Set(
+          events
+            .filter((event) => {
+              const start = new Date(event.start_date);
+              start.setHours(0, 0, 0, 0);
+              return start <= day;
+            })
+            .map((event) => event.ticket_id)
+            .filter((id): id is string => Boolean(id)),
+        );
+
+        // Calculate first and last event dates for each ticket (for Done tickets)
+        ticketEventDateRanges = new Map();
+        events.forEach((event) => {
+          if (!event.ticket_id) return;
+          const eventDate = new Date(event.start_date);
+          eventDate.setHours(0, 0, 0, 0);
+
+          const existing = ticketEventDateRanges!.get(event.ticket_id);
+          if (!existing) {
+            ticketEventDateRanges!.set(event.ticket_id, {
+              firstEventDate: new Date(eventDate),
+              lastEventDate: new Date(eventDate),
+            });
+          } else {
+            if (eventDate < existing.firstEventDate) {
+              existing.firstEventDate = new Date(eventDate);
+            }
+            if (eventDate > existing.lastEventDate) {
+              existing.lastEventDate = new Date(eventDate);
+            }
+          }
+        });
       }
 
       const todayTickets = visibleTickets.filter((t) => {
         const status = t.ticket_status;
-        const statusLower = status.toLowerCase();
+        const statusLower = status?.toLowerCase();
         const isDone = statusLower === "done";
+        const isRemoved = statusLower === "removed";
+        const isCompletedStatus = isDone || isRemoved;
 
-        // Exclude removed / backlog / blocked tickets from today view
-        if (["removed", "backlog", "blocked"].includes(statusLower)) return false;
+        // Exclude backlog / blocked tickets from today view
+        if (["backlog", "blocked"].includes(statusLower)) return false;
 
-        // Event-type tickets: only show when there is a calendar event on this day
+        // Check if ticket has calendar event on or before selected day
+        const hasEventOnOrBeforeDay = eventTicketIdsOnOrBeforeDay?.has(t.ticket_id);
+        const hasEventForDay = eventTicketIdsForDay?.has(t.ticket_id);
+        const eventDateRange = ticketEventDateRanges?.get(t.ticket_id);
+
+        // For event-type tickets: only show when there is a calendar event on this specific day
         if (getType(t) === "event") {
-          if (!eventTicketIdsForDay) return false;
-          return eventTicketIdsForDay.has(t.ticket_id);
+          return hasEventForDay || false;
         }
+
+        // For Done/Removed tickets:
+        if (isCompletedStatus) {
+          // If has completion_date, show up until completion_date
+          if (t.completion_date) {
+            const completionDate = new Date(t.completion_date);
+            completionDate.setHours(0, 0, 0, 0);
+
+            // If has calendar events, show from first event through completion_date
+            if (eventDateRange) {
+              return day >= eventDateRange.firstEventDate && day <= completionDate;
+            }
+
+            // If no calendar events, show only on completion_date
+            return completionDate.getTime() === day.getTime();
+          }
+
+          // If no completion_date, use existing behavior
+          // With events: show from first event date through last event date
+          if (eventDateRange) {
+            return day >= eventDateRange.firstEventDate && day <= eventDateRange.lastEventDate;
+          }
+
+          // With only scheduled_date: show only on exact scheduled date
+          if (t.scheduled_date) {
+            const scheduledDate = new Date(t.scheduled_date);
+            scheduledDate.setHours(0, 0, 0, 0);
+            return scheduledDate.getTime() === day.getTime();
+          }
+
+          // No events, no scheduled_date, no completion_date: don't show
+          return false;
+        }
+
+        // For non-Done, non-Removed, non-event tickets: show if they have a calendar event OR a scheduled_date
+        if (hasEventOnOrBeforeDay) return true;
 
         if (!t.scheduled_date) return false;
 
         const scheduledDate = new Date(t.scheduled_date);
         scheduledDate.setHours(0, 0, 0, 0);
-
-        if (isDone) {
-          // Done tickets: only show on their exact scheduled date
-          return scheduledDate.getTime() === day.getTime();
-        }
 
         // Non-done tickets: show when scheduled for selected day or earlier
         return scheduledDate <= day;
@@ -168,15 +227,20 @@ export function TicketsSidebar({
 
       return sortTickets(todayTickets);
     } else if (activeTab === "unscheduled") {
-      // Show non-event tickets with no scheduled_date and not in backlog/blocked/done/removed
-      return sortTickets(
-        visibleTickets.filter((t) => getType(t) !== "event" && !t.scheduled_date && !["Backlog", "Blocked", "Done", "Removed"].includes(t.ticket_status)),
-      );
-    } else {
-      // backlog - show non-event tickets with backlog or blocked status (excluding done/removed)
+      // Show non-event tickets: (no scheduled_date) OR (Blocked status ignoring scheduled_date)
       return sortTickets(
         visibleTickets.filter(
-          (t) => getType(t) !== "event" && ["Backlog", "Blocked"].includes(t.ticket_status) && !["Done", "Removed"].includes(t.ticket_status),
+          (t) =>
+            getType(t) !== "event" &&
+            !["done", "removed", "backlog"].includes(t.ticket_status?.toLowerCase()) &&
+            (!t.scheduled_date || t.ticket_status?.toLowerCase() === "blocked"),
+        ),
+      );
+    } else {
+      // backlog - show non-event tickets with Backlog status (ignoring scheduled_date)
+      return sortTickets(
+        visibleTickets.filter(
+          (t) => getType(t) !== "event" && t.ticket_status?.toLowerCase() === "backlog" && !["done", "removed"].includes(t.ticket_status?.toLowerCase()),
         ),
       );
     }
@@ -226,7 +290,7 @@ export function TicketsSidebar({
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--planner-sidebar-icon-bg)] text-[var(--accent)] shadow-[var(--planner-sidebar-icon-shadow)]">
             <Feather className="h-4 w-4" />
           </div>
-          <h3 className="text-lg font-semibold text-[var(--text)]">Tickets</h3>
+          <h3 className="text-lg font-semibold text-[var(--text)]">Focus Tickets</h3>
         </div>
         {selectedDay && (
           <div className="text-sm text-[var(--text-muted)]">
@@ -250,11 +314,15 @@ export function TicketsSidebar({
               .filter((p) => p.project_status?.toLowerCase() === "in progress")
               .sort((a, b) => a.project_key.localeCompare(b.project_key))
               .map((p) => (
-                <option key={p.project_key} value={p.project_key}>
+                <option key={`project-${p.project_key}`} value={p.project_key}>
                   {p.project_key} — {p.title}
                 </option>
               ))}
-            {projects.length === 0 && <option value="">No projects</option>}
+            {projects.length === 0 && (
+              <option key="no-domains" value="">
+                No focuses
+              </option>
+            )}
           </select>
           <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
         </div>
@@ -312,21 +380,23 @@ export function TicketsSidebar({
       <ScrollArea className="flex-1">
         <div ref={ticketsListRef} className="space-y-2 p-2">
           {filteredTickets.length === 0 ? (
-            <div className="p-4 text-center text-sm text-[var(--text-muted)]">{!selectedProjectKey ? "Select a project" : "No tickets available"}</div>
+            <div className="p-4 text-center text-sm text-[var(--text-muted)]">{!selectedProjectKey ? "Select a focus" : "No tickets available"}</div>
           ) : (
-            filteredTickets.map((ticket) => {
-              const isDone = ticket.ticket_status?.toLowerCase() === "done";
+            filteredTickets.map((ticket, index) => {
+              const isDone = ["done", "removed"].includes(ticket.ticket_status?.toLowerCase());
               const isEventToday = activeTab === "today" && ticket.ticket_type?.toLowerCase() === "event";
               const eventTimeRange = isEventToday && ticket.ticket_type?.toLowerCase() === "event" ? getEventTimeRangeForTicket(ticket.ticket_id) : null;
               return (
                 <TicketCard
-                  key={ticket.ticket_id}
+                  key={ticket.ticket_id || `ticket-${index}`}
                   ticket={ticket}
+                  tickets={currentTickets}
                   isDone={isDone}
                   isEventToday={isEventToday}
                   eventTimeRange={eventTimeRange}
                   onTicketClick={onTicketClick}
                   onUnscheduleTicket={onUnscheduleTicket}
+                  onStatusChange={onStatusChange}
                   onOpenSchedulePicker={
                     onScheduleTicket
                       ? (ticketId, position) => {
@@ -347,13 +417,7 @@ export function TicketsSidebar({
         </div>
       </ScrollArea>
 
-      <TicketCreateModal
-        open={isCreateModalOpen}
-        projects={projects}
-        selectedProjectKey={selectedProjectKey}
-        onClose={() => setIsCreateModalOpen(false)}
-        onCreateTicket={onCreateTicket}
-      />
+      <CreationHotbar open={isCreateModalOpen} projects={projects} selectedProjectKey={selectedProjectKey} onClose={() => setIsCreateModalOpen(false)} />
 
       {ticketSchedulePicker && (
         <div

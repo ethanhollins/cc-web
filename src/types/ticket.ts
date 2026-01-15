@@ -31,13 +31,16 @@ export interface Ticket {
   title: string;
   ticket_status: TicketStatus;
   assignee?: string;
-  epic?: string;
+  epic?: string; // Legacy: epic name (kept for backwards compatibility)
+  epic_id?: string; // Current: epic ticket_id
   project_id?: string;
   project?: Project;
   notion_url?: string;
+  notion_id?: string;
   colour?: string;
   google_id?: string;
   scheduled_date?: string; // ISO date string for when ticket is scheduled
+  completion_date?: string; // ISO date string for when ticket was completed (Done/Removed only)
   meeting_url?: string;
   meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
   priority?: string;
@@ -51,4 +54,25 @@ export interface Ticket {
 
 export interface TicketsResponse {
   tickets: Ticket[];
+}
+
+export interface TicketDetailsResponse {
+  ticket: {
+    ticket_id: string;
+    title: string;
+    project_id?: string;
+    ticket_type: TicketType;
+    ticket_status: TicketStatus;
+    ticket_key: string;
+    colour?: string;
+    epic_id?: string;
+    scheduled_date?: string;
+    start_date?: string;
+    end_date?: string;
+    google_calendar_id?: string;
+    completion_date?: string;
+    description?: string;
+    meeting_url?: string;
+    meeting_platform?: "google_meet" | "zoom" | "teams" | "other";
+  };
 }

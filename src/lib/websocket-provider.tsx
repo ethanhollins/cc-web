@@ -10,6 +10,8 @@ export type WebSocketMessage<T = unknown> = {
 
 export type WebSocketConnectionState = "connecting" | "connected" | "disconnected" | "reconnecting" | "error";
 
+type MessageListener = (message: WebSocketMessage) => void;
+
 export interface WebSocketContextType {
   connectionState: WebSocketConnectionState;
   lastMessage: WebSocketMessage | null;
@@ -17,6 +19,7 @@ export interface WebSocketContextType {
   connect: () => void;
   disconnect: () => void;
   isConnected: boolean;
+  addMessageListener: (listener: MessageListener) => () => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -48,6 +51,7 @@ export function WebSocketProvider({
   const reconnectAttemptsRef = useRef(0);
   const isManualDisconnectRef = useRef(false);
   const connectRef = useRef<() => void>(() => {});
+  const messageListenersRef = useRef<Set<MessageListener>>(new Set());
 
   const clearReconnectTimeout = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -92,6 +96,15 @@ export function WebSocketProvider({
           };
 
           setLastMessage(message);
+
+          // Notify all listeners directly (no state updates, no rerenders)
+          messageListenersRef.current.forEach((listener) => {
+            try {
+              listener(message);
+            } catch (error) {
+              console.error("Error in WebSocket message listener:", error);
+            }
+          });
         } catch (error) {
           console.error("Error processing WebSocket message:", error);
         }
@@ -191,6 +204,15 @@ export function WebSocketProvider({
     };
   }, [connect, connectionState]);
 
+  const addMessageListener = useCallback((listener: MessageListener) => {
+    messageListenersRef.current.add(listener);
+
+    // Return cleanup function
+    return () => {
+      messageListenersRef.current.delete(listener);
+    };
+  }, []);
+
   const contextValue: WebSocketContextType = {
     connectionState,
     lastMessage,
@@ -198,6 +220,7 @@ export function WebSocketProvider({
     connect,
     disconnect,
     isConnected: connectionState === "connected",
+    addMessageListener,
   };
 
   return <WebSocketContext.Provider value={contextValue}>{children}</WebSocketContext.Provider>;

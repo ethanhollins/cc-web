@@ -12,6 +12,108 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Hotbar Creation Interface - CC-66 - 2026-01-14
+
+- Redesign ticket/focus creation from modal to hotbar-style popup
+- Add toggle between "Ticket" and "Focus" creation modes
+- Implement horizontal scrollable expandable options with caret indicators
+- Position hotbar centered with no background blur or shading
+- Support default type detection ("Event" from calendar, "Task" from + button)
+- Add image icon button for future "create from image" flow
+- Maintain quick, temporary feel with click-outside-to-dismiss behavior
+
+### Refactor: Consolidate Ticket Type Colors - 2026-01-12
+
+- Consolidate all ticket type color definitions into themes.css CSS variables
+- Create comprehensive color tokens for all ticket types (task, story, bug, epic, event)
+- Add light and dark mode color variants for backgrounds, text, and hover states
+- Update ticket-type-utils.ts to use CSS variables instead of hardcoded Tailwind colors
+- Fix dark mode display issues where ticket type colors weren't showing
+- Update TicketCard component to use consolidated color system
+- Update epic Diamond icon to use purple color from theme variables
+- Simplify code by removing redundant dark mode class suffixes
+
+### Feature: Domains Sidebar & Mobile Navigation - CC-61 - 2026-01-12
+
+- Created domains sidebar with project/domain selection and epic management
+- Added tab menu for epics in domains sidebar
+- Implemented domain edit modal with compact/full modes similar to ticket modal
+- Added domain status dropdown with proper status groups
+- Renamed "Project" to "Domain" and "Projects" to "Focuses" throughout the application UI
+- Added mobile tab menu above header with tickets, domains, and theme toggle buttons
+- Improved mobile navigation with drawer experience for both tickets and domains
+- Updated PlannerLayout to support multiple sidebars
+- Added TypeSelect disabled state that looks normal but isn't clickable
+- Hidden Epic property row when viewing epic-type tickets
+
+### Refactor: Ticket Modal Compact Mode - CC-59 - 2026-01-11
+
+- Add dynamic mode switching between "compact" and "full" views based on content
+- Implement compact mode for tickets with minimal information (no description/linked tickets/documents)
+- Add pill-shaped "+" buttons for adding description, linked tickets, and related documents
+- Redesign layout: single column in compact mode, two-column in full mode
+- Display linked tickets and related documents in main content area with proper icons
+- Improve mobile-responsive behavior for both modes
+- Status badge changes to rounded-full in compact mode for cleaner look
+
+### Refactor: API Migration & UI Enhancements - 2026-01-11
+
+- Rename `isBreak` to `is_break` for API consistency across all calendar event references
+- Add break event creation API integration with proper backend support
+- Implement status change functionality with inline status select dropdown in ticket cards
+- Add `StatusSelect` component with grouped status options (To-do, In progress, Complete)
+- Create `ticket-status-utils.ts` with reusable status styling utilities
+- Update ticket filtering to show Done/Removed tickets until completion_date
+- Add `completion_date` field to Ticket type for tracking when tickets were completed
+- Refactor ticket sorting to prioritize Blocked tickets at top, Done/Removed at bottom
+- Improve unscheduled tab filter to include Blocked status tickets
+- Migrate ticket modal from `useTicketNotionData` to new `useTicketData` hook
+- Add `updateTicketStatus` and `fetchTicketDetails` API functions
+- Consolidate API type definitions with `TicketDetailsResponse` interface
+- Implement WebSocket message listener pattern to avoid unnecessary re-renders
+- Update context menu for break events with "Rename Break" and "Remove Break" options
+- Fix break event deletion to handle empty calendar_id
+- Simplify ticket creation API with unified `projectId` and `ticketType` parameters
+- Remove unused `WebSocketProvider` from old layout
+- Add dark mode support to ticket type strip colors and status select
+
+### CC-58: Fix Today Tickets Filter Logic - 2026-01-08
+
+- Fix today tab to show tickets with events on selected day or previous days (excluding Backlog status)
+- Update filter logic to correctly categorize tickets with calendar events into today tab instead of unscheduled tab
+- Event-type tickets now only show on days with actual events (not future days)
+- Done tickets with events show from first event date through last event date
+- Extract ticket sorting logic to reusable utility function in `src/utils/ticket-sort.ts`
+- Sort tickets by: Done status (bottom), type (Story→Task→Bug→Event), status (In Review→In Progress→Todo→Ongoing→Blocked), then ticket key
+- Add spacing to ticket cards with empty bottom sections for consistent layout
+- Fix ticket modal to show correct event instance when clicking from sidebar (use selected day's event)
+- Improve mobile calendar selection with reduced long press delay (500ms) and `selectMinDistance=0`
+
+### CC-57: Schedule Break UI with Zigzag Edges - 2026-01-08
+
+- Implement "Schedule Break" button in calendar time selection context menu
+- Create break event component with distinctive visual design (zigzag edges, flat appearance)
+- Add CSS-based zigzag pattern using conic gradients for consistent frequency at any height
+- Support both short (<30 min) and regular break event layouts
+- Add theme-aware styling with light/dark mode support via CSS custom properties
+- Create break events locally without backend integration (placeholder for future API)
+- Style break events to blend with calendar background (no border, square corners, subtle colors)
+- Add `isBreak` property to CalendarEvent type for break event identification
+- Implement break-specific styling in calendar event transformation
+
+### CC-55: Calendar Time Selection for Event Creation - 2026-01-07
+
+- Implement time selection context menu with "Create Event" and "Schedule Break" actions
+- Add `useCalendarSelection` hook for managing calendar time selection state
+- Create reusable `ContextMenuButton` component for context menu actions
+- Refactor `CalendarContextMenu` to support both event and selection menu types (union type)
+- Add optimistic UI updates for newly created calendar events
+- Integrate time selection into planner page with `TicketCreateModal` support
+- Add date-time utilities (`toTimezone`, `parseInTimezone`) for timezone handling
+- Support creating events directly from calendar time selection drag
+- Update API client to handle event creation with start/end dates
+- Display visual indicators for optimistic events (loading state overlay)
+
 ### CC-53: Coach Programs Dialog - 2026-01-06
 
 - Add a reusable coach conversation dialog that renders structured 2-4 week programs with objectives, current vs target state, weekly milestones, success criteria, and coach notes
@@ -49,12 +151,14 @@ This is a living document maintained to track feature additions, bug fixes, and 
 - Add toggle behavior to CalendarCard popup in TicketCard schedule button
 
 ### Project Setup & Configuration - 2025-12-31
+
 - Added CHANGELOG.md for tracking project changes
 - Created GitHub Copilot instructions document
 - Installed shadcn/ui dependencies (class-variance-authority, lucide-react)
 - Configured shadcn/ui with New York style and Tailwind CSS 4
 
 ### CC-45: Refactor Planner Page with New Component Library - 2026-01-01
+
 - [x] Migrate planner page from legacy components to shadcn/ui architecture
 - [x] Create reusable calendar component wrapper around FullCalendar
 - [x] Support multiple calendar views (week, day) with configurable options

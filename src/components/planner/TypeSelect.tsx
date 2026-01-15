@@ -1,0 +1,34 @@
+"use client";
+
+import React from "react";
+import { cn } from "@/lib/utils";
+import type { TicketType } from "@/types/ticket";
+import { PillSelect } from "@/ui/pill-select";
+import { TYPE_OPTIONS, getTypeDisplayName, typeHoverClasses, typePillClasses } from "@/utils/ticket-type-utils";
+
+interface TypeSelectProps {
+  type: TicketType;
+  onTypeChange: (newType: TicketType) => void;
+  className?: string;
+  disabled?: boolean;
+  includeEpic?: boolean;
+}
+
+export function TypeSelect({ type, onTypeChange, className, disabled, includeEpic = false }: TypeSelectProps) {
+  const options = includeEpic ? ([...TYPE_OPTIONS, "epic"] as TicketType[]) : TYPE_OPTIONS;
+
+  return (
+    <PillSelect
+      value={type}
+      onChange={onTypeChange}
+      groups={[{ label: "Ticket Type", options }]}
+      getPillClasses={typePillClasses}
+      getHoverClasses={typeHoverClasses}
+      getDisplayName={getTypeDisplayName}
+      align="start"
+      className={cn("h-6 rounded-sm", className)}
+      showShadow={false}
+      disabled={disabled}
+    />
+  );
+}

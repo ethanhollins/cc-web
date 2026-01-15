@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DateSelectArg, DatesSetArg, EventDropArg, EventInput, EventMountArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { Search } from "lucide-react";
+import { Clock, Edit, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { MOCK_COACHES } from "@/components/planner/CoachesSidebar";
+import { useCalendarSelection } from "@/hooks/useCalendarSelection";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarEventExtendedProps, CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
+import { ContextMenuButton } from "@/ui/context-menu-button";
 import { calculateScrollTime, lightenColor, reorderTimegridColumnEventsForElement } from "@/utils/calendar-utils";
+import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
 
 interface CalendarViewProps {
@@ -22,7 +26,6 @@ interface CalendarViewProps {
   onEventDrop?: (dropInfo: EventDropArg) => void;
   onEventResize?: (resizeInfo: CalendarResizeArg) => void;
   onEventReceive?: (receiveInfo: EventReceiveArg) => void;
-  onDateSelect?: (selectInfo: DateSelectArg) => void;
   onDatesSet?: (dateInfo: DatesSetArg) => void;
   onEventDidMount?: (info: EventMountArg) => void;
   onDayHeaderClick?: (date: Date) => void;
@@ -30,8 +33,17 @@ interface CalendarViewProps {
   selectedDay?: Date | null;
   isDragging?: boolean;
   editableEventId?: string | null;
-  showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string) => void;
+  // Event context menu props
+  showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string, is_break?: boolean) => void;
   hideContextMenu?: () => void;
+  eventContextMenu?: CalendarContextMenuState;
+  onEventEdit?: (eventId: string) => void;
+  onEventDelete?: (eventId: string) => void;
+  // Selection context menu props
+  onCreateEvent?: (startDate: Date, endDate: Date) => void;
+  onScheduleBreak?: (startDate: Date, endDate: Date) => void;
+  onRenameBreak?: (eventId: string) => void;
+  // Touch and drag handlers
   onTouchStart?: (e: TouchEvent, eventId: string) => void;
   onTouchEnd?: () => void;
   onDragStart?: () => void;
@@ -54,7 +66,6 @@ export function CalendarView({
   onEventDrop,
   onEventResize,
   onEventReceive,
-  onDateSelect,
   onDatesSet,
   onEventDidMount,
   onDayHeaderClick,
@@ -63,7 +74,13 @@ export function CalendarView({
   isDragging,
   editableEventId,
   showContextMenu,
-  hideContextMenu: _hideContextMenu,
+  hideContextMenu,
+  eventContextMenu,
+  onEventEdit,
+  onEventDelete,
+  onCreateEvent,
+  onScheduleBreak,
+  onRenameBreak,
   onTouchStart,
   onTouchEnd,
   onDragStart,
@@ -75,7 +92,42 @@ export function CalendarView({
 }: CalendarViewProps) {
   const internalRef = useRef<FullCalendar | null>(null);
   const calendarRef = externalRef || internalRef;
+
+  // Selection context menu management
+  const { selectionContextMenu, handleDateSelect, hideSelectionContextMenu } = useCalendarSelection();
   const scrollTime = calculateScrollTime();
+
+  // Wrap handleDateSelect to also hide event context menu
+  const handleDateSelectWrapper = useCallback(
+    (selectInfo: DateSelectArg) => {
+      hideContextMenu?.(); // Close event menu when making a selection
+      handleDateSelect(selectInfo);
+    },
+    [handleDateSelect, hideContextMenu],
+  );
+
+  // Helper to close selection menu and unselect
+  // eslint-disable-next-line
+  const handleSelectionMenuClose = useCallback(() => {
+    hideSelectionContextMenu();
+    calendarRef.current?.getApi().unselect();
+  }, [hideSelectionContextMenu, calendarRef]);
+
+  // Handler for create event action
+  const handleCreateEvent = useCallback(() => {
+    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onCreateEvent) {
+      onCreateEvent(selectionContextMenu.startDate, selectionContextMenu.endDate);
+    }
+    handleSelectionMenuClose();
+  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onCreateEvent, handleSelectionMenuClose]);
+
+  // Handler for schedule break action
+  const handleScheduleBreak = useCallback(() => {
+    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onScheduleBreak) {
+      onScheduleBreak(selectionContextMenu.startDate, selectionContextMenu.endDate);
+    }
+    handleSelectionMenuClose();
+  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onScheduleBreak, handleSelectionMenuClose]);
   // TODO: Consider lifting coach lens state into a shared hook or
   // context so other planner surfaces (e.g. navbar, sidebar) can
   // reflect the active coach without duplicating state.
@@ -155,6 +207,13 @@ export function CalendarView({
         expandRows={config.expandRows}
         stickyHeaderDates={config.stickyHeaderDates}
         firstDay={1} // Monday
+        // Enable time selection
+        selectable
+        selectMirror
+        unselectAuto={false}
+        longPressDelay={500}
+        selectLongPressDelay={500}
+        selectMinDistance={0}
         // Mobile-friendly day header
         dayHeaderFormat={{ weekday: "short", day: "numeric" }}
         dayHeaderContent={(args) => {
@@ -223,14 +282,20 @@ export function CalendarView({
         editable
         eventStartEditable
         eventDurationEditable
-        // Selection
-        selectable
-        selectMirror
-        unselectAuto={false}
-        longPressDelay={1200}
-        selectLongPressDelay={1200}
+        eventResizableFromStart
         // Events with project colors
         events={events.map((event) => {
+          // Break events: blend with calendar background
+          if (event.extendedProps?.is_break) {
+            return {
+              ...event,
+              borderColor: "transparent",
+              backgroundColor: "#71717b",
+              textColor: "#6b7280",
+              className: "event-break",
+            };
+          }
+          // Regular events with project colors
           if (event.extendedProps?.project?.colour) {
             return {
               ...event,
@@ -275,12 +340,18 @@ export function CalendarView({
             return;
           }
           info.jsEvent.preventDefault();
+
+          // Break events should not open ticket modal, they should just be selectable for editing
+          if (info.event.extendedProps?.is_break) {
+            return;
+          }
+
           onEventClick?.(info.event.id);
         }}
         eventDrop={onEventDrop}
         eventResize={onEventResize}
         eventReceive={onEventReceive}
-        select={onDateSelect}
+        select={handleDateSelectWrapper}
         drop={onDrop}
         datesSet={onDatesSet}
         eventDidMount={(info) => {
@@ -289,7 +360,7 @@ export function CalendarView({
             if (isDragging) return;
             e.preventDefault();
             e.stopPropagation();
-            showContextMenu?.(e.clientX, e.clientY, info.event.id, info.event.extendedProps?.google_calendar_id);
+            showContextMenu?.(e.clientX, e.clientY, info.event.id, info.event.extendedProps?.google_calendar_id, info.event.extendedProps?.is_break);
           };
 
           info.el.addEventListener("contextmenu", handleEventContextMenu);
@@ -316,6 +387,76 @@ export function CalendarView({
         eventResizeStart={onResizeStart}
         eventResizeStop={onResizeStop}
       />
+
+      {/* Event context menu (right-click on event) - only show if it has an eventId */}
+      {eventContextMenu && eventContextMenu.show && eventContextMenu.type === "event" && eventContextMenu.eventId && (
+        <CalendarContextMenu contextMenu={eventContextMenu} onClose={() => hideContextMenu?.()}>
+          {eventContextMenu.is_break ? (
+            // Break event menu items
+            <>
+              <ContextMenuButton
+                icon={Edit}
+                onClick={() => {
+                  if (eventContextMenu.eventId && onRenameBreak) {
+                    onRenameBreak(eventContextMenu.eventId);
+                  }
+                  hideContextMenu?.();
+                }}
+              >
+                Rename Break
+              </ContextMenuButton>
+
+              <ContextMenuButton
+                icon={Trash2}
+                variant="destructive"
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Remove Break
+              </ContextMenuButton>
+            </>
+          ) : (
+            // Regular event menu items
+            <>
+              <ContextMenuButton
+                icon={Edit}
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventEdit) onEventEdit(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Open Ticket
+              </ContextMenuButton>
+
+              <ContextMenuButton
+                icon={Trash2}
+                variant="destructive"
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Delete Event
+              </ContextMenuButton>
+            </>
+          )}
+        </CalendarContextMenu>
+      )}
+
+      {/* Selection context menu (click & drag to select time) */}
+      {selectionContextMenu.show && (
+        <CalendarContextMenu contextMenu={selectionContextMenu} onClose={handleSelectionMenuClose}>
+          <ContextMenuButton icon={Plus} onClick={handleCreateEvent}>
+            Create Event
+          </ContextMenuButton>
+
+          <ContextMenuButton icon={Clock} onClick={handleScheduleBreak}>
+            Schedule Break
+          </ContextMenuButton>
+        </CalendarContextMenu>
+      )}
 
       {/* Coach focus toggle - bottom-right overlay */}
       <button

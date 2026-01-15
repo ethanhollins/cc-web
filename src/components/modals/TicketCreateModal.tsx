@@ -60,9 +60,8 @@ export function TicketCreateModal({ open, projects, selectedProjectKey, onClose,
       const created = await createTicket(
         {
           title: newTicketTitle.trim(),
-          projectNotionId: project.notion_id,
-          internalProjectId: project.project_id,
-          type: newTicketType,
+          projectId: project.project_id,
+          ticketType: newTicketType,
           scheduledDate: newTicketScheduledDate ?? undefined,
         },
         undefined,

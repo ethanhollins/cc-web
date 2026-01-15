@@ -41,9 +41,7 @@ export default function RootLayout({
       </head>
       <body className={cx(inter.variable, "bg-primary antialiased")}>
         <RouteProvider>
-          <Theme>
-            <WebSocketProvider>{children}</WebSocketProvider>
-          </Theme>
+          <Theme>{children}</Theme>
         </RouteProvider>
       </body>
     </html>

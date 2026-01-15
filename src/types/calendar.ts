@@ -11,21 +11,38 @@ export interface CalendarEvent extends Ticket {
   google_calendar_id: string;
   all_day?: boolean;
   completed?: boolean;
+  isOptimistic?: boolean;
+  is_break?: boolean;
 }
 
 export interface EventsResponse {
   events: CalendarEvent[];
 }
 
+export interface BreakEvent {
+  google_id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  is_break: true;
+}
+
+export interface CreateBreakResponse {
+  break: BreakEvent;
+}
+
 export interface CalendarEventExtendedProps {
   showBand?: boolean;
   bandColor?: string;
-  ticket_id: string;
-  ticket_key: string;
-  ticket_status: string;
-  google_calendar_id: string;
+  ticket_id?: string;
+  ticket_key?: string;
+  ticket_status?: string;
+  google_calendar_id?: string;
   completed?: boolean;
   project?: Project;
+  is_break?: boolean;
+  epic?: string; // Legacy epic name
+  epic_id?: string; // Epic ticket_id
   /** Optional coach score for events that come from coach-managed tickets. */
   score?: number;
   /** Optional yields associated with the underlying ticket/program. */

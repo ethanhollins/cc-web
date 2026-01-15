@@ -1,4 +1,4 @@
-import type { EventsResponse } from "@/types/calendar";
+import type { CreateBreakResponse, EventsResponse } from "@/types/calendar";
 import { apiClient } from "./client";
 
 /**
@@ -62,4 +62,22 @@ export async function deleteEvent(eventId: string, calendarId: string, signal?: 
   if (response.status !== 200) {
     throw new Error(`Failed to delete event: ${response.status}`);
   }
+}
+
+export async function createBreak(
+  breakData: {
+    title: string;
+    start_date: string;
+    end_date: string;
+    calendar_id?: string;
+  },
+  signal?: AbortSignal,
+): Promise<CreateBreakResponse> {
+  const response = await apiClient.post("/events/breaks", breakData, { signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to create break: ${response.status}`);
+  }
+
+  return response.data as CreateBreakResponse;
 }

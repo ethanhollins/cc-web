@@ -3,6 +3,7 @@ import type { DateSelectArg, EventClickArg, EventDropArg } from "@fullcalendar/c
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import moment from "moment-timezone";
 import type { CalendarResizeArg } from "@/types/calendar";
+import { toTimezone } from "@/utils/date-utils";
 
 /**
  * Calendar interaction hooks for drag/drop, context menu, and touch interactions
@@ -16,6 +17,7 @@ export interface ContextMenu {
   type: "event";
   eventId?: string;
   googleCalendarId?: string;
+  is_break?: boolean;
 }
 
 /**
@@ -61,7 +63,7 @@ export function useCalendarContextMenu(isDragging?: boolean) {
   });
 
   const showContextMenu = useCallback(
-    (x: number, y: number, eventId?: string, googleCalendarId?: string) => {
+    (x: number, y: number, eventId?: string, googleCalendarId?: string, is_break?: boolean) => {
       // Don't show context menu if an event is being dragged
       if (isDragging) {
         return;
@@ -74,6 +76,7 @@ export function useCalendarContextMenu(isDragging?: boolean) {
         type: "event",
         eventId,
         googleCalendarId,
+        is_break,
       });
     },
     [isDragging],
@@ -227,7 +230,13 @@ export function useCalendarInteractions({
       info.jsEvent.preventDefault();
       info.jsEvent.stopPropagation();
 
-      showContextMenu(info.jsEvent.clientX, info.jsEvent.clientY, info.event.id, info.event.extendedProps?.google_calendar_id);
+      showContextMenu(
+        info.jsEvent.clientX,
+        info.jsEvent.clientY,
+        info.event.id,
+        info.event.extendedProps?.google_calendar_id,
+        info.event.extendedProps?.is_break,
+      );
     },
     [showContextMenu],
   );
@@ -237,8 +246,8 @@ export function useCalendarInteractions({
       try {
         const eventId = info.event.id;
         // Format dates in Sydney timezone (matching old implementation)
-        const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
-        const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+        const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
+        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
 
         const updates = {
           start_date: newStartDate,
@@ -259,8 +268,8 @@ export function useCalendarInteractions({
       try {
         const eventId = info.event.id;
         // Format dates in Sydney timezone (matching old implementation)
-        const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
-        const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+        const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
+        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
 
         const updates = {
           start_date: newStartDate,
@@ -286,8 +295,8 @@ export function useCalendarInteractions({
       try {
         const eventId = info.event.id;
         // Format dates in Sydney timezone (matching old implementation)
-        const newStartDate = moment.tz(info.event.start?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
-        const newEndDate = moment.tz(info.event.end?.toISOString().replace(/Z$/, ""), "Australia/Sydney").format();
+        const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
+        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
 
         const updates = {
           start_date: newStartDate,

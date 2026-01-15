@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type WebSocketMessage, useWebSocket } from "@/lib/websocket-provider";
 
 export interface UseWebSocketMessagesOptions {
@@ -9,7 +9,13 @@ export interface UseWebSocketMessagesOptions {
 }
 
 export function useWebSocketMessages<T = unknown>(handler?: (message: WebSocketMessage<T>) => void, options: UseWebSocketMessagesOptions = {}) {
-  const { lastMessage, connect, disconnect, connectionState, isConnected } = useWebSocket();
+  const { lastMessage, connect, disconnect, connectionState, isConnected, addMessageListener } = useWebSocket();
+
+  // Use ref to avoid recreating the listener on every render
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   useEffect(() => {
     if (options.autoConnect !== false) {
@@ -21,16 +27,21 @@ export function useWebSocketMessages<T = unknown>(handler?: (message: WebSocketM
   }, [connect, disconnect, options.autoConnect]);
 
   useEffect(() => {
-    if (!lastMessage || !handler) {
+    if (!handlerRef.current) {
       return;
     }
 
-    if (options.messageType && lastMessage.type !== options.messageType) {
-      return;
-    }
+    // Subscribe to messages via the listener pattern (no rerenders!)
+    const unsubscribe = addMessageListener((message) => {
+      if (options.messageType && message.type !== options.messageType) {
+        return;
+      }
 
-    handler(lastMessage as WebSocketMessage<T>);
-  }, [lastMessage, handler, options.messageType]);
+      handlerRef.current?.(message as WebSocketMessage<T>);
+    });
+
+    return unsubscribe;
+  }, [addMessageListener, options.messageType]);
 
   return {
     lastMessage,
