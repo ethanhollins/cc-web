@@ -60,6 +60,9 @@ export function sortTickets(list: Ticket[]): Ticket[] {
     if (aStatusRank !== bStatusRank) return aStatusRank - bStatusRank;
 
     // Finally by ticket key
+    if (!a.ticket_key && !b.ticket_key) return 0;
+    if (!a.ticket_key) return 1;
+    if (!b.ticket_key) return -1;
     return a.ticket_key.localeCompare(b.ticket_key);
   });
 }
