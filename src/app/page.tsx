@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
 import { createBreak, createEvent } from "@/api/calendar";
@@ -32,6 +32,7 @@ import type { Project } from "@/types/project";
 import type { Ticket } from "@/types/ticket";
 import { transformEventsToCalendarFormat } from "@/utils/calendar-transform";
 import { getWeekRangeTitle } from "@/utils/calendar-utils";
+import { loadFocusFilterPreferences, saveFocusFilterPreferences } from "@/utils/storage-utils";
 
 export default function StagePlannerPage() {
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -45,6 +46,17 @@ export default function StagePlannerPage() {
   });
 
   const [isTodayInRange, setIsTodayInRange] = useState(true);
+
+  // Focus filter state (empty array means show all)
+  const [selectedFocusIds, setSelectedFocusIds] = useState<string[]>(() => {
+    // Load saved preferences on mount
+    return loadFocusFilterPreferences();
+  });
+
+  // Save focus filter preferences to cookies whenever they change
+  useEffect(() => {
+    saveFocusFilterPreferences(selectedFocusIds);
+  }, [selectedFocusIds]);
 
   // Event creation trigger state (for calendar time selection)
   const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
@@ -97,6 +109,16 @@ export default function StagePlannerPage() {
 
   // Calendar events with caching (and automatic ticket fetching)
   const { events, isLoading: _isLoading, updateEvent, deleteEvent, updateEvents, refetch } = useCalendarEvents(selectedDate, fetchTicketsForProject);
+
+  // Filter events by selected focuses
+  const filteredEvents = events.filter((event) => {
+    // Always show break events
+    if (event.is_break) return true;
+    // If no filters selected, show all events
+    if (selectedFocusIds.length === 0) return true;
+    // Otherwise, only show events from selected focuses
+    return event.project_id && selectedFocusIds.includes(event.project_id);
+  });
 
   // Calendar interactions (drag/drop, context menu, long press)
   const {
@@ -196,7 +218,7 @@ export default function StagePlannerPage() {
       setSelectedTicket(event || null);
       setSelectedEventId(eventId);
     },
-    [events],
+    [events, setSelectedTicket, setSelectedEventId],
   );
 
   const handleTicketClick = useCallback(
@@ -223,7 +245,7 @@ export default function StagePlannerPage() {
         setSelectedEventId(null); // Clear event ID when no selected day
       }
     },
-    [selectedDay, events],
+    [selectedDay, events, setSelectedTicket, setSelectedEventId],
   );
 
   // Handle day header click for filtering
@@ -418,9 +440,12 @@ export default function StagePlannerPage() {
   }, []);
 
   // Handle opening domain modal
-  const handleProjectEdit = useCallback((project: Project) => {
-    setSelectedProject(project);
-  }, []);
+  const handleProjectEdit = useCallback(
+    (project: Project) => {
+      setSelectedProject(project);
+    },
+    [setSelectedProject],
+  );
 
   // Handle creating event from time selection
   const handleCreateEventFromSelection = useCallback((startDate: Date, endDate: Date) => {
@@ -549,7 +574,7 @@ export default function StagePlannerPage() {
   const title = getWeekRangeTitle(selectedDate);
 
   // Transform events to FullCalendar format
-  const calendarEvents = transformEventsToCalendarFormat(events, projects, tickets);
+  const calendarEvents = transformEventsToCalendarFormat(filteredEvents, projects, tickets);
 
   return (
     <div className="h-full w-full">
@@ -592,6 +617,9 @@ export default function StagePlannerPage() {
               onNext={goToNextPeriod}
               onToday={goToToday}
               isTodayInRange={isTodayInRange}
+              projects={projects}
+              selectedFocusIds={selectedFocusIds}
+              onFocusFilterChange={setSelectedFocusIds}
             />
 
             <div className="relative flex-1 overflow-hidden">

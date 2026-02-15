@@ -14,6 +14,12 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Focus Filter for Calendar - CC-90 - 2026-02-15
+
+- Add focus filter functionality to calendar view
+- Implement storage utilities for persisting filter preferences
+- Integrate filter with calendar header and event display
+
 ### Feature: Hotbar Creation Interface - CC-66 - 2026-01-14
 
 - Redesign ticket/focus creation from modal to hotbar-style popup
