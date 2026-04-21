@@ -6,7 +6,7 @@ body:
     id: ticket_key
     attributes:
       label: Ticket Key
-      description: Example: CC-48
+      description: "Example: CC-48"
       placeholder: CC-48
     validations:
       required: true
