@@ -1,0 +1,44 @@
+name: Work Item
+description: Create a structured issue for planned work
+title: "[CC-XXX] <short summary>"
+body:
+  - type: input
+    id: ticket_key
+    attributes:
+      label: Ticket Key
+      description: Example: CC-48
+      placeholder: CC-48
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: Issue Type
+      description: Select the type of work for this issue
+      options:
+        - feature
+        - fix
+        - chore
+        - refactor
+        - docs
+        - test
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the requested feature or change clearly
+      placeholder: Describe the requested feature/change clearly
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevant_reference_files
+    attributes:
+      label: Relevant Reference Files
+      description: List related files or paths, one per line
+      placeholder: |
+        path/to/file.py
