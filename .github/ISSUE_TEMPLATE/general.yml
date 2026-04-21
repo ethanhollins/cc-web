@@ -1,0 +1,47 @@
+name: General issue
+description: Report a bug or share a request for improvement
+title: "[Issue]: "
+labels:
+  - triage
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem or request.
+      placeholder: A clear and concise summary.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: If reporting a bug, share exact steps.
+      placeholder: |
+        1. Go to ...
+        2. Click on ...
+        3. See error ...
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, and version details.
+      placeholder: e.g. Chrome 124 on macOS 14
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add links, screenshots, logs, or any extra details.
+    validations:
+      required: false
