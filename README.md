@@ -72,6 +72,8 @@ npm run deploy:dev                          # Deploy to dev (dev/)
 npm run deploy:feature -- feat-cc-123       # Deploy to feature env (feat-cc-123/)
 ```
 
+Feature environments are auto-deployed for PRs and torn down automatically when the PR is merged.
+
 ## 📝 Development Guidelines
 
 This project follows strict development practices. **Please read these before contributing:**

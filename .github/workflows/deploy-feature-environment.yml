@@ -2,7 +2,7 @@ name: Deploy Feature Environment
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+    types: [opened, reopened, synchronize, edited, closed]
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ jobs:
   deploy-feature:
     name: Deploy feature environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,3 +48,35 @@ jobs:
         run: |
           # deploy.sh runs npm ci and npm run export before syncing to S3.
           ./deploy.sh "${{ steps.ticket.outputs.environment }}"
+
+  teardown-feature:
+    name: Tear down feature environment
+    runs-on: ubuntu-latest
+    if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - name: Extract ticket code
+        id: ticket
+        shell: bash
+        run: |
+          TITLE="$(echo "${{ github.event.pull_request.title }}" | tr '[:upper:]' '[:lower:]')"
+          BRANCH="$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]')"
+          TICKET_CODE="$(printf '%s\n%s\n' "$TITLE" "$BRANCH" | grep -Eo 'cc-[0-9]+' | head -n1 || true)"
+
+          if [ -z "$TICKET_CODE" ]; then
+            echo "Could not determine ticket code."
+            echo "Use PR title with 'CC-123' or branch name like 'feat/cc-123-description'."
+            exit 1
+          fi
+
+          echo "environment=feat-$TICKET_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Remove feature environment from S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        shell: bash
+        run: |
+          AWS_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="cc-web-app-bucket-${AWS_ACCOUNT}"
+          aws s3 rm "s3://${BUCKET_NAME}/${{ steps.ticket.outputs.environment }}/" --recursive
