@@ -21,7 +21,7 @@ ENVIRONMENT="$(echo "${1:-dev}" | tr '[:upper:]' '[:lower:]')"  # Supported: dev
 
 if [[ "$ENVIRONMENT" != "dev" && ! "$ENVIRONMENT" =~ ^feat-cc-[0-9]+$ ]]; then
     echo -e "${RED}❌ Invalid environment: ${ENVIRONMENT}${NC}"
-    echo -e "${YELLOW}Usage: ./deploy.sh dev | ./deploy.sh feat-cc-123${NC}"
+    echo -e "${YELLOW}Usage: ./deploy.sh dev | ./deploy.sh feat-cc-123 (case-insensitive input)${NC}"
     exit 1
 fi
 
