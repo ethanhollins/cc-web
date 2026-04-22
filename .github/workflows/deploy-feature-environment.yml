@@ -64,7 +64,7 @@ jobs:
 
           if [ -z "$TICKET_CODE" ]; then
             echo "Could not determine ticket code."
-            echo "Use PR title with 'CC-123' or branch name like 'feat/cc-123-description'."
+            echo "Use PR title with 'cc-123' (case-insensitive) or branch name like 'feat/cc-123-description'."
             exit 1
           fi
 
@@ -79,4 +79,6 @@ jobs:
         run: |
           AWS_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
           BUCKET_NAME="cc-web-app-bucket-${AWS_ACCOUNT}"
-          aws s3 rm "s3://${BUCKET_NAME}/${{ steps.ticket.outputs.environment }}/" --recursive
+          TARGET_PREFIX="s3://${BUCKET_NAME}/${{ steps.ticket.outputs.environment }}/"
+          echo "Removing feature environment objects from ${TARGET_PREFIX}"
+          aws s3 rm "${TARGET_PREFIX}" --recursive || true
