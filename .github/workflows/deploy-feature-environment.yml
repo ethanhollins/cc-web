@@ -33,7 +33,7 @@ jobs:
 
           if [ -z "$TICKET_CODE" ]; then
             echo "Could not determine ticket code."
-            echo "Use PR title or branch name with format CC-123 (or cc-123)."
+            echo "Use PR title or branch name with format cc-123 (case-insensitive)."
             exit 1
           fi
 
