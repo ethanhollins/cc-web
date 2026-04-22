@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 BUILD_DIR="out"
-ENVIRONMENT="${1:-dev}"  # Supported: dev or feat-<ticket-code>
+ENVIRONMENT="$(echo "${1:-dev}" | tr '[:upper:]' '[:lower:]')"  # Supported: dev or feat-<ticket-code>
 
 if [[ "$ENVIRONMENT" != "dev" && ! "$ENVIRONMENT" =~ ^feat-[a-z0-9-]+$ ]]; then
     echo -e "${RED}❌ Invalid environment: ${ENVIRONMENT}${NC}"
