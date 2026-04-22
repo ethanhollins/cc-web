@@ -45,6 +45,7 @@ echo -e "${BLUE}🚀 Starting deployment process for environment: ${YELLOW}${ENV
 
 # Load environment variables
 ENV_FILE=".env.${ENVIRONMENT}"
+# Feature environments share dev config unless an explicit feature env file exists.
 if [ ! -f "$ENV_FILE" ] && [[ "$ENVIRONMENT" =~ ^feat- ]]; then
     ENV_FILE=".env.dev"
 fi

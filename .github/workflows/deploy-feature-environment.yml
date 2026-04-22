@@ -26,6 +26,7 @@ jobs:
         id: ticket
         shell: bash
         run: |
+          # Normalize to lowercase so both CC-123 and cc-123 are supported.
           TITLE="$(echo "${{ github.event.pull_request.title }}" | tr '[:upper:]' '[:lower:]')"
           BRANCH="$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]')"
           TICKET_CODE="$(printf '%s\n%s\n' "$TITLE" "$BRANCH" | grep -Eo 'cc-[0-9]+' | head -n1 || true)"
@@ -45,4 +46,5 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
+          # deploy.sh runs npm ci and npm run export before syncing to S3.
           ./deploy.sh "${{ steps.ticket.outputs.environment }}"
