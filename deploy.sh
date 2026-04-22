@@ -4,6 +4,7 @@
 # This script builds the application and uploads it to S3 for static hosting
 # Usage: ./deploy.sh [environment]
 # Example: ./deploy.sh dev
+# Example: ./deploy.sh feat-cc-123
 
 set -e  # Exit on any error
 
@@ -16,7 +17,19 @@ NC='\033[0m' # No Color
 
 # Configuration
 BUILD_DIR="out"
-ENVIRONMENT="${1:-dev}"  # Default to 'dev' if no environment specified
+ENVIRONMENT="${1:-dev}"  # Supported: dev or feat-<ticket-code>
+
+if [[ "$ENVIRONMENT" != "dev" && ! "$ENVIRONMENT" =~ ^feat-[a-z0-9-]+$ ]]; then
+    echo -e "${RED}❌ Invalid environment: ${ENVIRONMENT}${NC}"
+    echo -e "${YELLOW}Usage: ./deploy.sh dev | ./deploy.sh feat-cc-123${NC}"
+    exit 1
+fi
+
+if [ "$ENVIRONMENT" = "dev" ]; then
+    S3_PREFIX="dev"
+else
+    S3_PREFIX="$ENVIRONMENT"
+fi
 
 # AWS Configuration - use environment variables by default, fallback to profile
 if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
@@ -32,6 +45,10 @@ echo -e "${BLUE}🚀 Starting deployment process for environment: ${YELLOW}${ENV
 
 # Load environment variables
 ENV_FILE=".env.${ENVIRONMENT}"
+if [ ! -f "$ENV_FILE" ] && [[ "$ENVIRONMENT" == feat-* ]]; then
+    ENV_FILE=".env.dev"
+fi
+
 if [ -f "$ENV_FILE" ]; then
     echo -e "${BLUE}📋 Loading environment variables from ${ENV_FILE}...${NC}"
     set -a  # Automatically export all variables
@@ -42,8 +59,8 @@ else
     echo -e "${YELLOW}⚠️  Environment file ${ENV_FILE} not found, continuing without it...${NC}"
 fi
 
-# Set NODE_ENV based on environment
-export NODE_ENV="${ENVIRONMENT}"
+# Static build should always run in production mode
+export NODE_ENV="production"
 echo -e "${BLUE}🔧 NODE_ENV set to: ${NODE_ENV}${NC}"
 
 # Check if AWS CLI is installed
@@ -88,9 +105,10 @@ echo -e "${GREEN}✅ Build completed successfully${NC}"
 
 # Upload to S3
 echo -e "${BLUE}☁️  Uploading to S3...${NC}"
-aws s3 sync $BUILD_DIR s3://"$BUCKET_NAME" \
+aws s3 sync "$BUILD_DIR" "s3://${BUCKET_NAME}/${S3_PREFIX}/" \
     $AWS_CLI_ARGS \
     --delete
 
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
+echo -e "${GREEN}🌐 Deployment prefix: ${S3_PREFIX}/ in s3://${BUCKET_NAME}${NC}"
 echo -e "${YELLOW}💡 Note: It may take a few minutes for changes to propagate${NC}"

@@ -68,9 +68,8 @@ npm start
 ### Deployment
 
 ```bash
-npm run deploy:dev      # Deploy to dev environment
-npm run deploy:staging  # Deploy to staging
-npm run deploy:prod     # Deploy to production
+npm run deploy:dev                          # Deploy to dev (dev/)
+npm run deploy:feature -- feat-cc-123       # Deploy to feature env (feat-cc-123/)
 ```
 
 ## 📝 Development Guidelines
