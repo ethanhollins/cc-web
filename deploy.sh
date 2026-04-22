@@ -45,7 +45,7 @@ echo -e "${BLUE}🚀 Starting deployment process for environment: ${YELLOW}${ENV
 
 # Load environment variables
 ENV_FILE=".env.${ENVIRONMENT}"
-if [ ! -f "$ENV_FILE" ] && [[ "$ENVIRONMENT" == feat-* ]]; then
+if [ ! -f "$ENV_FILE" ] && [[ "$ENVIRONMENT" =~ ^feat- ]]; then
     ENV_FILE=".env.dev"
 fi
 
