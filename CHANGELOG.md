@@ -14,6 +14,12 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Dev Environment CD Workflow - CC-115 - 2026-04-23
+
+- Add a push-triggered GitHub Actions workflow that deploys `dev` when `master` receives new commits
+- Reuse the existing `deploy.sh dev` deployment path with repository AWS secrets
+- Keep feature-environment deployment workflow unchanged
+
 ### Feature: Feature Environment Deployments - CC-115 - 2026-04-22
 
 - Update `deploy.sh` to support only `dev` and `feat-<ticket-code>` environments
