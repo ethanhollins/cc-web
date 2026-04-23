@@ -68,10 +68,13 @@ npm start
 ### Deployment
 
 ```bash
-npm run deploy:dev      # Deploy to dev environment
-npm run deploy:staging  # Deploy to staging
-npm run deploy:prod     # Deploy to production
+npm run deploy:dev                          # Deploy to dev (dev/)
+npm run deploy:feature -- feat-cc-123       # Deploy to feature env (feat-cc-123/)
+npm run destroy:feature -- feat-cc-123      # Destroy a feature env (prompts for confirmation)
+npm run destroy:feature -- feat-cc-123 --force  # Destroy without confirmation prompt
 ```
+
+Feature environments are auto-deployed for PRs and torn down automatically when the PR is merged.
 
 ## 📝 Development Guidelines
 

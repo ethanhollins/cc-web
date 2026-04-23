@@ -14,6 +14,14 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Feature Environment Deployments - CC-115 - 2026-04-22
+
+- Update `deploy.sh` to support only `dev` and `feat-<ticket-code>` environments
+- Deploy frontend artifacts to environment-scoped S3 prefixes (`dev/` and `feat-.../`)
+- Add PR-triggered GitHub Actions workflow that auto-detects ticket code (`CC-123`) from PR title/branch and deploys `feat-cc-123`
+- Tear down feature environment S3 prefix automatically when a PR is merged
+- Update deployment commands in `README.md` and `package.json` to match the new environment model
+
 ### Feature: Focus Filter for Calendar - CC-90 - 2026-02-15
 
 - Add focus filter functionality to calendar view
