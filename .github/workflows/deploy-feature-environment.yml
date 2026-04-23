@@ -54,6 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Extract ticket code
         id: ticket
         shell: bash
@@ -77,8 +80,4 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         shell: bash
         run: |
-          AWS_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-          BUCKET_NAME="cc-web-app-bucket-${AWS_ACCOUNT}"
-          TARGET_PREFIX="s3://${BUCKET_NAME}/${{ steps.ticket.outputs.environment }}/"
-          echo "Removing feature environment objects from ${TARGET_PREFIX}"
-          aws s3 rm "${TARGET_PREFIX}" --recursive
+          ./deploy.sh "${{ steps.ticket.outputs.environment }}" --destroy --force
