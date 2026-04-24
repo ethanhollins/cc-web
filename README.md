@@ -76,6 +76,31 @@ npm run destroy:feature -- feat-cc-123 --force  # Destroy without confirmation p
 
 Feature environments are auto-deployed for PRs and torn down automatically when the PR is merged.
 
+### GitHub Environments Setup
+
+The CI/CD workflows use two GitHub repository environments — **`dev`** and **`feature`** — so that secrets and variables can be scoped per environment.  Create both environments under **Settings → Environments** in the repository and configure the following for each one:
+
+#### `dev` environment
+
+| Type | Name | Description |
+|------|------|-------------|
+| Secret | `AWS_ACCESS_KEY_ID` | AWS access key ID for the dev deployment IAM user |
+| Secret | `AWS_SECRET_ACCESS_KEY` | AWS secret access key for the dev deployment IAM user |
+| Secret | `AWS_REGION` | AWS region where the S3 bucket lives (e.g. `ap-southeast-2`) |
+| Variable | `NEXT_PUBLIC_API_BASE_URL` | Base URL of the API Gateway for the dev stage (e.g. `https://abc123.execute-api.ap-southeast-2.amazonaws.com/dev`) |
+
+#### `feature` environment
+
+| Type | Name | Description |
+|------|------|-------------|
+| Secret | `AWS_ACCESS_KEY_ID` | AWS access key ID for the feature deployment IAM user |
+| Secret | `AWS_SECRET_ACCESS_KEY` | AWS secret access key for the feature deployment IAM user |
+| Secret | `AWS_REGION` | AWS region where the S3 bucket lives (e.g. `ap-southeast-2`) |
+| Variable | `NEXT_PUBLIC_API_BASE_URL` | Base URL of the API Gateway for the feature stage (e.g. `https://abc123.execute-api.ap-southeast-2.amazonaws.com/feature`) |
+
+> [!NOTE]
+> The `dev` and `feature` environments can share the same IAM credentials and `NEXT_PUBLIC_API_BASE_URL` if you only have a single backend stage, or you can configure separate values to isolate each environment entirely.
+
 ## 📝 Development Guidelines
 
 This project follows strict development practices. **Please read these before contributing:**

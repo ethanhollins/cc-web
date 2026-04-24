@@ -14,6 +14,13 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: GitHub Environment Scoping for CI/CD - CC-115 - 2026-04-23
+
+- Scope `deploy-dev` job to the `dev` GitHub repository environment so secrets and variables are drawn from environment-level config
+- Scope `deploy-feature` and `teardown-feature` jobs to the `feature` GitHub repository environment for the same reason
+- Pass `NEXT_PUBLIC_API_BASE_URL` from `vars.NEXT_PUBLIC_API_BASE_URL` into the deploy step so the Next.js static export bakes in the correct API URL per environment
+- Add a "GitHub Environments Setup" table to `README.md` documenting the required secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`) and variable (`NEXT_PUBLIC_API_BASE_URL`) for each environment
+
 ### Feature: Dev Environment CD Workflow - CC-115 - 2026-04-23
 
 - Add a push-triggered GitHub Actions workflow that deploys `dev` when `master` receives new commits

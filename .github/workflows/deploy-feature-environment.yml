@@ -11,6 +11,7 @@ jobs:
   deploy-feature:
     name: Deploy feature environment
     runs-on: ubuntu-latest
+    environment: feature
     if: ${{ github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Checkout
@@ -45,6 +46,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
         run: |
           # deploy.sh runs npm ci and npm run export before syncing to S3.
           ./deploy.sh "${{ steps.ticket.outputs.environment }}"
@@ -52,6 +54,7 @@ jobs:
   teardown-feature:
     name: Tear down feature environment
     runs-on: ubuntu-latest
+    environment: feature
     if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Checkout
