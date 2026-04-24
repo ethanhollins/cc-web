@@ -14,6 +14,18 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Point in Time Markers - CC-102 - 2026-04-24
+
+- Add `event_type` field ("standard" | "break" | "marker") to `CalendarEvent` to replace the legacy `is_break` boolean discriminant
+- Add `MarkerEvent`, `CreateMarkerResponse` types and `marker_colour` field to the data model
+- Add `createMarker()` API function posting to `/events/markers`; extend `updateEvent()` to accept a `colour` field
+- Render markers as FullCalendar `display: "background"` events with a 5-minute window, styled as 4px thin bars that expand to 8px on hover; title is hidden by default and shown via a JS tooltip on mouse-over
+- Add "Create Marker" option to the calendar selection context menu
+- Add "Marker" tab to `CreationModeToggle` (enabled only when a time range is selected)
+- Add marker creation/rename mode to `CreationHotbar` with an inline colour picker (default #2563eb)
+- Add "Rename Marker" / "Remove Marker" options to the marker right-click context menu
+- Exclude markers from focus-filter logic (always visible, same behaviour as breaks)
+
 ### Feature: GitHub Environment Scoping for CI/CD - CC-115 - 2026-04-23
 
 - Scope `deploy-dev` job to the `dev` GitHub repository environment so secrets and variables are drawn from environment-level config
