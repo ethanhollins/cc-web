@@ -32,7 +32,7 @@ interface WebSocketProviderProps {
   reconnectInterval?: number;
 }
 
-const DEFAULT_WS_URL = "wss://0lb3xuz9nj.execute-api.ap-southeast-2.amazonaws.com/dev/";
+const DEFAULT_WS_URL = process.env.NEXT_PUBLIC_WS_URL!;
 const DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
 const DEFAULT_RECONNECT_INTERVAL = 3000;
 
