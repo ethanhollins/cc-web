@@ -22,6 +22,7 @@ export async function updateEvent(
     end_date?: string;
     title?: string;
     calendar_id?: string;
+    colour?: string;
   },
   signal?: AbortSignal,
 ): Promise<void> {

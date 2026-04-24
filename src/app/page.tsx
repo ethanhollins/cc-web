@@ -559,19 +559,23 @@ export default function StagePlannerPage() {
         });
 
         // Optimistically add marker event to calendar
+        // CalendarEvent extends Ticket but markers don't have ticket data;
+        // we satisfy required fields with empty strings.
         const markerEvent: CalendarEvent = {
           google_id: result.marker.google_id,
+          // Required Ticket fields – not applicable for markers
           ticket_id: "",
           ticket_key: "",
           ticket_type: "task",
-          title: "Marker",
           ticket_status: "In Progress",
           project_id: "",
+          epic: "",
+          // Marker-specific fields
+          title: "Marker",
           start_date: startDate.toISOString(),
           end_date: startDate.toISOString(),
           colour: "#2563eb",
           marker_colour: "#2563eb",
-          epic: "",
           google_calendar_id: "",
           all_day: false,
           completed: false,

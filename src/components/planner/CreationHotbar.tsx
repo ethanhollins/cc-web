@@ -204,6 +204,7 @@ export function CreationHotbar({
             title: title.trim(),
             start_date: initialDateRange.startDate.toISOString(),
             end_date: initialDateRange.startDate.toISOString(), // Point in time
+            colour: markerColour,
           });
           onMarkerUpdate?.(markerEventId, title.trim(), markerColour);
         } else {
