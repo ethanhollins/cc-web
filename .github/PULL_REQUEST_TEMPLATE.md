@@ -1,6 +1,6 @@
-<!-- PR Title format: feat(CC-XXX): short title
-     Example: feat(CC-123): add skill progression page
-     Types: feat | fix | refactor | perf | docs | style | test | chore | build | ci -->
+<!-- PR Title format: [Type/CC-XXX] Short title
+     Example: [Feat/CC-123] Add skill progression endpoint
+     Types: Feat | Fix | Refactor | Perf | Docs | Style | Test | Chore | Build | CI -->
 
 ## Ticket Key
 
@@ -35,7 +35,7 @@ https://feat-cc-xxx.ethanhollins.com
 
 ## Checklist
 
-- [ ] PR title follows Conventional Commits format `<type>(CC-XXX): <description>` (e.g. `feat(CC-123): add user dashboard page`)
+- [ ] PR title follows the `[Type/CC-XXX] Short title` format (e.g. `[Feat/CC-123] Add user dashboard page`)
 - [ ] Code follows project naming conventions (PascalCase for components, camelCase for hooks, kebab-case for utils/other files)
 - [ ] All imports are at the top of files
 - [ ] No new imports from `/src/old/` in new or refactored code
