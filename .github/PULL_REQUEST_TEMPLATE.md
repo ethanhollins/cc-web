@@ -26,7 +26,7 @@ https://feat-cc-xxx.ethanhollins.com
 
 ## Checklist
 
-- [ ] PR title follows the `[Type/CC-XXX] Short title` format (e.g. `[Feat/CC-123] Add user dashboard page`)
+- [ ] PR title follows Conventional Commits format `<type>(scope): <description>` (e.g. `feat(CC-123): add user dashboard page`)
 - [ ] Code follows project naming conventions (PascalCase for components, camelCase for hooks, kebab-case for utils/other files)
 - [ ] All imports are at the top of files
 - [ ] No new imports from `/src/old/` in new or refactored code
