@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
-import { createBreak, createEvent } from "@/api/calendar";
+import { createBreak, createEvent, createMarker } from "@/api/calendar";
 import {
   scheduleTicket,
   unscheduleTicket,
@@ -62,7 +62,8 @@ export default function StagePlannerPage() {
   const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [breakEventId, setBreakEventId] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<"ticket" | "focus" | "break">("ticket");
+  const [markerEventId, setMarkerEventId] = useState<string | null>(null);
+  const [creationMode, setCreationMode] = useState<"ticket" | "focus" | "break" | "marker">("ticket");
 
   // Projects and tickets
   const { projects, selectedProjectKey, selectProject, updateProject } = useProjects();
@@ -112,8 +113,8 @@ export default function StagePlannerPage() {
 
   // Filter events by selected focuses
   const filteredEvents = events.filter((event) => {
-    // Always show break events
-    if (event.is_break) return true;
+    // Always show break and marker events
+    if (event.is_break || event.event_type === "break" || event.event_type === "marker") return true;
     // If no filters selected, show all events
     if (selectedFocusIds.length === 0) return true;
     // Otherwise, only show events from selected focuses
@@ -437,6 +438,7 @@ export default function StagePlannerPage() {
     setShowCreateModal(false);
     setCreationMode("ticket");
     setBreakEventId(null);
+    setMarkerEventId(null);
   }, []);
 
   // Handle opening domain modal
@@ -545,6 +547,83 @@ export default function StagePlannerPage() {
     [updateEvents, refetch],
   );
 
+  // Handle creating a marker from time selection
+  const handleCreateMarker = useCallback(
+    async (startDate: Date, endDate: Date) => {
+      try {
+        const result = await createMarker({
+          title: "Marker",
+          start_date: startDate.toISOString(),
+          end_date: startDate.toISOString(), // Point in time
+          colour: "#2563eb",
+        });
+
+        // Optimistically add marker event to calendar
+        const markerEvent: CalendarEvent = {
+          google_id: result.marker.google_id,
+          ticket_id: "",
+          ticket_key: "",
+          ticket_type: "task",
+          title: "Marker",
+          ticket_status: "In Progress",
+          project_id: "",
+          start_date: startDate.toISOString(),
+          end_date: startDate.toISOString(),
+          colour: "#2563eb",
+          marker_colour: "#2563eb",
+          epic: "",
+          google_calendar_id: "",
+          all_day: false,
+          completed: false,
+          event_type: "marker",
+        };
+
+        updateEvents?.((prev) => [...prev, markerEvent]);
+
+        // Open hotbar in marker mode for renaming
+        setMarkerEventId(result.marker.google_id);
+        setEventCreationTrigger({ startDate, endDate });
+        setCreationMode("marker");
+        setShowCreateModal(true);
+      } catch (error) {
+        console.error("Failed to create marker:", error);
+      }
+    },
+    [updateEvents],
+  );
+
+  // Handle renaming existing marker
+  const handleRenameMarker = useCallback(
+    (eventId: string) => {
+      const markerEvent = events.find((e) => e.google_id === eventId && e.event_type === "marker");
+      if (!markerEvent) return;
+
+      setMarkerEventId(eventId);
+      setEventCreationTrigger({
+        startDate: new Date(markerEvent.start_date),
+        endDate: new Date(markerEvent.start_date),
+      });
+      setCreationMode("marker");
+      setShowCreateModal(true);
+    },
+    [events],
+  );
+
+  // Handle updating marker event
+  const handleMarkerUpdate = useCallback(
+    async (eventId: string, title: string, colour: string) => {
+      updateEvents?.((prev) =>
+        prev.map((event) =>
+          event.google_id === eventId
+            ? { ...event, title, marker_colour: colour, colour }
+            : event,
+        ),
+      );
+      await refetch();
+    },
+    [updateEvents, refetch],
+  );
+
   // Unselect calendar on outside click
   const handleUnselectCalendar = useCallback(() => {
     const api = calendarRef.current?.getApi();
@@ -636,7 +715,9 @@ export default function StagePlannerPage() {
                 onEventReceive={handleEventReceive}
                 onCreateEvent={handleCreateEventFromSelection}
                 onScheduleBreak={handleScheduleBreak}
+                onCreateMarker={handleCreateMarker}
                 onRenameBreak={handleRenameBreak}
+                onRenameMarker={handleRenameMarker}
                 onDrop={handleDrop}
                 onDayHeaderClick={handleDayHeaderClick}
                 showContextMenu={showContextMenu}
@@ -686,12 +767,21 @@ export default function StagePlannerPage() {
         initialDateRange={eventCreationTrigger}
         defaultMode={creationMode}
         breakEventId={breakEventId}
-        disableModeSwitch={creationMode === "break"}
-        initialTitle={creationMode === "break" && breakEventId ? events.find((e) => e.google_id === breakEventId)?.title : undefined}
+        markerEventId={markerEventId}
+        disableModeSwitch={creationMode === "break" || creationMode === "marker"}
+        initialTitle={
+          creationMode === "break" && breakEventId
+            ? events.find((e) => e.google_id === breakEventId)?.title
+            : creationMode === "marker" && markerEventId
+              ? events.find((e) => e.google_id === markerEventId)?.title
+              : undefined
+        }
         onClose={handleCloseCreateModal}
         onClearDateRange={() => setEventCreationTrigger(null)}
         onBreakCreate={refetch}
         onBreakUpdate={handleBreakUpdate}
+        onMarkerCreate={refetch}
+        onMarkerUpdate={handleMarkerUpdate}
         onTicketAdd={(ticket) => {
           if (selectedProjectKey && tickets[selectedProjectKey]) {
             updateTickets(selectedProjectKey, [...tickets[selectedProjectKey], ticket]);

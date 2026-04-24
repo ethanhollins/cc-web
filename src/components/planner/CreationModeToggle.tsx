@@ -3,7 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export type CreationMode = "ticket" | "focus" | "break";
+export type CreationMode = "ticket" | "focus" | "break" | "marker";
 
 interface CreationModeToggleProps {
   mode: CreationMode;
@@ -13,11 +13,12 @@ interface CreationModeToggleProps {
 }
 
 /**
- * Toggle component for switching between Ticket and Focus creation modes
- * Displays as a pill with two sides that flip highlight on click
+ * Toggle component for switching between Ticket, Focus, Break and Marker creation modes
+ * Displays as a pill with sides that flip highlight on click
  */
 export function CreationModeToggle({ mode, onModeChange: _onModeChange, disabled = false, hasTimeRange = false }: CreationModeToggleProps) {
   const isBreakDisabled = disabled || !hasTimeRange;
+  const isMarkerDisabled = disabled || !hasTimeRange;
 
   return (
     <div className={cn("inline-flex rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] p-0.5", disabled && "cursor-not-allowed opacity-50")}>
@@ -54,6 +55,20 @@ export function CreationModeToggle({ mode, onModeChange: _onModeChange, disabled
         )}
       >
         Break
+      </button>
+      <button
+        type="button"
+        onClick={() => _onModeChange("marker")}
+        disabled={isMarkerDisabled}
+        className={cn(
+          "min-w-[50px] rounded-full px-2 py-0.5 text-xs font-medium transition-all duration-200",
+          mode === "marker"
+            ? "bg-blue-100 text-blue-600 shadow-sm dark:bg-blue-950 dark:text-blue-400"
+            : "text-[var(--text-muted)] hover:text-[var(--text)]",
+          isMarkerDisabled && "cursor-not-allowed opacity-50",
+        )}
+      >
+        Marker
       </button>
     </div>
   );

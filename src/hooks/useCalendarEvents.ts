@@ -240,9 +240,9 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
           return;
         }
 
-        // Break events don't require calendar_id, regular events do
-        if (!event.is_break && !event.google_calendar_id) {
-          console.warn("Calendar ID not found for non-break event deletion:", eventId);
+        // Break and marker events don't require calendar_id, regular events do
+        if (!event.is_break && event.event_type !== "break" && event.event_type !== "marker" && !event.google_calendar_id) {
+          console.warn("Calendar ID not found for non-break/marker event deletion:", eventId);
           return;
         }
 
