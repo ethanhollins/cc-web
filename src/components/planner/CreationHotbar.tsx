@@ -202,17 +202,15 @@ export function CreationHotbar({
           // Update existing marker event (title and colour)
           await updateEvent(markerEventId, {
             title: title.trim(),
-            start_date: initialDateRange.startDate.toISOString(),
-            end_date: initialDateRange.startDate.toISOString(), // Point in time
+            date: initialDateRange.startDate.toISOString(),
             colour: markerColour,
           });
           onMarkerUpdate?.(markerEventId, title.trim(), markerColour);
         } else {
-          // Create new marker event (point in time = same start and end)
+          // Create new marker event (point in time)
           await createMarker({
             title: title.trim(),
-            start_date: initialDateRange.startDate.toISOString(),
-            end_date: initialDateRange.startDate.toISOString(), // Point in time
+            date: initialDateRange.startDate.toISOString(),
             colour: markerColour,
           });
           onMarkerCreate?.();

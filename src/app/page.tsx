@@ -553,8 +553,7 @@ export default function StagePlannerPage() {
       try {
         const result = await createMarker({
           title: "Marker",
-          start_date: startDate.toISOString(),
-          end_date: startDate.toISOString(), // Point in time
+          date: startDate.toISOString(),
           colour: "#2563eb",
         });
 

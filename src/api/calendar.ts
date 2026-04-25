@@ -20,6 +20,7 @@ export async function updateEvent(
   updates: {
     start_date?: string;
     end_date?: string;
+    date?: string;
     title?: string;
     calendar_id?: string;
     colour?: string;
@@ -86,8 +87,7 @@ export async function createBreak(
 export async function createMarker(
   markerData: {
     title: string;
-    start_date: string;
-    end_date: string;
+    date: string;
     colour?: string;
   },
   signal?: AbortSignal,
