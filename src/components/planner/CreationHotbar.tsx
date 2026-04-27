@@ -17,6 +17,7 @@ import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { generateFocusKey } from "@/utils/generate-focus-key";
+import { isAbortError } from "@/utils/error-utils";
 
 const DEFAULT_MARKER_COLOUR = "#2980b9";
 
@@ -119,8 +120,10 @@ export function CreationHotbar({
       try {
         const result = await searchTickets(title.trim(), 10, controller.signal);
         setSearchResults(result.tickets ?? []);
-      } catch {
-        // Ignore abort errors
+      } catch (err) {
+        if (!isAbortError(err)) {
+          console.error("Ticket search failed:", err);
+        }
       } finally {
         setIsSearching(false);
       }
