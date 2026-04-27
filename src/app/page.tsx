@@ -138,6 +138,8 @@ export default function StagePlannerPage() {
     showContextMenu,
   } = useCalendarInteractions({
     onEventUpdate: async (eventId, updates) => {
+      const calendarEvent = events.find((e) => e.google_id === eventId);
+      const isMarker = calendarEvent?.event_type === "marker";
       // Optimistically update events
       if (updateEvents) {
         updateEvents((prevEvents) => {
@@ -152,8 +154,12 @@ export default function StagePlannerPage() {
           );
         });
       }
-      // Then update via API
-      await updateEvent(eventId, updates.date ? { date: updates.date } : updates);
+      // Then update via API — markers always use a single date field (start date only)
+      if (isMarker) {
+        await updateEvent(eventId, { date: updates.date || updates.start_date });
+      } else {
+        await updateEvent(eventId, updates.date ? { date: updates.date } : updates);
+      }
     },
     onEventDelete: deleteEvent,
     onEventCreate: async (eventData) => {
