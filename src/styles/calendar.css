@@ -77,6 +77,42 @@
   border: none !important;
 }
 
+/* Event Marker – thin point-in-time line spanning the full column width */
+.fc-timegrid-event.event-marker {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  min-height: 2px !important;
+  height: 2px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  cursor: grab;
+  opacity: 0.95;
+  z-index: 20 !important;
+  overflow: visible !important;
+  transition: height 0.15s ease, opacity 0.15s ease;
+}
+
+.fc-timegrid-event.event-marker:hover {
+  height: 6px !important;
+  min-height: 6px !important;
+  opacity: 1;
+}
+
+.fc-timegrid-event.event-marker:active,
+.fc-timegrid-event.event-marker.fc-event-dragging,
+.fc-timegrid-event.event-marker.fc-event-mirror {
+  cursor: grabbing !important;
+}
+
+/* Hide FullCalendar's built-in title for markers (we show a custom tooltip) */
+.fc-timegrid-event.event-marker .fc-event-title,
+.fc-timegrid-event.event-marker .fc-event-time {
+  display: none;
+}
+
 /* Touch support for mobile */
 .fc {
   touch-action: manipulation;

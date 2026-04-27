@@ -203,6 +203,12 @@ export async function fetchProjects(signal?: AbortSignal): Promise<ProjectsRespo
 - Update `CHANGELOG.md` with completion date
 - Move entry from `[In Progress]` to `[Completed]`
 - Create PR with descriptive conventional commit message
+- **MANDATORY: PR title and description MUST follow the `.github/PULL_REQUEST_TEMPLATE.md` format exactly**
+  - PR title format: `[Type/CC-XXX] Short title` (e.g., `[Feat/CC-102] Add point-in-time markers`)
+  - Valid types: `Feat`, `Fix`, `Refactor`, `Perf`, `Docs`, `Style`, `Test`, `Chore`, `Build`, `CI`
+  - PR body must include all template sections: Ticket Key, Issue Type, Description, Changes, Action Items, Feature Environment, Checklist
+  - Feature environment URL pattern: `https://feat-cc-xxx.ethanhollins.com` (replace `xxx` with the ticket number)
+  - Complete the Checklist before submitting
 
 ### Example Workflow
 

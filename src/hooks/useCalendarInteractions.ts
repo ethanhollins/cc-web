@@ -18,6 +18,7 @@ export interface ContextMenu {
   eventId?: string;
   googleCalendarId?: string;
   is_break?: boolean;
+  is_marker?: boolean;
 }
 
 /**
@@ -63,7 +64,7 @@ export function useCalendarContextMenu(isDragging?: boolean) {
   });
 
   const showContextMenu = useCallback(
-    (x: number, y: number, eventId?: string, googleCalendarId?: string, is_break?: boolean) => {
+    (x: number, y: number, eventId?: string, googleCalendarId?: string, is_break?: boolean, is_marker?: boolean) => {
       // Don't show context menu if an event is being dragged
       if (isDragging) {
         return;
@@ -77,6 +78,7 @@ export function useCalendarContextMenu(isDragging?: boolean) {
         eventId,
         googleCalendarId,
         is_break,
+        is_marker,
       });
     },
     [isDragging],
@@ -210,7 +212,7 @@ export function useCalendarInteractions({
   onEventDelete,
   onEventCreate,
 }: {
-  onEventUpdate?: (eventId: string, updates: { start_date: string; end_date: string; calendar_id?: string }) => Promise<void>;
+  onEventUpdate?: (eventId: string, updates: { start_date?: string; end_date?: string; date?: string; calendar_id?: string }) => Promise<void>;
   onEventDelete?: (eventId: string) => Promise<void>;
   onEventCreate?: (eventData: {
     calendar_id: string;
@@ -236,6 +238,7 @@ export function useCalendarInteractions({
         info.event.id,
         info.event.extendedProps?.google_calendar_id,
         info.event.extendedProps?.is_break,
+        info.event.extendedProps?.is_marker,
       );
     },
     [showContextMenu],
@@ -245,15 +248,26 @@ export function useCalendarInteractions({
     async (info: EventDropArg) => {
       try {
         const eventId = info.event.id;
+        const isMarker = info.event.extendedProps?.is_marker === true;
         // Format dates in Sydney timezone (matching old implementation)
         const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
-        const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");
-
-        const updates = {
-          start_date: newStartDate,
-          end_date: newEndDate,
-          calendar_id: info.event.extendedProps?.google_calendar_id,
-        };
+        const updates = isMarker
+          ? {
+              date: newStartDate,
+            }
+          : (() => {
+              const eventEnd = info.event.end;
+              if (!eventEnd) {
+                throw new Error(
+                  "Event drop failed: non-marker event is missing required end date. Please ensure the event has both start and end times.",
+                );
+              }
+              return {
+                start_date: newStartDate,
+                end_date: toTimezone(eventEnd.toISOString().replace(/Z$/, "")),
+                calendar_id: info.event.extendedProps?.google_calendar_id,
+              };
+            })();
         await onEventUpdate?.(eventId, updates);
       } catch (error) {
         console.error("Failed to drop event:", error);
@@ -267,6 +281,11 @@ export function useCalendarInteractions({
     async (info: CalendarResizeArg) => {
       try {
         const eventId = info.event.id;
+        const isMarker = info.event.extendedProps?.is_marker === true;
+        if (isMarker) {
+          info.revert();
+          return;
+        }
         // Format dates in Sydney timezone (matching old implementation)
         const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
         const newEndDate = toTimezone(info.event.end?.toISOString().replace(/Z$/, "") ?? "");

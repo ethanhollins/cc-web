@@ -5,6 +5,8 @@ import type { Ticket } from "./ticket";
  * Calendar and event type definitions
  */
 
+export type EventType = "standard" | "break" | "marker";
+
 export interface CalendarEvent extends Ticket {
   start_date: string; // ISO date string
   end_date: string; // ISO date string
@@ -12,7 +14,9 @@ export interface CalendarEvent extends Ticket {
   all_day?: boolean;
   completed?: boolean;
   isOptimistic?: boolean;
-  is_break?: boolean;
+  is_break?: boolean; // Legacy field – prefer event_type
+  event_type?: EventType; // New field replacing is_break
+  marker_colour?: string; // Marker colour (default #2980b9)
 }
 
 export interface EventsResponse {
@@ -25,10 +29,24 @@ export interface BreakEvent {
   start_date: string;
   end_date: string;
   is_break: true;
+  event_type?: "break";
 }
 
 export interface CreateBreakResponse {
   break: BreakEvent;
+}
+
+export interface MarkerEvent {
+  google_id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  event_type: "marker";
+  colour?: string;
+}
+
+export interface CreateMarkerResponse {
+  marker: MarkerEvent;
 }
 
 export interface CalendarEventExtendedProps {
@@ -41,6 +59,9 @@ export interface CalendarEventExtendedProps {
   completed?: boolean;
   project?: Project;
   is_break?: boolean;
+  is_marker?: boolean;
+  event_type?: EventType;
+  marker_colour?: string;
   epic?: string; // Legacy epic name
   epic_id?: string; // Epic ticket_id
 }
@@ -82,6 +103,7 @@ export type CalendarResizeArg = {
     end: Date | null;
     extendedProps?: {
       google_calendar_id?: string;
+      is_marker?: boolean;
     };
   };
   revert: () => void;

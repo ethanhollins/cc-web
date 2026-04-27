@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Image, Plus, X } from "lucide-react";
-import { createBreak, updateEvent } from "@/api/calendar";
+import { createBreak, createMarker, updateEvent } from "@/api/calendar";
 import { createProject } from "@/api/projects";
 import { DEFAULT_CALENDAR_ID, createTicket } from "@/api/tickets";
 import { CreationMode, CreationModeToggle } from "@/components/planner/CreationModeToggle";
@@ -18,6 +18,8 @@ import type { Project } from "@/types/project";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { generateFocusKey } from "@/utils/generate-focus-key";
 
+const DEFAULT_MARKER_COLOUR = "#2980b9";
+
 interface CreationHotbarProps {
   open: boolean;
   projects: Project[];
@@ -27,12 +29,16 @@ interface CreationHotbarProps {
   initialDateRange?: { startDate: Date; endDate: Date } | null;
   defaultMode?: CreationMode;
   breakEventId?: string | null;
+  markerEventId?: string | null;
+  initialColour?: string;
   disableModeSwitch?: boolean;
   initialTitle?: string;
   onClose: () => void;
   onClearDateRange?: () => void;
   onBreakCreate?: () => void;
   onBreakUpdate?: (eventId: string, title: string, startDate?: Date, endDate?: Date) => void;
+  onMarkerCreate?: () => void;
+  onMarkerUpdate?: (eventId: string, title: string, colour: string) => void;
   onTicketAdd?: (ticket: Ticket) => void;
   onTicketRemove?: (ticketId: string) => void;
   onEventAdd?: (event: CalendarEvent) => void;
@@ -53,19 +59,25 @@ export function CreationHotbar({
   initialDateRange,
   defaultMode = "ticket",
   breakEventId = null,
+  markerEventId = null,
+  initialColour,
   disableModeSwitch = false,
   initialTitle,
   onClose,
   onClearDateRange,
   onBreakCreate,
   onBreakUpdate,
+  onMarkerCreate,
+  onMarkerUpdate,
   onTicketAdd,
   onTicketRemove,
   onEventAdd,
   onEventRemove,
 }: CreationHotbarProps) {
   const [mode, setMode] = useState<CreationMode>(defaultMode);
-  const [title, setTitle] = useState(initialTitle || (defaultMode === "break" ? "Break" : ""));
+  const [title, setTitle] = useState(
+    initialTitle || (defaultMode === "break" ? "Break" : defaultMode === "marker" ? "Marker" : ""),
+  );
   const [projectKey, setProjectKey] = useState<string | undefined>(selectedProjectKey ?? projects[0]?.project_key);
   const [ticketType, setTicketType] = useState<TicketType>(defaultType);
   const [status, setStatus] = useState<string>(defaultMode === "focus" ? "not started" : "To Do");
@@ -74,7 +86,7 @@ export function CreationHotbar({
   const [focusKeyOverride, setFocusKeyOverride] = useState<string>("");
   const [expandedOptions, setExpandedOptions] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
-  const [colour, setColour] = useState("");
+  const [colour, setColour] = useState(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
   const hotbarRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -86,20 +98,20 @@ export function CreationHotbar({
     if (open) {
       const timer = setTimeout(() => {
         setMode(defaultMode);
-        setTitle(initialTitle || (defaultMode === "break" ? "Break" : ""));
+        setTitle(initialTitle || (defaultMode === "break" ? "Break" : defaultMode === "marker" ? "Marker" : ""));
         setProjectKey(selectedProjectKey ?? projects[0]?.project_key);
         setTicketType(defaultType);
         setStatus(defaultMode === "focus" ? "not started" : "To Do");
         setPriority(undefined);
         setEpicId(undefined);
         setFocusKeyOverride("");
-        setExpandedOptions(new Set());
+        setExpandedOptions(defaultMode === "marker" ? new Set(["colour"]) : new Set());
         setDescription("");
-        setColour("");
+        setColour(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [open, selectedProjectKey, projects, defaultType, defaultMode, initialTitle]);
+  }, [open, selectedProjectKey, projects, defaultType, defaultMode, initialTitle, initialColour]);
 
   // Update status when mode changes
   useEffect(() => {
@@ -107,9 +119,13 @@ export function CreationHotbar({
       setStatus("not started");
     } else if (mode === "ticket") {
       setStatus("To Do");
+    } else if (mode === "marker") {
+      // Default marker colour to blue when switching to marker mode
+      setColour((prev) => prev || initialColour || DEFAULT_MARKER_COLOUR);
+      setExpandedOptions((prev) => (prev.has("colour") ? prev : new Set(prev).add("colour")));
     }
-    // No status change needed for "break" mode
-  }, [mode]);
+    // No status change needed for "break" or "marker" mode
+  }, [mode, initialColour]);
 
   // Click outside handler
   useEffect(() => {
@@ -178,6 +194,31 @@ export function CreationHotbar({
             end_date: initialDateRange.endDate.toISOString(),
           });
           onBreakCreate?.();
+        }
+      } else if (mode === "marker") {
+        if (!initialDateRange) {
+          console.error("Cannot create/update marker without date range");
+          return;
+        }
+
+        const markerColour = colour || DEFAULT_MARKER_COLOUR;
+
+        if (markerEventId) {
+          // Update existing marker event (title and colour)
+          await updateEvent(markerEventId, {
+            title: title.trim(),
+            date: initialDateRange.startDate.toISOString(),
+            colour: markerColour,
+          });
+          onMarkerUpdate?.(markerEventId, title.trim(), markerColour);
+        } else {
+          // Create new marker event (point in time)
+          await createMarker({
+            title: title.trim(),
+            date: initialDateRange.startDate.toISOString(),
+            colour: markerColour,
+          });
+          onMarkerCreate?.();
         }
       } else if (mode === "ticket" && projectKey) {
         const project = projects.find((p) => p.project_key === projectKey);
@@ -294,8 +335,11 @@ export function CreationHotbar({
     initialDateRange,
     focusKeyOverride,
     breakEventId,
+    markerEventId,
     onBreakCreate,
     onBreakUpdate,
+    onMarkerCreate,
+    onMarkerUpdate,
     onClose,
     onTicketAdd,
     onTicketRemove,
@@ -316,7 +360,13 @@ export function CreationHotbar({
         <div
           className={cn(
             "mx-5 mb-4 mt-5 flex items-center gap-3 border-b pb-3",
-            mode === "focus" ? "border-purple-500" : mode === "break" ? "border-gray-400 dark:border-gray-600" : "border-[var(--accent)]",
+            mode === "focus"
+              ? "border-purple-500"
+              : mode === "break"
+                ? "border-gray-400 dark:border-gray-600"
+                : mode === "marker"
+                  ? "border-blue-500"
+                  : "border-[var(--accent)]",
           )}
         >
           <input
@@ -331,7 +381,15 @@ export function CreationHotbar({
                 onClose();
               }
             }}
-            placeholder={mode === "ticket" ? "Enter your Ticket title..." : mode === "break" ? "Enter break title..." : "Enter your Focus title..."}
+            placeholder={
+              mode === "ticket"
+                ? "Enter your Ticket title..."
+                : mode === "break"
+                  ? "Enter break title..."
+                  : mode === "marker"
+                    ? "Enter marker title..."
+                    : "Enter your Focus title..."
+            }
             autoFocus
             className="flex-1 bg-transparent text-lg font-medium text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
           />
@@ -353,7 +411,9 @@ export function CreationHotbar({
                   ? "border-purple-500 bg-purple-500 text-white hover:border-green-500 hover:bg-green-500"
                   : mode === "break"
                     ? "border-gray-500 bg-gray-500 text-white hover:border-green-500 hover:bg-green-500"
-                    : "border-[var(--accent)] bg-[var(--accent)] text-white hover:border-green-500 hover:bg-green-500"
+                    : mode === "marker"
+                      ? "border-blue-500 bg-blue-500 text-white hover:border-green-500 hover:bg-green-500"
+                      : "border-[var(--accent)] bg-[var(--accent)] text-white hover:border-green-500 hover:bg-green-500"
                 : "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50",
             )}
             title="Create"
@@ -374,13 +434,19 @@ export function CreationHotbar({
           </div>
 
           {/* Time range display */}
-          {initialDateRange && (mode === "ticket" || mode === "break") && (mode !== "ticket" || ticketType !== "epic") && (
+          {initialDateRange && (mode === "ticket" || mode === "break" || mode === "marker") && (mode !== "ticket" || ticketType !== "epic") && (
             <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2 py-0.5 text-xs text-[var(--text-muted)]">
               <span>
-                {initialDateRange.startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} -{" "}
-                {initialDateRange.endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                {initialDateRange.startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                {mode !== "marker" && (
+                  <>
+                    {" "}
+                    -{" "}
+                    {initialDateRange.endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </>
+                )}
               </span>
-              {onClearDateRange && mode !== "break" && (
+              {onClearDateRange && mode !== "break" && mode !== "marker" && (
                 <button
                   type="button"
                   onClick={(e) => {
@@ -478,6 +544,25 @@ export function CreationHotbar({
             </>
           )}
 
+          {mode === "marker" && (
+            <>
+              {/* + Colour button (same selector pattern as focus mode) */}
+              <button
+                type="button"
+                onClick={() => toggleOption("colour")}
+                className={cn(
+                  "flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs transition-colors",
+                  expandedOptions.has("colour")
+                    ? "border-purple-500 bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
+                    : "border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950/50 dark:text-purple-400 dark:hover:bg-purple-950",
+                )}
+              >
+                {expandedOptions.has("colour") ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                Colour
+              </button>
+            </>
+          )}
+
           {mode === "focus" && (
             <>
               {/* Key preview */}
@@ -569,7 +654,7 @@ export function CreationHotbar({
                   <input
                     id="colour-input"
                     type="color"
-                    value={colour || "#2563eb"}
+                    value={colour || DEFAULT_MARKER_COLOUR}
                     onChange={(e) => setColour(e.target.value)}
                     className="h-8 w-16 cursor-pointer rounded border border-[var(--border-subtle)]"
                   />
@@ -577,7 +662,7 @@ export function CreationHotbar({
                     type="text"
                     value={colour}
                     onChange={(e) => setColour(e.target.value)}
-                    placeholder="#2563eb"
+                    placeholder={DEFAULT_MARKER_COLOUR}
                     className="flex-1 rounded border border-[var(--border-subtle)] bg-transparent px-2 py-1 text-sm text-[var(--text)] outline-none"
                   />
                 </div>

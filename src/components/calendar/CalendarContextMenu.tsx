@@ -5,7 +5,7 @@ import { Card } from "@/ui/card";
 
 // Union type for different context menu types
 export type CalendarContextMenuState =
-  | { show: boolean; x: number; y: number; type: "event"; eventId?: string; googleCalendarId?: string; is_break?: boolean }
+  | { show: boolean; x: number; y: number; type: "event"; eventId?: string; googleCalendarId?: string; is_break?: boolean; is_marker?: boolean }
   | { show: boolean; x: number; y: number; type: "selection"; startDate?: Date; endDate?: Date };
 
 interface CalendarContextMenuProps {

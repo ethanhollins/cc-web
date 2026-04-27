@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DatesSetArg } from "@fullcalendar/core";
 import type FullCalendar from "@fullcalendar/react";
-import { createBreak, createEvent } from "@/api/calendar";
+import { createBreak, createEvent, createMarker } from "@/api/calendar";
 import {
   scheduleTicket,
   unscheduleTicket,
@@ -62,7 +62,8 @@ export default function StagePlannerPage() {
   const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [breakEventId, setBreakEventId] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<"ticket" | "focus" | "break">("ticket");
+  const [markerEventId, setMarkerEventId] = useState<string | null>(null);
+  const [creationMode, setCreationMode] = useState<"ticket" | "focus" | "break" | "marker">("ticket");
 
   // Projects and tickets
   const { projects, selectedProjectKey, selectProject, updateProject } = useProjects();
@@ -112,8 +113,8 @@ export default function StagePlannerPage() {
 
   // Filter events by selected focuses
   const filteredEvents = events.filter((event) => {
-    // Always show break events
-    if (event.is_break) return true;
+    // Always show break and marker events
+    if (event.is_break || event.event_type === "break" || event.event_type === "marker") return true;
     // If no filters selected, show all events
     if (selectedFocusIds.length === 0) return true;
     // Otherwise, only show events from selected focuses
@@ -144,15 +145,15 @@ export default function StagePlannerPage() {
             event.google_id === eventId
               ? {
                   ...event,
-                  start_date: updates.start_date || event.start_date,
-                  end_date: updates.end_date || event.end_date,
+                  start_date: updates.date || updates.start_date || event.start_date,
+                  end_date: updates.date || updates.end_date || event.end_date,
                 }
               : event,
           );
         });
       }
       // Then update via API
-      await updateEvent(eventId, updates);
+      await updateEvent(eventId, updates.date ? { date: updates.date } : updates);
     },
     onEventDelete: deleteEvent,
     onEventCreate: async (eventData) => {
@@ -437,6 +438,7 @@ export default function StagePlannerPage() {
     setShowCreateModal(false);
     setCreationMode("ticket");
     setBreakEventId(null);
+    setMarkerEventId(null);
   }, []);
 
   // Handle opening domain modal
@@ -545,6 +547,86 @@ export default function StagePlannerPage() {
     [updateEvents, refetch],
   );
 
+  // Handle creating a marker from time selection
+  const handleCreateMarker = useCallback(
+    async (startDate: Date, endDate: Date) => {
+      try {
+        const result = await createMarker({
+          title: "Marker",
+          date: startDate.toISOString(),
+          colour: "#2980b9",
+        });
+
+        // Optimistically add marker event to calendar
+        // CalendarEvent extends Ticket but markers don't have ticket data;
+        // we satisfy required fields with empty strings.
+        const markerEvent: CalendarEvent = {
+          google_id: result.marker.google_id,
+          // Required Ticket fields – not applicable for markers
+          ticket_id: "",
+          ticket_key: "",
+          ticket_type: "task",
+          ticket_status: "In Progress",
+          project_id: "",
+          epic: "",
+          // Marker-specific fields
+          title: "Marker",
+          start_date: startDate.toISOString(),
+          end_date: startDate.toISOString(),
+          colour: "#2980b9",
+          marker_colour: "#2980b9",
+          google_calendar_id: "",
+          all_day: false,
+          completed: false,
+          event_type: "marker",
+        };
+
+        updateEvents?.((prev) => [...prev, markerEvent]);
+
+        // Open hotbar in marker mode for renaming
+        setMarkerEventId(result.marker.google_id);
+        setEventCreationTrigger({ startDate, endDate });
+        setCreationMode("marker");
+        setShowCreateModal(true);
+      } catch (error) {
+        console.error("Failed to create marker:", error);
+      }
+    },
+    [updateEvents],
+  );
+
+  // Handle renaming existing marker
+  const handleRenameMarker = useCallback(
+    (eventId: string) => {
+      const markerEvent = events.find((e) => e.google_id === eventId && e.event_type === "marker");
+      if (!markerEvent) return;
+
+      setMarkerEventId(eventId);
+      setEventCreationTrigger({
+        startDate: new Date(markerEvent.start_date),
+        endDate: new Date(markerEvent.start_date),
+      });
+      setCreationMode("marker");
+      setShowCreateModal(true);
+    },
+    [events],
+  );
+
+  // Handle updating marker event
+  const handleMarkerUpdate = useCallback(
+    async (eventId: string, title: string, colour: string) => {
+      updateEvents?.((prev) =>
+        prev.map((event) =>
+          event.google_id === eventId
+            ? { ...event, title, marker_colour: colour, colour }
+            : event,
+        ),
+      );
+      await refetch();
+    },
+    [updateEvents, refetch],
+  );
+
   // Unselect calendar on outside click
   const handleUnselectCalendar = useCallback(() => {
     const api = calendarRef.current?.getApi();
@@ -575,6 +657,8 @@ export default function StagePlannerPage() {
 
   // Transform events to FullCalendar format
   const calendarEvents = transformEventsToCalendarFormat(filteredEvents, projects, tickets);
+  const breakEventForEdit = creationMode === "break" && breakEventId ? events.find((e) => e.google_id === breakEventId) : undefined;
+  const markerEventForEdit = creationMode === "marker" && markerEventId ? events.find((e) => e.google_id === markerEventId) : undefined;
 
   return (
     <div className="h-full w-full">
@@ -636,7 +720,9 @@ export default function StagePlannerPage() {
                 onEventReceive={handleEventReceive}
                 onCreateEvent={handleCreateEventFromSelection}
                 onScheduleBreak={handleScheduleBreak}
+                onCreateMarker={handleCreateMarker}
                 onRenameBreak={handleRenameBreak}
+                onRenameMarker={handleRenameMarker}
                 onDrop={handleDrop}
                 onDayHeaderClick={handleDayHeaderClick}
                 showContextMenu={showContextMenu}
@@ -686,12 +772,20 @@ export default function StagePlannerPage() {
         initialDateRange={eventCreationTrigger}
         defaultMode={creationMode}
         breakEventId={breakEventId}
-        disableModeSwitch={creationMode === "break"}
-        initialTitle={creationMode === "break" && breakEventId ? events.find((e) => e.google_id === breakEventId)?.title : undefined}
+        markerEventId={markerEventId}
+        disableModeSwitch={creationMode === "break" || creationMode === "marker"}
+        initialTitle={
+          creationMode === "break" ? breakEventForEdit?.title : creationMode === "marker" ? markerEventForEdit?.title : undefined
+        }
+        initialColour={
+          creationMode === "marker" ? markerEventForEdit?.marker_colour || markerEventForEdit?.colour : undefined
+        }
         onClose={handleCloseCreateModal}
         onClearDateRange={() => setEventCreationTrigger(null)}
         onBreakCreate={refetch}
         onBreakUpdate={handleBreakUpdate}
+        onMarkerCreate={refetch}
+        onMarkerUpdate={handleMarkerUpdate}
         onTicketAdd={(ticket) => {
           if (selectedProjectKey && tickets[selectedProjectKey]) {
             updateTickets(selectedProjectKey, [...tickets[selectedProjectKey], ticket]);

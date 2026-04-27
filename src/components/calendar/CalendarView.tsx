@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DateSelectArg, DatesSetArg, EventDropArg, EventInput, EventMountArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { Clock, Edit, Plus, Trash2 } from "lucide-react";
+import { Clock, Edit, FlagTriangleRight, Plus, Trash2 } from "lucide-react";
 import { useCalendarSelection } from "@/hooks/useCalendarSelection";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
@@ -31,7 +31,7 @@ interface CalendarViewProps {
   isDragging?: boolean;
   editableEventId?: string | null;
   // Event context menu props
-  showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string, is_break?: boolean) => void;
+  showContextMenu?: (x: number, y: number, eventId: string, googleCalendarId?: string, is_break?: boolean, is_marker?: boolean) => void;
   hideContextMenu?: () => void;
   eventContextMenu?: CalendarContextMenuState;
   onEventEdit?: (eventId: string) => void;
@@ -39,7 +39,9 @@ interface CalendarViewProps {
   // Selection context menu props
   onCreateEvent?: (startDate: Date, endDate: Date) => void;
   onScheduleBreak?: (startDate: Date, endDate: Date) => void;
+  onCreateMarker?: (startDate: Date, endDate: Date) => void;
   onRenameBreak?: (eventId: string) => void;
+  onRenameMarker?: (eventId: string) => void;
   // Touch and drag handlers
   onTouchStart?: (e: TouchEvent, eventId: string) => void;
   onTouchEnd?: () => void;
@@ -49,6 +51,12 @@ interface CalendarViewProps {
   onResizeStop?: () => void;
   className?: string;
   calendarRef?: React.RefObject<FullCalendar | null>;
+}
+
+interface MarkerTooltip {
+  title: string;
+  x: number;
+  y: number;
 }
 
 /**
@@ -77,7 +85,9 @@ export function CalendarView({
   onEventDelete,
   onCreateEvent,
   onScheduleBreak,
+  onCreateMarker,
   onRenameBreak,
+  onRenameMarker,
   onTouchStart,
   onTouchEnd,
   onDragStart,
@@ -89,6 +99,9 @@ export function CalendarView({
 }: CalendarViewProps) {
   const internalRef = useRef<FullCalendar | null>(null);
   const calendarRef = externalRef || internalRef;
+
+  // Marker hover tooltip state
+  const [markerTooltip, setMarkerTooltip] = useState<MarkerTooltip | null>(null);
 
   // Selection context menu management
   const { selectionContextMenu, handleDateSelect, hideSelectionContextMenu } = useCalendarSelection();
@@ -126,6 +139,14 @@ export function CalendarView({
     handleSelectionMenuClose();
   }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onScheduleBreak, handleSelectionMenuClose]);
 
+  // Handler for create marker action
+  const handleCreateMarker = useCallback(() => {
+    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onCreateMarker) {
+      onCreateMarker(selectionContextMenu.startDate, selectionContextMenu.endDate);
+    }
+    handleSelectionMenuClose();
+  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onCreateMarker, handleSelectionMenuClose]);
+
   // Default config with mobile optimizations
   const defaultConfig: CalendarViewConfig = {
     initialView: "timeGridWeek",
@@ -151,6 +172,16 @@ export function CalendarView({
 
   return (
     <div className={cn("h-full w-full", className)}>
+      {/* Marker hover tooltip */}
+      {markerTooltip && (
+        <div
+          className="pointer-events-none fixed z-50 rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg"
+          style={{ left: markerTooltip.x, top: markerTooltip.y - 32 }}
+        >
+          {markerTooltip.title}
+        </div>
+      )}
+
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
@@ -252,6 +283,19 @@ export function CalendarView({
         eventResizableFromStart
         // Events with project colors
         events={events.map((event) => {
+          // Marker events: full-width draggable line
+          if (event.extendedProps?.is_marker) {
+            return {
+              ...event,
+              classNames: ["event-marker"],
+              backgroundColor: event.extendedProps?.marker_colour || "#2980b9",
+              borderColor: "transparent",
+              textColor: "transparent",
+              editable: true,
+              startEditable: true,
+              durationEditable: false,
+            };
+          }
           // Break events: blend with calendar background
           if (event.extendedProps?.is_break) {
             return {
@@ -278,11 +322,36 @@ export function CalendarView({
         eventBackgroundColor="#ffffff"
         eventBorderColor="#d1d5db"
         eventTextColor="#374151"
-        eventClassNames={() => ["rounded-lg", "border", "overflow-hidden", "relative"]}
-        eventContent={(arg) => <CalendarEvent eventInfo={arg} />}
+        eventClassNames={(arg) => {
+          if (arg.event.extendedProps?.is_marker) {
+            return ["event-marker"];
+          }
+          return ["rounded-lg", "border", "overflow-hidden", "relative"];
+        }}
+        eventContent={(arg) => {
+          // Marker line events don't use eventContent
+          if (arg.event.extendedProps?.is_marker) return null;
+          return <CalendarEvent eventInfo={arg} />;
+        }}
         // Drag & drop
         droppable={true}
         dropAccept=".draggable-ticket"
+        // Marker hover tooltip
+        eventMouseEnter={(info) => {
+          if (info.event.extendedProps?.is_marker) {
+            const rect = info.el.getBoundingClientRect();
+            setMarkerTooltip({
+              title: info.event.title || "Marker",
+              x: rect.left,
+              y: rect.top,
+            });
+          }
+        }}
+        eventMouseLeave={(info) => {
+          if (info.event.extendedProps?.is_marker) {
+            setMarkerTooltip(null);
+          }
+        }}
         // Event handlers
         eventClick={(info) => {
           if (editableEventId === info.event.id) {
@@ -296,6 +365,11 @@ export function CalendarView({
             return;
           }
 
+          // Marker events should not open ticket modal
+          if (info.event.extendedProps?.is_marker) {
+            return;
+          }
+
           onEventClick?.(info.event.id);
         }}
         eventDrop={onEventDrop}
@@ -305,18 +379,25 @@ export function CalendarView({
         drop={onDrop}
         datesSet={onDatesSet}
         eventDidMount={(info) => {
-          // Add right-click context menu handler
+          // Add right-click context menu handler for all events including background (markers)
           const handleEventContextMenu = (e: MouseEvent) => {
             if (isDragging) return;
             e.preventDefault();
             e.stopPropagation();
-            showContextMenu?.(e.clientX, e.clientY, info.event.id, info.event.extendedProps?.google_calendar_id, info.event.extendedProps?.is_break);
+            showContextMenu?.(
+              e.clientX,
+              e.clientY,
+              info.event.id,
+              info.event.extendedProps?.google_calendar_id,
+              info.event.extendedProps?.is_break,
+              info.event.extendedProps?.is_marker,
+            );
           };
 
           info.el.addEventListener("contextmenu", handleEventContextMenu);
 
-          // Add touch handlers for long press
-          if (onTouchStart && onTouchEnd) {
+          // Add touch handlers for long press (not for markers)
+          if (onTouchStart && onTouchEnd && !info.event.extendedProps?.is_marker) {
             info.el.addEventListener("touchstart", (e) => {
               onTouchStart(e as TouchEvent, info.event.id);
             });
@@ -336,7 +417,33 @@ export function CalendarView({
       {/* Event context menu (right-click on event) - only show if it has an eventId */}
       {eventContextMenu && eventContextMenu.show && eventContextMenu.type === "event" && eventContextMenu.eventId && (
         <CalendarContextMenu contextMenu={eventContextMenu} onClose={() => hideContextMenu?.()}>
-          {eventContextMenu.is_break ? (
+          {eventContextMenu.is_marker ? (
+            // Marker event menu items
+            <>
+              <ContextMenuButton
+                icon={Edit}
+                onClick={() => {
+                  if (eventContextMenu.eventId && onRenameMarker) {
+                    onRenameMarker(eventContextMenu.eventId);
+                  }
+                  hideContextMenu?.();
+                }}
+              >
+                Edit Marker
+              </ContextMenuButton>
+
+              <ContextMenuButton
+                icon={Trash2}
+                variant="destructive"
+                onClick={() => {
+                  if (eventContextMenu.eventId && onEventDelete) onEventDelete(eventContextMenu.eventId);
+                  hideContextMenu?.();
+                }}
+              >
+                Remove Marker
+              </ContextMenuButton>
+            </>
+          ) : eventContextMenu.is_break ? (
             // Break event menu items
             <>
               <ContextMenuButton
@@ -399,6 +506,10 @@ export function CalendarView({
 
           <ContextMenuButton icon={Clock} onClick={handleScheduleBreak}>
             Schedule Break
+          </ContextMenuButton>
+
+          <ContextMenuButton icon={FlagTriangleRight} onClick={handleCreateMarker}>
+            Create Marker
           </ContextMenuButton>
         </CalendarContextMenu>
       )}

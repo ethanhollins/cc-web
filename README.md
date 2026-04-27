@@ -88,6 +88,7 @@ The CI/CD workflows use two GitHub repository environments — **`dev`** and **`
 | Secret | `AWS_SECRET_ACCESS_KEY` | AWS secret access key for the dev deployment IAM user |
 | Secret | `AWS_REGION` | AWS region where the S3 bucket lives (e.g. `ap-southeast-2`) |
 | Variable | `NEXT_PUBLIC_API_BASE_URL` | Base URL of the API Gateway for the dev stage (e.g. `https://abc123.execute-api.ap-southeast-2.amazonaws.com/dev`) |
+| Variable | `NEXT_PUBLIC_WS_URL` | WebSocket URL for the dev stage (e.g. `wss://abc123.execute-api.ap-southeast-2.amazonaws.com/dev/`) |
 
 #### `feature` environment
 
@@ -97,6 +98,7 @@ The CI/CD workflows use two GitHub repository environments — **`dev`** and **`
 | Secret | `AWS_SECRET_ACCESS_KEY` | AWS secret access key for the feature deployment IAM user |
 | Secret | `AWS_REGION` | AWS region where the S3 bucket lives (e.g. `ap-southeast-2`) |
 | Variable | `NEXT_PUBLIC_API_BASE_URL` | Base URL of the API Gateway for the feature stage (e.g. `https://abc123.execute-api.ap-southeast-2.amazonaws.com/feature`) |
+| Variable | `NEXT_PUBLIC_WS_URL` | WebSocket URL for the feature stage (e.g. `wss://abc123.execute-api.ap-southeast-2.amazonaws.com/feature/`) |
 
 > [!NOTE]
 > The `dev` and `feature` environments can share the same IAM credentials and `NEXT_PUBLIC_API_BASE_URL` if you only have a single backend stage, or you can configure separate values to isolate each environment entirely.

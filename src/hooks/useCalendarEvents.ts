@@ -1,9 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteEvent as apiDeleteEvent, updateEvent as apiUpdateEvent, fetchEvents } from "@/api/calendar";
 import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
-import type { CalendarEvent } from "@/types/calendar";
+import type { CalendarEvent, EventType } from "@/types/calendar";
 import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
 import { isAbortError } from "@/utils/error-utils";
+
+const VALID_EVENT_TYPES: EventType[] = ["standard", "break", "marker"];
+
+/**
+ * Normalizes API event_type values to lowercase and drops unknown values.
+ * This keeps downstream marker/break checks consistent even when the API
+ * returns uppercase variants such as "MARKER".
+ */
+function normalizeCalendarEvent(event: CalendarEvent): CalendarEvent {
+  const normalizedEventType = event.event_type?.toLowerCase();
+  const eventType: EventType | undefined =
+    normalizedEventType && VALID_EVENT_TYPES.includes(normalizedEventType as EventType) ? (normalizedEventType as EventType) : undefined;
+
+  return {
+    ...event,
+    event_type: eventType,
+  };
+}
 
 /**
  * Hook for managing calendar events with caching, debouncing, and WebSocket updates
@@ -128,7 +146,7 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
         } else {
           console.debug("Fetching events from API for week:", startDate, "to", endDate);
           const data = await fetchEvents(startDate, endDate, ac.signal);
-          items = data.events || [];
+          items = (data.events || []).map(normalizeCalendarEvent);
           console.debug("Events fetched from API:", items);
 
           // Update cache and state
@@ -216,11 +234,22 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
 
   // Update event API call
   const updateEvent = useCallback(
-    async (eventId: string, updates: Partial<CalendarEvent>) => {
+    async (eventId: string, updates: Partial<CalendarEvent> & { date?: string; calendar_id?: string }) => {
       try {
         await apiUpdateEvent(eventId, updates);
+        const { date, calendar_id: _calendarId, ...eventUpdates } = updates;
         // Optimistically update local state
-        updateEvents((prevEvents) => prevEvents.map((event) => (event.google_id === eventId ? { ...event, ...updates } : event)));
+        updateEvents((prevEvents) =>
+          prevEvents.map((event) =>
+            event.google_id === eventId
+              ? {
+                  ...event,
+                  ...eventUpdates,
+                  ...(date ? { start_date: date, end_date: date } : {}),
+                }
+              : event,
+          ),
+        );
       } catch (error) {
         console.error("Failed to update event:", error);
         throw error;
@@ -240,9 +269,9 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
           return;
         }
 
-        // Break events don't require calendar_id, regular events do
-        if (!event.is_break && !event.google_calendar_id) {
-          console.warn("Calendar ID not found for non-break event deletion:", eventId);
+        // Break and marker events don't require calendar_id, regular events do
+        if (!event.is_break && event.event_type !== "break" && event.event_type !== "marker" && !event.google_calendar_id) {
+          console.warn("Calendar ID not found for non-break/marker event deletion:", eventId);
           return;
         }
 

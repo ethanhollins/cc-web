@@ -1,4 +1,4 @@
-import type { CreateBreakResponse, EventsResponse } from "@/types/calendar";
+import type { CreateBreakResponse, CreateMarkerResponse, EventsResponse } from "@/types/calendar";
 import { apiClient } from "./client";
 
 /**
@@ -20,8 +20,10 @@ export async function updateEvent(
   updates: {
     start_date?: string;
     end_date?: string;
+    date?: string;
     title?: string;
     calendar_id?: string;
+    colour?: string;
   },
   signal?: AbortSignal,
 ): Promise<void> {
@@ -80,4 +82,21 @@ export async function createBreak(
   }
 
   return response.data as CreateBreakResponse;
+}
+
+export async function createMarker(
+  markerData: {
+    title: string;
+    date: string;
+    colour?: string;
+  },
+  signal?: AbortSignal,
+): Promise<CreateMarkerResponse> {
+  const response = await apiClient.post("/events/markers", markerData, { signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to create marker: ${response.status}`);
+  }
+
+  return response.data as CreateMarkerResponse;
 }
