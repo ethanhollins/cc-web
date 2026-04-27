@@ -14,6 +14,10 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Fix: Marker Maintains Full Width When Overlapping Events - CC-102 - 2026-04-27
+
+- Target `.fc-timegrid-event-harness:has(.event-marker)` in CSS to force the FullCalendar harness wrapper (which receives inline `left`/`right`/`width` overlap-avoidance styles) to always be full column width with z-index above other events, so markers no longer shrink to half-width when placed on top of another event
+
 ### Feature: Point in Time Markers - CC-102 - 2026-04-24
 
 - Add `event_type` field ("standard" | "break" | "marker") to `CalendarEvent` to replace the legacy `is_break` boolean discriminant
