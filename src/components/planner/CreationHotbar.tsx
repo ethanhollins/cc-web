@@ -18,6 +18,8 @@ import type { Project } from "@/types/project";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { generateFocusKey } from "@/utils/generate-focus-key";
 
+const DEFAULT_MARKER_COLOUR = "#2980b9";
+
 interface CreationHotbarProps {
   open: boolean;
   projects: Project[];
@@ -28,6 +30,7 @@ interface CreationHotbarProps {
   defaultMode?: CreationMode;
   breakEventId?: string | null;
   markerEventId?: string | null;
+  initialColour?: string;
   disableModeSwitch?: boolean;
   initialTitle?: string;
   onClose: () => void;
@@ -57,6 +60,7 @@ export function CreationHotbar({
   defaultMode = "ticket",
   breakEventId = null,
   markerEventId = null,
+  initialColour,
   disableModeSwitch = false,
   initialTitle,
   onClose,
@@ -82,7 +86,7 @@ export function CreationHotbar({
   const [focusKeyOverride, setFocusKeyOverride] = useState<string>("");
   const [expandedOptions, setExpandedOptions] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
-  const [colour, setColour] = useState(defaultMode === "marker" ? "#2980b9" : "");
+  const [colour, setColour] = useState(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
   const hotbarRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -101,13 +105,13 @@ export function CreationHotbar({
         setPriority(undefined);
         setEpicId(undefined);
         setFocusKeyOverride("");
-        setExpandedOptions(new Set());
+        setExpandedOptions(defaultMode === "marker" ? new Set(["colour"]) : new Set());
         setDescription("");
-        setColour(defaultMode === "marker" ? "#2980b9" : "");
+        setColour(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [open, selectedProjectKey, projects, defaultType, defaultMode, initialTitle]);
+  }, [open, selectedProjectKey, projects, defaultType, defaultMode, initialTitle, initialColour]);
 
   // Update status when mode changes
   useEffect(() => {
@@ -117,10 +121,11 @@ export function CreationHotbar({
       setStatus("To Do");
     } else if (mode === "marker") {
       // Default marker colour to blue when switching to marker mode
-      setColour((prev) => prev || "#2980b9");
+      setColour((prev) => prev || initialColour || DEFAULT_MARKER_COLOUR);
+      setExpandedOptions((prev) => (prev.has("colour") ? prev : new Set(prev).add("colour")));
     }
     // No status change needed for "break" or "marker" mode
-  }, [mode]);
+  }, [mode, initialColour]);
 
   // Click outside handler
   useEffect(() => {
@@ -196,7 +201,7 @@ export function CreationHotbar({
           return;
         }
 
-        const markerColour = colour || "#2980b9";
+        const markerColour = colour || DEFAULT_MARKER_COLOUR;
 
         if (markerEventId) {
           // Update existing marker event (title and colour)
@@ -541,24 +546,20 @@ export function CreationHotbar({
 
           {mode === "marker" && (
             <>
-              {/* Colour swatch + label – clicking anywhere in this pill opens the colour picker */}
-              <label
-                htmlFor="marker-colour-input"
-                className="flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2 py-0.5 text-xs text-[var(--text-muted)] hover:border-blue-400 hover:bg-[var(--surface-hover)]"
+              {/* + Colour button (same selector pattern as focus mode) */}
+              <button
+                type="button"
+                onClick={() => toggleOption("colour")}
+                className={cn(
+                  "flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs transition-colors",
+                  expandedOptions.has("colour")
+                    ? "border-purple-500 bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
+                    : "border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950/50 dark:text-purple-400 dark:hover:bg-purple-950",
+                )}
               >
-                <span
-                  className="inline-block h-3 w-3 rounded-full border border-[var(--border-subtle)]"
-                  style={{ backgroundColor: colour || "#2980b9" }}
-                />
+                {expandedOptions.has("colour") ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                 Colour
-                <input
-                  id="marker-colour-input"
-                  type="color"
-                  value={colour || "#2980b9"}
-                  onChange={(e) => setColour(e.target.value)}
-                  className="sr-only"
-                />
-              </label>
+              </button>
             </>
           )}
 
@@ -653,7 +654,7 @@ export function CreationHotbar({
                   <input
                     id="colour-input"
                     type="color"
-                    value={colour || "#2980b9"}
+                    value={colour || DEFAULT_MARKER_COLOUR}
                     onChange={(e) => setColour(e.target.value)}
                     className="h-8 w-16 cursor-pointer rounded border border-[var(--border-subtle)]"
                   />
@@ -661,7 +662,7 @@ export function CreationHotbar({
                     type="text"
                     value={colour}
                     onChange={(e) => setColour(e.target.value)}
-                    placeholder="#2980b9"
+                    placeholder={DEFAULT_MARKER_COLOUR}
                     className="flex-1 rounded border border-[var(--border-subtle)] bg-transparent px-2 py-1 text-sm text-[var(--text)] outline-none"
                   />
                 </div>

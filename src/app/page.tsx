@@ -657,6 +657,8 @@ export default function StagePlannerPage() {
 
   // Transform events to FullCalendar format
   const calendarEvents = transformEventsToCalendarFormat(filteredEvents, projects, tickets);
+  const breakEventForEdit = creationMode === "break" && breakEventId ? events.find((e) => e.google_id === breakEventId) : undefined;
+  const markerEventForEdit = creationMode === "marker" && markerEventId ? events.find((e) => e.google_id === markerEventId) : undefined;
 
   return (
     <div className="h-full w-full">
@@ -773,11 +775,10 @@ export default function StagePlannerPage() {
         markerEventId={markerEventId}
         disableModeSwitch={creationMode === "break" || creationMode === "marker"}
         initialTitle={
-          creationMode === "break" && breakEventId
-            ? events.find((e) => e.google_id === breakEventId)?.title
-            : creationMode === "marker" && markerEventId
-              ? events.find((e) => e.google_id === markerEventId)?.title
-              : undefined
+          creationMode === "break" ? breakEventForEdit?.title : creationMode === "marker" ? markerEventForEdit?.title : undefined
+        }
+        initialColour={
+          creationMode === "marker" ? markerEventForEdit?.marker_colour || markerEventForEdit?.colour : undefined
         }
         onClose={handleCloseCreateModal}
         onClearDateRange={() => setEventCreationTrigger(null)}

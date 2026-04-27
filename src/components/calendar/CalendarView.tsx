@@ -429,7 +429,7 @@ export function CalendarView({
                   hideContextMenu?.();
                 }}
               >
-                Rename Marker
+                Edit Marker
               </ContextMenuButton>
 
               <ContextMenuButton
