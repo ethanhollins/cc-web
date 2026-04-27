@@ -156,7 +156,10 @@ export default function StagePlannerPage() {
       }
       // Then update via API — markers always use a single date field (start date only)
       if (isMarker) {
-        await updateEvent(eventId, { date: updates.date || updates.start_date });
+        const markerDate = updates.date || updates.start_date;
+        if (markerDate) {
+          await updateEvent(eventId, { date: markerDate });
+        }
       } else {
         await updateEvent(eventId, updates.date ? { date: updates.date } : updates);
       }
