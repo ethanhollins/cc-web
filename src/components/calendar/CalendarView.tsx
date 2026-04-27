@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DateSelectArg, DatesSetArg, EventDropArg, EventInput, EventMountArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
@@ -84,8 +84,8 @@ export function CalendarView({
   onEventEdit,
   onEventDelete,
   onCreateEvent,
-  onScheduleBreak,
-  onCreateMarker,
+  onScheduleBreak: _onScheduleBreak,
+  onCreateMarker: _onCreateMarker,
   onRenameBreak,
   onRenameMarker,
   onTouchStart,
@@ -110,18 +110,15 @@ export function CalendarView({
   const scrollTime = calculateScrollTime();
 
   // On time selection, immediately open the hotbar in ticket-creation mode
-  const handleDateSelectWrapper = useCallback(
-    (selectInfo: DateSelectArg) => {
-      hideContextMenu?.();
-      if (onCreateEvent && selectInfo.start && selectInfo.end) {
-        const startMoment = parseInTimezone(selectInfo.startStr);
-        const endMoment = parseInTimezone(selectInfo.endStr);
-        onCreateEvent(startMoment.toDate(), endMoment.toDate());
-      }
-      calendarRef.current?.getApi().unselect();
-    },
-    [hideContextMenu, onCreateEvent, calendarRef],
-  );
+  const handleDateSelectWrapper = (selectInfo: DateSelectArg) => {
+    hideContextMenu?.();
+    if (onCreateEvent && selectInfo.start && selectInfo.end) {
+      const startMoment = parseInTimezone(selectInfo.startStr);
+      const endMoment = parseInTimezone(selectInfo.endStr);
+      onCreateEvent(startMoment.toDate(), endMoment.toDate());
+    }
+    calendarRef.current?.getApi().unselect();
+  };
 
   // Default config with mobile optimizations
   const defaultConfig: CalendarViewConfig = {
