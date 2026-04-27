@@ -80,22 +80,13 @@
 /* Event Marker – thin point-in-time line spanning the full column width */
 
 /*
- * FullCalendar wraps each timegrid event in a `.fc-timegrid-event-harness`
- * element and applies inline left/right/width styles to it when events
- * overlap (the overlap-avoidance layout).  The `!important` rules on the
- * inner event element do not override the harness inline styles, so markers
- * would shrink to half-width whenever they share a time slot with another
- * event.  Targeting the harness with :has() forces it to always occupy the
- * full column width and stack above other events.
+ * FullCalendar's overlap-avoidance layout applies inline left/right styles to
+ * the `.fc-timegrid-event-harness` wrapper, shrinking markers when they share
+ * a time slot with another event.  The JS eventDidMount callback overrides
+ * these harness styles directly and uses a MutationObserver to re-apply the
+ * override whenever FullCalendar re-renders the inline styles.  These CSS
+ * properties are kept here as a baseline; the JS approach is authoritative.
  */
-.fc-timegrid-event-harness:has(.event-marker) {
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  margin-inline: 0 !important;
-  z-index: 20 !important;
-}
-
 .fc-timegrid-event.event-marker {
   left: 0 !important;
   right: 0 !important;

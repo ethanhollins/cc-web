@@ -103,6 +103,10 @@ export function CalendarView({
   // Marker hover tooltip state
   const [markerTooltip, setMarkerTooltip] = useState<MarkerTooltip | null>(null);
 
+  // WeakMap to track MutationObservers attached to marker harness elements so
+  // they can be disconnected when the event is unmounted.
+  const markerHarnessObservers = useRef(new WeakMap<HTMLElement, MutationObserver>()).current;
+
   // Selection context menu management
   const { selectionContextMenu, handleDateSelect, hideSelectionContextMenu } = useCalendarSelection();
   const scrollTime = calculateScrollTime();
@@ -405,8 +409,50 @@ export function CalendarView({
             info.el.addEventListener("touchcancel", () => onTouchEnd());
           }
 
+          // Force marker harness to full column width.
+          // FullCalendar's overlap-avoidance layout injects inline left/right
+          // styles onto the `.fc-timegrid-event-harness` wrapper element, which
+          // shrinks markers when another event occupies the same time slot.
+          // We override those inline styles here and use a MutationObserver to
+          // re-apply the override whenever FullCalendar updates the harness
+          // style (e.g. after drag-and-drop re-layout).  The observer is
+          // disconnected before each re-application and reconnected afterwards
+          // to prevent infinite feedback loops.
+          if (info.event.extendedProps?.is_marker) {
+            const harness = info.el.closest(".fc-timegrid-event-harness") as HTMLElement | null;
+            if (harness) {
+              const applyHarnessOverride = () => {
+                harness.style.left = "0";
+                harness.style.right = "0";
+                harness.style.marginLeft = "0";
+                harness.style.marginRight = "0";
+                harness.style.zIndex = "20";
+              };
+
+              applyHarnessOverride();
+
+              const observer = new MutationObserver(() => {
+                observer.disconnect();
+                applyHarnessOverride();
+                observer.observe(harness, { attributeFilter: ["style"] });
+              });
+
+              observer.observe(harness, { attributeFilter: ["style"] });
+              markerHarnessObservers.set(harness, observer);
+            }
+          }
+
           // Call custom eventDidMount if provided
           onEventDidMount?.(info);
+        }}
+        eventWillUnmount={(info) => {
+          if (info.event.extendedProps?.is_marker) {
+            const harness = info.el.closest(".fc-timegrid-event-harness") as HTMLElement | null;
+            if (harness) {
+              markerHarnessObservers.get(harness)?.disconnect();
+              markerHarnessObservers.delete(harness);
+            }
+          }
         }}
         eventDragStart={onDragStart}
         eventDragStop={onDragStop}
