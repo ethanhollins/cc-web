@@ -83,7 +83,7 @@
  * FullCalendar wraps each timegrid event in a `.fc-timegrid-event-harness`
  * element and applies inline left/right/width styles to it when events
  * overlap (the overlap-avoidance layout).  The `!important` rules on the
- * inner event element do NOT override the harness inline styles, so markers
+ * inner event element do not override the harness inline styles, so markers
  * would shrink to half-width whenever they share a time slot with another
  * event.  Targeting the harness with :has() forces it to always occupy the
  * full column width and stack above other events.
