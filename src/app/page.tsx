@@ -145,15 +145,15 @@ export default function StagePlannerPage() {
             event.google_id === eventId
               ? {
                   ...event,
-                  start_date: updates.start_date || event.start_date,
-                  end_date: updates.end_date || event.end_date,
+                  start_date: updates.date || updates.start_date || event.start_date,
+                  end_date: updates.date || updates.end_date || event.end_date,
                 }
               : event,
           );
         });
       }
       // Then update via API
-      await updateEvent(eventId, updates);
+      await updateEvent(eventId, updates.date ? { date: updates.date } : updates);
     },
     onEventDelete: deleteEvent,
     onEventCreate: async (eventData) => {
@@ -554,7 +554,7 @@ export default function StagePlannerPage() {
         const result = await createMarker({
           title: "Marker",
           date: startDate.toISOString(),
-          colour: "#2563eb",
+          colour: "#2980b9",
         });
 
         // Optimistically add marker event to calendar
@@ -573,8 +573,8 @@ export default function StagePlannerPage() {
           title: "Marker",
           start_date: startDate.toISOString(),
           end_date: startDate.toISOString(),
-          colour: "#2563eb",
-          marker_colour: "#2563eb",
+          colour: "#2980b9",
+          marker_colour: "#2980b9",
           google_calendar_id: "",
           all_day: false,
           completed: false,

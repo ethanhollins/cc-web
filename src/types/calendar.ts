@@ -16,7 +16,7 @@ export interface CalendarEvent extends Ticket {
   isOptimistic?: boolean;
   is_break?: boolean; // Legacy field – prefer event_type
   event_type?: EventType; // New field replacing is_break
-  marker_colour?: string; // Marker colour (default blue)
+  marker_colour?: string; // Marker colour (default #2980b9)
 }
 
 export interface EventsResponse {
@@ -103,6 +103,7 @@ export type CalendarResizeArg = {
     end: Date | null;
     extendedProps?: {
       google_calendar_id?: string;
+      is_marker?: boolean;
     };
   };
   revert: () => void;

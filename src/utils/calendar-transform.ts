@@ -38,17 +38,19 @@ export function transformEventsToCalendarFormat(events: CalendarEvent[], project
       const markerStart = moment(event.start_date).tz("Australia/Sydney").format();
       // Use a 5-minute window so the bar is visible but thin
       const markerEnd = moment(event.start_date).add(5, "minutes").tz("Australia/Sydney").format();
-      const markerColour = event.marker_colour || event.colour || "#2563eb";
+      const markerColour = event.marker_colour || event.colour || "#2980b9";
 
       return {
         id: event.google_id,
         title: event.title,
         start: markerStart,
         end: markerEnd,
-        display: "background",
         backgroundColor: markerColour,
+        borderColor: "transparent",
         classNames: ["event-marker"],
-        editable: false,
+        editable: true,
+        startEditable: true,
+        durationEditable: false,
         extendedProps: {
           is_marker: true,
           event_type: "marker" as const,

@@ -234,11 +234,22 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
 
   // Update event API call
   const updateEvent = useCallback(
-    async (eventId: string, updates: Partial<CalendarEvent>) => {
+    async (eventId: string, updates: Partial<CalendarEvent> & { date?: string; calendar_id?: string }) => {
       try {
         await apiUpdateEvent(eventId, updates);
+        const { date, calendar_id: _calendarId, ...eventUpdates } = updates;
         // Optimistically update local state
-        updateEvents((prevEvents) => prevEvents.map((event) => (event.google_id === eventId ? { ...event, ...updates } : event)));
+        updateEvents((prevEvents) =>
+          prevEvents.map((event) =>
+            event.google_id === eventId
+              ? {
+                  ...event,
+                  ...eventUpdates,
+                  ...(date ? { start_date: date, end_date: date } : {}),
+                }
+              : event,
+          ),
+        );
       } catch (error) {
         console.error("Failed to update event:", error);
         throw error;

@@ -283,14 +283,17 @@ export function CalendarView({
         eventResizableFromStart
         // Events with project colors
         events={events.map((event) => {
-          // Marker events: full-width background bar (no width impact on other events)
+          // Marker events: full-width draggable line
           if (event.extendedProps?.is_marker) {
             return {
               ...event,
-              display: "background",
               classNames: ["event-marker"],
-              backgroundColor: event.extendedProps?.marker_colour || "#2563eb",
-              editable: false,
+              backgroundColor: event.extendedProps?.marker_colour || "#2980b9",
+              borderColor: "transparent",
+              textColor: "transparent",
+              editable: true,
+              startEditable: true,
+              durationEditable: false,
             };
           }
           // Break events: blend with calendar background
@@ -319,9 +322,14 @@ export function CalendarView({
         eventBackgroundColor="#ffffff"
         eventBorderColor="#d1d5db"
         eventTextColor="#374151"
-        eventClassNames={() => ["rounded-lg", "border", "overflow-hidden", "relative"]}
+        eventClassNames={(arg) => {
+          if (arg.event.extendedProps?.is_marker) {
+            return ["event-marker"];
+          }
+          return ["rounded-lg", "border", "overflow-hidden", "relative"];
+        }}
         eventContent={(arg) => {
-          // Background events (markers) don't use eventContent
+          // Marker line events don't use eventContent
           if (arg.event.extendedProps?.is_marker) return null;
           return <CalendarEvent eventInfo={arg} />;
         }}

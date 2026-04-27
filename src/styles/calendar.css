@@ -77,28 +77,33 @@
   border: none !important;
 }
 
-/* Event Marker – thin point-in-time bar spanning the full column width */
-.fc-timegrid-bg-harness:has(.event-marker) {
-  /* Collapse the harness to a thin stripe; pointer events on a larger area */
-  height: 8px;
-  overflow: visible;
-  z-index: 4;
-  pointer-events: none;
-}
-.event-marker.fc-bg-event {
-  height: 4px;
-  border-radius: 2px;
-  opacity: 0.85;
-  cursor: pointer;
-  pointer-events: auto;
+/* Event Marker – thin point-in-time line spanning the full column width */
+.fc-timegrid-event.event-marker {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  min-height: 2px !important;
+  height: 2px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  cursor: ns-resize;
+  opacity: 0.95;
+  z-index: 20 !important;
+  overflow: visible !important;
   transition: height 0.15s ease, opacity 0.15s ease;
 }
-.event-marker.fc-bg-event:hover {
-  height: 8px;
+
+.fc-timegrid-event.event-marker:hover {
+  height: 6px !important;
+  min-height: 6px !important;
   opacity: 1;
 }
+
 /* Hide FullCalendar's built-in title for markers (we show a custom tooltip) */
-.event-marker.fc-bg-event .fc-event-title {
+.fc-timegrid-event.event-marker .fc-event-title,
+.fc-timegrid-event.event-marker .fc-event-time {
   display: none;
 }
 

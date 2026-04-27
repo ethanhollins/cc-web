@@ -82,7 +82,7 @@ export function CreationHotbar({
   const [focusKeyOverride, setFocusKeyOverride] = useState<string>("");
   const [expandedOptions, setExpandedOptions] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
-  const [colour, setColour] = useState(defaultMode === "marker" ? "#2563eb" : "");
+  const [colour, setColour] = useState(defaultMode === "marker" ? "#2980b9" : "");
   const hotbarRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +103,7 @@ export function CreationHotbar({
         setFocusKeyOverride("");
         setExpandedOptions(new Set());
         setDescription("");
-        setColour(defaultMode === "marker" ? "#2563eb" : "");
+        setColour(defaultMode === "marker" ? "#2980b9" : "");
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -117,7 +117,7 @@ export function CreationHotbar({
       setStatus("To Do");
     } else if (mode === "marker") {
       // Default marker colour to blue when switching to marker mode
-      setColour((prev) => prev || "#2563eb");
+      setColour((prev) => prev || "#2980b9");
     }
     // No status change needed for "break" or "marker" mode
   }, [mode]);
@@ -196,7 +196,7 @@ export function CreationHotbar({
           return;
         }
 
-        const markerColour = colour || "#2563eb";
+        const markerColour = colour || "#2980b9";
 
         if (markerEventId) {
           // Update existing marker event (title and colour)
@@ -548,13 +548,13 @@ export function CreationHotbar({
               >
                 <span
                   className="inline-block h-3 w-3 rounded-full border border-[var(--border-subtle)]"
-                  style={{ backgroundColor: colour || "#2563eb" }}
+                  style={{ backgroundColor: colour || "#2980b9" }}
                 />
                 Colour
                 <input
                   id="marker-colour-input"
                   type="color"
-                  value={colour || "#2563eb"}
+                  value={colour || "#2980b9"}
                   onChange={(e) => setColour(e.target.value)}
                   className="sr-only"
                 />
@@ -653,7 +653,7 @@ export function CreationHotbar({
                   <input
                     id="colour-input"
                     type="color"
-                    value={colour || "#2563eb"}
+                    value={colour || "#2980b9"}
                     onChange={(e) => setColour(e.target.value)}
                     className="h-8 w-16 cursor-pointer rounded border border-[var(--border-subtle)]"
                   />
@@ -661,7 +661,7 @@ export function CreationHotbar({
                     type="text"
                     value={colour}
                     onChange={(e) => setColour(e.target.value)}
-                    placeholder="#2563eb"
+                    placeholder="#2980b9"
                     className="flex-1 rounded border border-[var(--border-subtle)] bg-transparent px-2 py-1 text-sm text-[var(--text)] outline-none"
                   />
                 </div>
