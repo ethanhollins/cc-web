@@ -249,7 +249,10 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
 
         if (isMarker) {
           const date = updates.date || updates.start_date;
-          if (!date) return;
+          if (!date) {
+            console.warn(`updateEvent: marker ${eventId} received no date — skipping API call`);
+            return;
+          }
           await apiUpdateEvent(eventId, { date });
           updateEvents((prevEvents) =>
             prevEvents.map((event) => (event.google_id === eventId ? { ...event, start_date: date, end_date: date } : event)),
