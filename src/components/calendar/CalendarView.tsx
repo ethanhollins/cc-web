@@ -6,7 +6,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { Clock, Edit, MapPin, Plus, Trash2 } from "lucide-react";
+import { Clock, Edit, FlagTriangleRight, Plus, Trash2 } from "lucide-react";
 import { useCalendarSelection } from "@/hooks/useCalendarSelection";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
@@ -508,7 +508,7 @@ export function CalendarView({
             Schedule Break
           </ContextMenuButton>
 
-          <ContextMenuButton icon={MapPin} onClick={handleCreateMarker}>
+          <ContextMenuButton icon={FlagTriangleRight} onClick={handleCreateMarker}>
             Create Marker
           </ContextMenuButton>
         </CalendarContextMenu>
