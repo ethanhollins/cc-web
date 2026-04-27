@@ -222,3 +222,13 @@ export async function deleteTicket(ticketId: string, signal?: AbortSignal): Prom
     throw new Error(`Failed to delete ticket: ${response.status}`);
   }
 }
+
+export async function searchTickets(query: string, limit: number = 10, signal?: AbortSignal): Promise<TicketsResponse> {
+  const response = await apiClient.get("/ticket/search", { params: { q: query, limit }, signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to search tickets: ${response.status}`);
+  }
+
+  return response.data as TicketsResponse;
+}

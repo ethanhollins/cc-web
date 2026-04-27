@@ -6,13 +6,13 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { DropArg, EventReceiveArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { Clock, Edit, FlagTriangleRight, Plus, Trash2 } from "lucide-react";
-import { useCalendarSelection } from "@/hooks/useCalendarSelection";
+import { Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
 import { ContextMenuButton } from "@/ui/context-menu-button";
 import { calculateScrollTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
+import { parseInTimezone } from "@/utils/date-utils";
 import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
 
@@ -107,49 +107,21 @@ export function CalendarView({
   // they can be disconnected when the event is unmounted.
   const markerHarnessObservers = useRef(new WeakMap<HTMLElement, MutationObserver>()).current;
 
-  // Selection context menu management
-  const { selectionContextMenu, handleDateSelect, hideSelectionContextMenu } = useCalendarSelection();
   const scrollTime = calculateScrollTime();
 
-  // Wrap handleDateSelect to also hide event context menu
+  // On time selection, immediately open the hotbar in ticket-creation mode
   const handleDateSelectWrapper = useCallback(
     (selectInfo: DateSelectArg) => {
-      hideContextMenu?.(); // Close event menu when making a selection
-      handleDateSelect(selectInfo);
+      hideContextMenu?.();
+      if (onCreateEvent && selectInfo.start && selectInfo.end) {
+        const startMoment = parseInTimezone(selectInfo.startStr);
+        const endMoment = parseInTimezone(selectInfo.endStr);
+        onCreateEvent(startMoment.toDate(), endMoment.toDate());
+      }
+      calendarRef.current?.getApi().unselect();
     },
-    [handleDateSelect, hideContextMenu],
+    [hideContextMenu, onCreateEvent, calendarRef],
   );
-
-  // Helper to close selection menu and unselect
-  // eslint-disable-next-line
-  const handleSelectionMenuClose = useCallback(() => {
-    hideSelectionContextMenu();
-    calendarRef.current?.getApi().unselect();
-  }, [hideSelectionContextMenu, calendarRef]);
-
-  // Handler for create event action
-  const handleCreateEvent = useCallback(() => {
-    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onCreateEvent) {
-      onCreateEvent(selectionContextMenu.startDate, selectionContextMenu.endDate);
-    }
-    handleSelectionMenuClose();
-  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onCreateEvent, handleSelectionMenuClose]);
-
-  // Handler for schedule break action
-  const handleScheduleBreak = useCallback(() => {
-    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onScheduleBreak) {
-      onScheduleBreak(selectionContextMenu.startDate, selectionContextMenu.endDate);
-    }
-    handleSelectionMenuClose();
-  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onScheduleBreak, handleSelectionMenuClose]);
-
-  // Handler for create marker action
-  const handleCreateMarker = useCallback(() => {
-    if (selectionContextMenu.startDate && selectionContextMenu.endDate && onCreateMarker) {
-      onCreateMarker(selectionContextMenu.startDate, selectionContextMenu.endDate);
-    }
-    handleSelectionMenuClose();
-  }, [selectionContextMenu.startDate, selectionContextMenu.endDate, onCreateMarker, handleSelectionMenuClose]);
 
   // Default config with mobile optimizations
   const defaultConfig: CalendarViewConfig = {
@@ -521,23 +493,6 @@ export function CalendarView({
               </ContextMenuButton>
             </>
           )}
-        </CalendarContextMenu>
-      )}
-
-      {/* Selection context menu (click & drag to select time) */}
-      {selectionContextMenu.show && (
-        <CalendarContextMenu contextMenu={selectionContextMenu} onClose={handleSelectionMenuClose}>
-          <ContextMenuButton icon={Plus} onClick={handleCreateEvent}>
-            Create Event
-          </ContextMenuButton>
-
-          <ContextMenuButton icon={Clock} onClick={handleScheduleBreak}>
-            Schedule Break
-          </ContextMenuButton>
-
-          <ContextMenuButton icon={FlagTriangleRight} onClick={handleCreateMarker}>
-            Create Marker
-          </ContextMenuButton>
         </CalendarContextMenu>
       )}
     </div>
