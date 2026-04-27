@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
 import { ContextMenuButton } from "@/ui/context-menu-button";
-import { calculateScrollTime, lightenColor } from "@/utils/calendar-utils";
+import { calculateScrollTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
 import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
 
@@ -102,6 +102,10 @@ export function CalendarView({
 
   // Marker hover tooltip state
   const [markerTooltip, setMarkerTooltip] = useState<MarkerTooltip | null>(null);
+
+  // WeakMap to track MutationObservers attached to marker harness elements so
+  // they can be disconnected when the event is unmounted.
+  const markerHarnessObservers = useRef(new WeakMap<HTMLElement, MutationObserver>()).current;
 
   // Selection context menu management
   const { selectionContextMenu, handleDateSelect, hideSelectionContextMenu } = useCalendarSelection();
@@ -405,8 +409,31 @@ export function CalendarView({
             info.el.addEventListener("touchcancel", () => onTouchEnd());
           }
 
+          // Force marker harness to full column width.
+          // FullCalendar's overlap-avoidance layout injects inline left/right
+          // styles onto the `.fc-timegrid-event-harness` wrapper element, which
+          // shrinks markers when another event occupies the same time slot.
+          // observeMarkerHarness applies the override immediately and keeps
+          // re-applying it via a MutationObserver whenever FullCalendar
+          // updates the harness style (e.g. after drag-and-drop re-layout).
+          if (info.event.extendedProps?.is_marker) {
+            const harness = info.el.closest(".fc-timegrid-event-harness") as HTMLElement | null;
+            if (harness) {
+              markerHarnessObservers.set(harness, observeMarkerHarness(harness));
+            }
+          }
+
           // Call custom eventDidMount if provided
           onEventDidMount?.(info);
+        }}
+        eventWillUnmount={(info) => {
+          if (info.event.extendedProps?.is_marker) {
+            const harness = info.el.closest(".fc-timegrid-event-harness") as HTMLElement | null;
+            if (harness) {
+              markerHarnessObservers.get(harness)?.disconnect();
+              markerHarnessObservers.delete(harness);
+            }
+          }
         }}
         eventDragStart={onDragStart}
         eventDragStop={onDragStop}

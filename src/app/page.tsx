@@ -152,8 +152,8 @@ export default function StagePlannerPage() {
           );
         });
       }
-      // Then update via API
-      await updateEvent(eventId, updates.date ? { date: updates.date } : updates);
+      // Marker-specific payload normalisation is handled inside updateEvent
+      await updateEvent(eventId, updates);
     },
     onEventDelete: deleteEvent,
     onEventCreate: async (eventData) => {

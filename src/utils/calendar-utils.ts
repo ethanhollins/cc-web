@@ -108,3 +108,40 @@ export function calculateEventDuration(start: Date | null, end: Date | null): nu
 export function isShortEvent(start: Date | null, end: Date | null): boolean {
   return calculateEventDuration(start, end) < 30;
 }
+
+/**
+ * Applies full-width override styles to a marker event harness element.
+ * FullCalendar's overlap-avoidance layout injects inline left/right styles
+ * onto the `.fc-timegrid-event-harness` wrapper that shrink markers when
+ * another event occupies the same time slot. This override restores the
+ * full-column width required for marker rendering.
+ */
+export function applyMarkerHarnessOverride(harness: HTMLElement): void {
+  harness.style.left = "0";
+  harness.style.right = "0";
+  harness.style.marginLeft = "0";
+  harness.style.marginRight = "0";
+  harness.style.zIndex = "20";
+}
+
+/**
+ * Attaches a MutationObserver to the given marker harness that re-applies
+ * the full-width override whenever FullCalendar mutates the harness's style
+ * attribute (e.g. after a drag-and-drop re-layout). The observer disconnects
+ * before each re-application and reconnects afterwards to avoid infinite loops.
+ *
+ * Returns the observer so the caller can store and disconnect it later
+ * (e.g. in eventWillUnmount).
+ */
+export function observeMarkerHarness(harness: HTMLElement): MutationObserver {
+  applyMarkerHarnessOverride(harness);
+
+  const observer = new MutationObserver(() => {
+    observer.disconnect();
+    applyMarkerHarnessOverride(harness);
+    observer.observe(harness, { attributeFilter: ["style"] });
+  });
+
+  observer.observe(harness, { attributeFilter: ["style"] });
+  return observer;
+}
