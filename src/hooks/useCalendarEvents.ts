@@ -38,6 +38,11 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
   const [eventsCache, setEventsCache] = useState<Map<string, CalendarEvent[]>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
 
+  // Latest-ref: always reflects the current events array without adding it as
+  // a dependency to every useCallback that needs to read it.
+  const eventsRef = useRef<CalendarEvent[]>([]);
+  eventsRef.current = events;
+
   // WebSocket integration - will need migration later
   const { lastMessage } = useWebSocketMessages((message) => {
     console.log("WebSocket message received:", message);
@@ -236,20 +241,34 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
   const updateEvent = useCallback(
     async (eventId: string, updates: Partial<CalendarEvent> & { date?: string; calendar_id?: string }) => {
       try {
-        await apiUpdateEvent(eventId, updates);
-        const { date, calendar_id: _calendarId, ...eventUpdates } = updates;
-        // Optimistically update local state
-        updateEvents((prevEvents) =>
-          prevEvents.map((event) =>
-            event.google_id === eventId
-              ? {
-                  ...event,
-                  ...eventUpdates,
-                  ...(date ? { start_date: date, end_date: date } : {}),
-                }
-              : event,
-          ),
-        );
+        // Detect markers from the latest events state.
+        // Marker events only accept { date } (start date only); they must never
+        // receive { start_date, end_date } which is the regular-event shape.
+        const calEvent = eventsRef.current.find((e) => e.google_id === eventId);
+        const isMarker = calEvent?.event_type === "marker";
+
+        if (isMarker) {
+          const date = updates.date || updates.start_date;
+          if (!date) return;
+          await apiUpdateEvent(eventId, { date });
+          updateEvents((prevEvents) =>
+            prevEvents.map((event) => (event.google_id === eventId ? { ...event, start_date: date, end_date: date } : event)),
+          );
+        } else {
+          await apiUpdateEvent(eventId, updates);
+          const { date, calendar_id: _calendarId, ...eventUpdates } = updates;
+          updateEvents((prevEvents) =>
+            prevEvents.map((event) =>
+              event.google_id === eventId
+                ? {
+                    ...event,
+                    ...eventUpdates,
+                    ...(date ? { start_date: date, end_date: date } : {}),
+                  }
+                : event,
+            ),
+          );
+        }
       } catch (error) {
         console.error("Failed to update event:", error);
         throw error;

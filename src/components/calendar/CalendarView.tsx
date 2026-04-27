@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
 import { ContextMenuButton } from "@/ui/context-menu-button";
-import { calculateScrollTime, lightenColor } from "@/utils/calendar-utils";
+import { calculateScrollTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
 import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
 
@@ -413,32 +413,13 @@ export function CalendarView({
           // FullCalendar's overlap-avoidance layout injects inline left/right
           // styles onto the `.fc-timegrid-event-harness` wrapper element, which
           // shrinks markers when another event occupies the same time slot.
-          // We override those inline styles here and use a MutationObserver to
-          // re-apply the override whenever FullCalendar updates the harness
-          // style (e.g. after drag-and-drop re-layout).  The observer is
-          // disconnected before each re-application and reconnected afterwards
-          // to prevent infinite feedback loops.
+          // observeMarkerHarness applies the override immediately and keeps
+          // re-applying it via a MutationObserver whenever FullCalendar
+          // updates the harness style (e.g. after drag-and-drop re-layout).
           if (info.event.extendedProps?.is_marker) {
             const harness = info.el.closest(".fc-timegrid-event-harness") as HTMLElement | null;
             if (harness) {
-              const applyHarnessOverride = () => {
-                harness.style.left = "0";
-                harness.style.right = "0";
-                harness.style.marginLeft = "0";
-                harness.style.marginRight = "0";
-                harness.style.zIndex = "20";
-              };
-
-              applyHarnessOverride();
-
-              const observer = new MutationObserver(() => {
-                observer.disconnect();
-                applyHarnessOverride();
-                observer.observe(harness, { attributeFilter: ["style"] });
-              });
-
-              observer.observe(harness, { attributeFilter: ["style"] });
-              markerHarnessObservers.set(harness, observer);
+              markerHarnessObservers.set(harness, observeMarkerHarness(harness));
             }
           }
 

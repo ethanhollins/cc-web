@@ -248,7 +248,7 @@ export function useCalendarInteractions({
     async (info: EventDropArg) => {
       try {
         const eventId = info.event.id;
-        const isMarker = info.event.extendedProps?.is_marker === true;
+        const isMarker = info.event.extendedProps?.is_marker === true || info.event.extendedProps?.event_type === "marker";
         // Format dates in Sydney timezone (matching old implementation)
         const newStartDate = toTimezone(info.event.start?.toISOString().replace(/Z$/, "") ?? "");
         const updates = isMarker
