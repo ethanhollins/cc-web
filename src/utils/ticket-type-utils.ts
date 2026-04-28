@@ -2,7 +2,8 @@ import type { TicketType } from "@/types/ticket";
 
 export const TYPE_OPTIONS = ["task", "story", "bug", "event"] as TicketType[];
 
-export function getTypeDisplayName(type: string): string {
+export function getTypeDisplayName(type: string | undefined | null): string {
+  if (!type) return "";
   const typeMap: Record<string, string> = {
     task: "Task",
     story: "Story",
