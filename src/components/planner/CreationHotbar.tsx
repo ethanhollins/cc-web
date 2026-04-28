@@ -180,6 +180,14 @@ export function CreationHotbar({
     }
   }, [mode, selectedExistingTicket]);
 
+  // Clear selected existing ticket when the time range is removed
+  useEffect(() => {
+    if (!initialDateRange && selectedExistingTicket) {
+      setSelectedExistingTicket(null);
+      setSearchResults([]);
+    }
+  }, [initialDateRange, selectedExistingTicket]);
+
   // Click outside handler
   useEffect(() => {
     if (!open) return;
