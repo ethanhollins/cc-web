@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteEvent as apiDeleteEvent, updateEvent as apiUpdateEvent, fetchEvents } from "@/api/calendar";
+import { getLastMutationTime } from "@/api/client";
 import { useWebSocketMessages } from "@/hooks/useWebSocketMessages";
 import type { CalendarEvent, EventType } from "@/types/calendar";
+import type { WebSocketMessage } from "@/lib/websocket-provider";
 import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
 import { isAbortError } from "@/utils/error-utils";
 
@@ -54,12 +56,59 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
   const lastUpdateTimeRef = useRef<number>(0);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Keep a reference to the last WS message we processed so we can detect when
+  // a *new* message arrives (vs. the effect re-running due to selectedDate changing).
+  const prevLastMessageRef = useRef<WebSocketMessage | null>(null);
+
   // Track which projects have had their tickets fetched to avoid duplicate calls
   const fetchedProjectsRef = useRef<Set<string>>(new Set());
 
   // Handle WebSocket updates and date changes with debouncing
   useEffect(() => {
     const now = Date.now();
+
+    // Detect whether this effect run was triggered by a new WS message.
+    const isNewWSMessage = lastMessage !== null && lastMessage !== prevLastMessageRef.current;
+    prevLastMessageRef.current = lastMessage;
+
+    if (isNewWSMessage) {
+      // Extract received_time from the WS message payload sent by the backend.
+      // If the FE made a mutating API call more recently than the backend received
+      // this event, the message is stale and should be ignored to prevent the
+      // optimistic UI from rolling back to an intermediate server state.
+      //
+      // The backend sends received_time as either an ISO-8601 string or a Unix
+      // timestamp (ms).  We intentionally cast via `unknown` so TypeScript
+      // reminds us that the shape is not guaranteed at compile time.
+      const messageData = (lastMessage.data as unknown) as Record<string, unknown> | null | undefined;
+      const receivedTime = messageData?.received_time;
+
+      if (receivedTime !== undefined) {
+        const receivedTimestamp =
+          typeof receivedTime === "string"
+            ? new Date(receivedTime).getTime()
+            : typeof receivedTime === "number"
+              ? receivedTime
+              : NaN;
+
+        // Only apply the staleness check when we have a valid numeric timestamp.
+        // An invalid/unparseable value falls through so we never silently discard messages.
+        if (!Number.isNaN(receivedTimestamp)) {
+          const lastChangeTime = getLastMutationTime();
+
+          if (lastChangeTime > receivedTimestamp) {
+            console.log(
+              "Ignoring stale WS message: FE last change at",
+              lastChangeTime,
+              "is newer than WS received_time",
+              receivedTimestamp,
+            );
+            return;
+          }
+        }
+      }
+    }
+
     const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
     const DEBOUNCE_DELAY = 30000; // 30 seconds
 
@@ -68,8 +117,8 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
       clearTimeout(debounceTimeoutRef.current);
     }
 
-    // Check if this is a WebSocket update (lastMessage changed)
-    const isWSUpdate = lastMessage !== null;
+    // Check if this is a WebSocket update (a new, non-stale message arrived)
+    const isWSUpdate = isNewWSMessage;
     setIsWebSocketUpdate(isWSUpdate);
 
     if (timeSinceLastUpdate >= DEBOUNCE_DELAY) {
