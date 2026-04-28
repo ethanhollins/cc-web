@@ -567,21 +567,25 @@ export function CreationHotbar({
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--surface-hover)] focus:outline-none"
                     >
                       {/* Ticket key pill */}
-                      <span
-                        className="flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white"
-                        style={{ backgroundColor: projectColour }}
-                      >
-                        {ticket.ticket_key}
-                      </span>
+                      {ticket.ticket_key && (
+                        <span
+                          className="flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white"
+                          style={{ backgroundColor: projectColour }}
+                        >
+                          {ticket.ticket_key}
+                        </span>
+                      )}
 
                       {/* Ticket title */}
                       <span className="min-w-0 flex-1 truncate text-[var(--text)]">{ticket.title}</span>
 
                       {/* Type and project pills */}
                       <div className="flex flex-shrink-0 items-center gap-1">
-                        <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", typePillClasses(ticket.ticket_type))}>
-                          {getTypeDisplayName(ticket.ticket_type)}
-                        </span>
+                        {ticket.ticket_type && (
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", typePillClasses(ticket.ticket_type))}>
+                            {getTypeDisplayName(ticket.ticket_type)}
+                          </span>
+                        )}
                         {ticket.project?.title && (
                           <span
                             className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
