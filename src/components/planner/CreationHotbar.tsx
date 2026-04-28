@@ -18,6 +18,7 @@ import type { Project } from "@/types/project";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { generateFocusKey } from "@/utils/generate-focus-key";
 import { isAbortError } from "@/utils/error-utils";
+import { getTypeDisplayName, typePillClasses } from "@/utils/ticket-type-utils";
 
 const DEFAULT_MARKER_COLOUR = "#2980b9";
 
@@ -170,6 +171,14 @@ export function CreationHotbar({
     }
     // No status change needed for "break" or "marker" mode
   }, [mode, initialColour]);
+
+  // Clear selected existing ticket when leaving ticket mode
+  useEffect(() => {
+    if (mode !== "ticket" && selectedExistingTicket) {
+      setSelectedExistingTicket(null);
+      setSearchResults([]);
+    }
+  }, [mode, selectedExistingTicket]);
 
   // Click outside handler
   useEffect(() => {
@@ -561,8 +570,8 @@ export function CreationHotbar({
 
                       {/* Type and project pills */}
                       <div className="flex flex-shrink-0 items-center gap-1">
-                        <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2 py-0.5 text-xs capitalize text-[var(--text-muted)]">
-                          {ticket.ticket_type}
+                        <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", typePillClasses(ticket.ticket_type))}>
+                          {getTypeDisplayName(ticket.ticket_type)}
                         </span>
                         {ticket.project?.title && (
                           <span
