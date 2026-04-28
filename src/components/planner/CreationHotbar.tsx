@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Image, Plus, X } from "lucide-react";
-import { createBreak, createMarker, updateEvent } from "@/api/calendar";
+import { createBreak, createEvent, createMarker, updateEvent } from "@/api/calendar";
 import { createProject } from "@/api/projects";
-import { DEFAULT_CALENDAR_ID, createTicket } from "@/api/tickets";
+import { DEFAULT_CALENDAR_ID, createTicket, searchTickets } from "@/api/tickets";
 import { CreationMode, CreationModeToggle } from "@/components/planner/CreationModeToggle";
 import { EpicSelect } from "@/components/planner/EpicSelect";
 import { FocusStatusSelect } from "@/components/planner/FocusStatusSelect";
@@ -17,6 +17,8 @@ import type { CalendarEvent } from "@/types/calendar";
 import type { Project } from "@/types/project";
 import type { Ticket, TicketStatus, TicketType } from "@/types/ticket";
 import { generateFocusKey } from "@/utils/generate-focus-key";
+import { isAbortError } from "@/utils/error-utils";
+import { getTypeDisplayName, typePillClasses } from "@/utils/ticket-type-utils";
 
 const DEFAULT_MARKER_COLOUR = "#2980b9";
 
@@ -87,11 +89,55 @@ export function CreationHotbar({
   const [expandedOptions, setExpandedOptions] = useState<Set<string>>(new Set());
   const [description, setDescription] = useState("");
   const [colour, setColour] = useState(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
+  const [searchResults, setSearchResults] = useState<Ticket[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedExistingTicket, setSelectedExistingTicket] = useState<Ticket | null>(null);
   const hotbarRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const clearSelectedExistingTicket = useCallback(() => {
+    setSelectedExistingTicket(null);
+    setSearchResults([]);
+  }, []);
 
   // Auto-generate focus key from title
   const focusKey = mode === "focus" ? generateFocusKey(title, focusKeyOverride) : "";
+
+  // Debounced ticket search – only active in ticket mode with a time range
+  useEffect(() => {
+    if (mode !== "ticket" || !initialDateRange || selectedExistingTicket) return;
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    if (!title.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+
+      try {
+        const result = await searchTickets(title.trim(), 10, controller.signal);
+        setSearchResults(result.tickets ?? []);
+      } catch (err) {
+        if (!isAbortError(err)) {
+          console.error("Ticket search failed:", err);
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [title, mode, initialDateRange, selectedExistingTicket]);
 
   // Reset state when opening
   useEffect(() => {
@@ -108,6 +154,9 @@ export function CreationHotbar({
         setExpandedOptions(defaultMode === "marker" ? new Set(["colour"]) : new Set());
         setDescription("");
         setColour(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
+        setSearchResults([]);
+        setIsSearching(false);
+        setSelectedExistingTicket(null);
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -126,6 +175,19 @@ export function CreationHotbar({
     }
     // No status change needed for "break" or "marker" mode
   }, [mode, initialColour]);
+
+  // Clear selected existing ticket when leaving ticket mode
+  useEffect(() => {
+    if (mode !== "ticket" && selectedExistingTicket) {
+      clearSelectedExistingTicket();
+    }
+  }, [mode, selectedExistingTicket, clearSelectedExistingTicket]);
+
+  // Clear selected existing ticket when the time range is removed
+  useEffect(() => {
+    if (initialDateRange) return;
+    clearSelectedExistingTicket();
+  }, [initialDateRange, clearSelectedExistingTicket]);
 
   // Click outside handler
   useEffect(() => {
@@ -219,6 +281,44 @@ export function CreationHotbar({
             colour: markerColour,
           });
           onMarkerCreate?.();
+        }
+      } else if (mode === "ticket" && selectedExistingTicket && initialDateRange) {
+        // Schedule an existing ticket into the selected time range
+        const optimisticEventId = `optimistic-event-${Date.now()}`;
+        const optimisticEvent: CalendarEvent = {
+          ...selectedExistingTicket,
+          google_id: optimisticEventId,
+          start_date: initialDateRange.startDate.toISOString(),
+          end_date: initialDateRange.endDate.toISOString(),
+          google_calendar_id: DEFAULT_CALENDAR_ID,
+          isOptimistic: true,
+        };
+        onEventAdd?.(optimisticEvent);
+
+        try {
+          const result = await createEvent({
+            calendar_id: DEFAULT_CALENDAR_ID,
+            start_date: initialDateRange.startDate.toISOString(),
+            end_date: initialDateRange.endDate.toISOString(),
+            ticket_data: {
+              ticket_id: selectedExistingTicket.ticket_id,
+              title: selectedExistingTicket.title,
+            },
+          });
+
+          onEventRemove?.(optimisticEventId);
+          onEventAdd?.({
+            ...selectedExistingTicket,
+            google_id: result.event_id,
+            start_date: initialDateRange.startDate.toISOString(),
+            end_date: initialDateRange.endDate.toISOString(),
+            google_calendar_id: DEFAULT_CALENDAR_ID,
+          });
+        } catch (error) {
+          onEventRemove?.(optimisticEventId);
+          console.error("Failed to schedule existing ticket:", error);
+          // TODO: Show error toast
+          throw error;
         }
       } else if (mode === "ticket" && projectKey) {
         const project = projects.find((p) => p.project_key === projectKey);
@@ -336,6 +436,7 @@ export function CreationHotbar({
     focusKeyOverride,
     breakEventId,
     markerEventId,
+    selectedExistingTicket,
     onBreakCreate,
     onBreakUpdate,
     onMarkerCreate,
@@ -369,16 +470,36 @@ export function CreationHotbar({
                   : "border-[var(--accent)]",
           )}
         >
+          {/* Ticket key badge shown when an existing ticket is selected */}
+          {selectedExistingTicket && (
+            <span
+              className="flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white"
+              style={{ backgroundColor: selectedExistingTicket.project?.colour || "var(--accent)" }}
+            >
+              {selectedExistingTicket.ticket_key}
+            </span>
+          )}
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (selectedExistingTicket) {
+                setSelectedExistingTicket(null);
+                setSearchResults([]);
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 handleSubmit();
               } else if (e.key === "Escape") {
-                onClose();
+                if (selectedExistingTicket) {
+                  setSelectedExistingTicket(null);
+                  setSearchResults([]);
+                } else {
+                  onClose();
+                }
               }
             }}
             placeholder={
@@ -422,6 +543,62 @@ export function CreationHotbar({
           </button>
         </div>
 
+        {/* Ticket search results – shown only in ticket mode with a time range when not already selected */}
+        {mode === "ticket" && initialDateRange && !selectedExistingTicket && (searchResults.length > 0 || isSearching) && (
+          <div className="mx-5 mb-3">
+            {isSearching && searchResults.length === 0 ? (
+              <div className="flex items-center gap-2 py-2 text-xs text-[var(--text-muted)]">
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-[var(--border-subtle)] border-t-[var(--accent)]" />
+                Searching…
+              </div>
+            ) : (
+              <div className="max-h-[11.5rem] overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)]">
+                {searchResults.map((ticket) => {
+                  const projectColour = ticket.project?.colour || "var(--accent)";
+                  return (
+                    <button
+                      key={ticket.ticket_id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedExistingTicket(ticket);
+                        setTitle(ticket.title);
+                        setSearchResults([]);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--surface-hover)] focus:outline-none"
+                    >
+                      {/* Ticket key pill */}
+                      <span
+                        className="flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white"
+                        style={{ backgroundColor: projectColour }}
+                      >
+                        {ticket.ticket_key}
+                      </span>
+
+                      {/* Ticket title */}
+                      <span className="min-w-0 flex-1 truncate text-[var(--text)]">{ticket.title}</span>
+
+                      {/* Type and project pills */}
+                      <div className="flex flex-shrink-0 items-center gap-1">
+                        <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", typePillClasses(ticket.ticket_type))}>
+                          {getTypeDisplayName(ticket.ticket_type)}
+                        </span>
+                        {ticket.project?.title && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                            style={{ backgroundColor: projectColour }}
+                          >
+                            {ticket.project.title}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Options row with mode toggle and dropdowns */}
         <div
           ref={scrollContainerRef}
@@ -461,7 +638,7 @@ export function CreationHotbar({
             </div>
           )}
 
-          {mode === "ticket" && (
+          {mode === "ticket" && !selectedExistingTicket && (
             <>
               {/* Focus dropdown */}
               <div className="flex-shrink-0">
