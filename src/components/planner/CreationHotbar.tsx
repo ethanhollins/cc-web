@@ -96,6 +96,10 @@ export function CreationHotbar({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchAbortRef = useRef<AbortController | null>(null);
+  const clearSelectedExistingTicket = useCallback(() => {
+    setSelectedExistingTicket(null);
+    setSearchResults([]);
+  }, []);
 
   // Auto-generate focus key from title
   const focusKey = mode === "focus" ? generateFocusKey(title, focusKeyOverride) : "";
@@ -175,17 +179,15 @@ export function CreationHotbar({
   // Clear selected existing ticket when leaving ticket mode
   useEffect(() => {
     if (mode !== "ticket" && selectedExistingTicket) {
-      setSelectedExistingTicket(null);
-      setSearchResults([]);
+      clearSelectedExistingTicket();
     }
-  }, [mode, selectedExistingTicket]);
+  }, [mode, selectedExistingTicket, clearSelectedExistingTicket]);
 
   // Clear selected existing ticket when the time range is removed
   useEffect(() => {
     if (initialDateRange) return;
-    setSelectedExistingTicket(null);
-    setSearchResults([]);
-  }, [initialDateRange]);
+    clearSelectedExistingTicket();
+  }, [initialDateRange, clearSelectedExistingTicket]);
 
   // Click outside handler
   useEffect(() => {
