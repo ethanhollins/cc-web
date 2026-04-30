@@ -18,6 +18,8 @@ export type {
   SkillTicket,
   CreateEventPayload,
   UpdateEventPayload,
+  CreateTicketPayload,
+  UpdateTicketPayload,
   SkillDataRecord,
   SkillDataScope,
 } from "./types";
@@ -26,7 +28,7 @@ export type {
 export { getEvents, createSkillEvent, updateSkillEvent, deleteSkillEvent } from "./events";
 
 // Tickets
-export { getTickets, updateTicketStatus } from "./tickets";
+export { getTickets, createTicket, updateTicket, deleteTicket } from "./tickets";
 
 // Persistent data – global scope
 export { getGlobalData, listGlobalData, setGlobalData, deleteGlobalData } from "./skill-data";

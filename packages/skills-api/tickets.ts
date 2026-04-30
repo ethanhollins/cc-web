@@ -5,19 +5,24 @@
  * Skills import from @skills-api rather than calling the raw API client directly.
  */
 
-import { fetchTickets, updateTicketStatus as apiUpdateTicketStatus } from "@/api/tickets";
-import type { SkillTicket } from "./types";
+import {
+  fetchTickets,
+  createTicket as apiCreateTicket,
+  updateTicketStatus as apiUpdateTicketStatus,
+  updateTicketTitle,
+  updateTicketType,
+  updateTicketProject,
+  updateTicketEpic,
+  updateTicketPriority,
+  updateTicketDescription,
+  scheduleTicket,
+  unscheduleTicket,
+  deleteTicket as apiDeleteTicket,
+} from "@/api/tickets";
+import type { SkillTicket, CreateTicketPayload, UpdateTicketPayload } from "./types";
+import type { Ticket } from "@/types/ticket";
 
-function mapToSkillTicket(raw: {
-  ticket_id: string;
-  ticket_key: string;
-  title: string;
-  ticket_status: string;
-  ticket_type: string;
-  project_id?: string;
-  colour?: string;
-  priority?: string;
-}): SkillTicket {
+function mapToSkillTicket(raw: Ticket): SkillTicket {
   return {
     id: raw.ticket_id,
     key: raw.ticket_key,
@@ -27,6 +32,8 @@ function mapToSkillTicket(raw: {
     projectId: raw.project_id,
     colour: raw.colour,
     priority: raw.priority,
+    epicId: raw.epic_id,
+    scheduledDate: raw.scheduled_date,
   };
 }
 
@@ -41,11 +48,74 @@ export async function getTickets(projectId: string): Promise<SkillTicket[]> {
 }
 
 /**
- * Update the status of a ticket.
+ * Create a new ticket.
  *
- * @param ticketId  - The ticket's unique id
- * @param newStatus - The new status to set
+ * @param payload - Ticket creation payload
+ * @returns The newly created ticket
  */
-export async function updateTicketStatus(ticketId: string, newStatus: string): Promise<void> {
-  await apiUpdateTicketStatus(ticketId, newStatus);
+export async function createTicket(payload: CreateTicketPayload): Promise<SkillTicket> {
+  const ticket = await apiCreateTicket({
+    title: payload.title,
+    projectId: payload.projectId,
+    ticketType: payload.ticketType,
+    ticketStatus: payload.ticketStatus,
+    priority: payload.priority,
+    colour: payload.colour,
+    description: payload.description,
+    epicId: payload.epicId,
+    scheduledDate: payload.scheduledDate,
+  });
+  return mapToSkillTicket(ticket);
 }
+
+/**
+ * Update one or more fields of an existing ticket.
+ * Only the fields provided in `updates` will be changed.
+ *
+ * @param ticketId - The ticket's unique id
+ * @param updates  - Fields to update
+ */
+export async function updateTicket(ticketId: string, updates: UpdateTicketPayload): Promise<void> {
+  const tasks: Promise<unknown>[] = [];
+
+  if (updates.title !== undefined) {
+    tasks.push(updateTicketTitle(ticketId, updates.title));
+  }
+  if (updates.ticketStatus !== undefined) {
+    tasks.push(apiUpdateTicketStatus(ticketId, updates.ticketStatus));
+  }
+  if (updates.ticketType !== undefined) {
+    tasks.push(updateTicketType(ticketId, updates.ticketType));
+  }
+  if (updates.priority !== undefined) {
+    tasks.push(updateTicketPriority(ticketId, updates.priority));
+  }
+  if (updates.description !== undefined) {
+    tasks.push(updateTicketDescription(ticketId, updates.description));
+  }
+  if (updates.epicId !== undefined) {
+    tasks.push(updateTicketEpic(ticketId, updates.epicId));
+  }
+  if (updates.projectId !== undefined) {
+    tasks.push(updateTicketProject(ticketId, updates.projectId));
+  }
+  if (updates.scheduledDate !== undefined) {
+    tasks.push(
+      updates.scheduledDate === null
+        ? unscheduleTicket(ticketId)
+        : scheduleTicket(ticketId, updates.scheduledDate),
+    );
+  }
+
+  await Promise.all(tasks);
+}
+
+/**
+ * Delete a ticket.
+ *
+ * @param ticketId - The ticket's unique id
+ */
+export async function deleteTicket(ticketId: string): Promise<void> {
+  await apiDeleteTicket(ticketId);
+}
+

@@ -26,6 +26,32 @@ export interface SkillTicket {
   projectId?: string;
   colour?: string;
   priority?: string;
+  description?: string;
+  epicId?: string;
+  scheduledDate?: string;
+}
+
+export interface CreateTicketPayload {
+  title: string;
+  projectId: string;
+  ticketType?: string;
+  ticketStatus?: string;
+  priority?: string;
+  colour?: string;
+  description?: string;
+  epicId?: string;
+  scheduledDate?: string;
+}
+
+export interface UpdateTicketPayload {
+  title?: string;
+  ticketStatus?: string;
+  ticketType?: string;
+  priority?: string;
+  description?: string;
+  epicId?: string;
+  projectId?: string;
+  scheduledDate?: string | null;
 }
 
 export interface CreateEventPayload {
