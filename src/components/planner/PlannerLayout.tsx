@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { Feather, Target } from "lucide-react";
+import { Feather, Puzzle, Target } from "lucide-react";
 import { MobileTab, MobileTabMenu } from "@/components/planner/MobileTabMenu";
 import { PlannerNavBar } from "@/components/planner/PlannerNavBar";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -11,8 +11,11 @@ import { cn } from "@/lib/utils";
 interface PlannerLayoutProps {
   ticketsSidebar: ReactNode;
   focusesSidebar: ReactNode;
+  skillsSidebar: ReactNode;
+  skillsContent: ReactNode;
   calendar: ReactNode;
   navigation?: ReactNode;
+  onActivePanelChange?: (id: string | null) => void;
 }
 
 const MAX_HEIGHT_VH = 85; // Maximum 85vh
@@ -24,7 +27,7 @@ const OPEN_HEIGHT_VH = 50; // Default open height (1/2 of screen)
  * Mobile: Full-screen calendar with drawer sidebar
  * Desktop: Side-by-side with collapsible sidebar
  */
-export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, navigation }: PlannerLayoutProps) {
+export function PlannerLayout({ ticketsSidebar, focusesSidebar, skillsSidebar, skillsContent, calendar, navigation, onActivePanelChange }: PlannerLayoutProps) {
   const { theme, containerClass, setTheme } = usePlannerTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -126,10 +129,27 @@ export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, naviga
 
   const isDark = theme === "soft-dark";
 
+  // Whether the skills panel is active
+  const isSkillsActive = isMobile ? mobileActiveTab === "skills" : activePanelId === "skills";
+
+  // Notify parent when the active panel changes
+  const onActivePanelChangeRef = useRef(onActivePanelChange);
+  useEffect(() => {
+    onActivePanelChangeRef.current = onActivePanelChange;
+  });
+  const prevActivePanelId = useRef<string | null>(activePanelId);
+  useEffect(() => {
+    if (prevActivePanelId.current !== activePanelId) {
+      prevActivePanelId.current = activePanelId;
+      onActivePanelChangeRef.current?.(activePanelId);
+    }
+  }, [activePanelId]);
+
   // Map of sidebar content by id
   const sidebarMap: Record<string, ReactNode> = {
     tickets: ticketsSidebar,
     domains: focusesSidebar,
+    skills: skillsSidebar,
   };
 
   // Determine which sidebar to show based on mobile tab or desktop panel
@@ -160,7 +180,7 @@ export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, naviga
               paddingBottom: isMobile ? (sidebarOpen || isDragging ? drawerHeight : CLOSED_HEIGHT) : 0,
             }}
           >
-            {calendar}
+            {isSkillsActive ? skillsContent : calendar}
           </div>
 
           {/* Mobile: Bottom drawer with peek */}
@@ -253,6 +273,11 @@ export function PlannerLayout({ ticketsSidebar, focusesSidebar, calendar, naviga
                 id: "domains",
                 icon: <Target className="h-5 w-5" />,
                 label: "Focuses",
+              },
+              {
+                id: "skills",
+                icon: <Puzzle className="h-5 w-5" />,
+                label: "Skills",
               },
             ]}
             activeId={!desktopSidebarCollapsed ? activePanelId : null}

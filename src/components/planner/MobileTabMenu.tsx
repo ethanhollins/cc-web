@@ -1,11 +1,11 @@
 "use client";
 
-import { Feather, MoonStar, SunMedium, Target } from "lucide-react";
+import { Feather, MoonStar, Puzzle, SunMedium, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { ExpandingTabButton } from "@/ui/expanding-tab-button";
 
-export type MobileTab = "tickets" | "domains";
+export type MobileTab = "tickets" | "domains" | "skills";
 
 interface MobileTabMenuProps {
   activeTab: MobileTab;
@@ -18,7 +18,7 @@ interface MobileTabMenuProps {
 
 /**
  * Mobile tab menu component positioned in the drawer
- * Provides navigation between tickets and focuses views, plus theme toggle
+ * Provides navigation between tickets, focuses and skills views, plus theme toggle
  */
 export function MobileTabMenu({ activeTab, onTabChange, isDark, onToggleTheme, isDrawerOpen, onOpenDrawer }: MobileTabMenuProps) {
   const handleTabClick = (tab: MobileTab) => {
@@ -50,6 +50,16 @@ export function MobileTabMenu({ activeTab, onTabChange, isDark, onToggleTheme, i
           variant="purple"
           size="md"
           labelWidth="w-18"
+          showActiveBackground={isDrawerOpen}
+        />
+        <ExpandingTabButton
+          icon={<Puzzle className="h-5 w-5" />}
+          label="Skills"
+          isActive={activeTab === "skills"}
+          onClick={() => handleTabClick("skills")}
+          variant="green"
+          size="md"
+          labelWidth="w-14"
           showActiveBackground={isDrawerOpen}
         />
       </div>

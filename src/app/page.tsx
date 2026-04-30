@@ -21,6 +21,10 @@ import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { FocusesSidebar } from "@/components/planner/FocusesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
+import { SkillsSidebar } from "@/components/planner/SkillsSidebar";
+import { SkillsContent } from "@/components/skills/SkillsContent";
+import { skillsRegistry } from "@/lib/skills-registry";
+import type { RegisteredSkill } from "@/types/skill";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useCalendarInteractions } from "@/hooks/useCalendarInteractions";
@@ -57,6 +61,10 @@ export default function StagePlannerPage() {
   useEffect(() => {
     saveFocusFilterPreferences(selectedFocusIds);
   }, [selectedFocusIds]);
+
+  // Skills state
+  const [selectedSkillFocusId, setSelectedSkillFocusId] = useState<string | null>(() => skillsRegistry[0]?.config.id ?? null);
+  const [selectedSkill, setSelectedSkill] = useState<RegisteredSkill | null>(null);
 
   // Event creation trigger state (for calendar time selection)
   const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
@@ -692,6 +700,24 @@ export default function StagePlannerPage() {
             onTicketClick={handleTicketClick}
             onStatusChange={handleStatusChange}
             onProjectEdit={handleProjectEdit}
+          />
+        }
+        skillsSidebar={
+          <SkillsSidebar
+            key="skills-sidebar"
+            selectedFocusId={selectedSkillFocusId}
+            selectedSkillId={selectedSkill?.config.id ?? null}
+            onFocusChange={setSelectedSkillFocusId}
+            onSkillSelect={(skill) => setSelectedSkill(skill)}
+          />
+        }
+        skillsContent={
+          <SkillsContent
+            key="skills-content"
+            selectedFocusId={selectedSkillFocusId}
+            selectedSkill={selectedSkill}
+            onSkillSelect={(skill) => setSelectedSkill(skill)}
+            onBack={() => setSelectedSkill(null)}
           />
         }
         calendar={
