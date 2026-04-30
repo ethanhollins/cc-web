@@ -645,7 +645,7 @@ export default function StagePlannerPage() {
   }, [calendarRef, closeContextMenu, longPressHandlers]);
 
   const handleSkillsProjectChange = useCallback((projectId: string) => {
-    setSelectedSkillProjectId(projectId || null);
+    setSelectedSkillProjectId(projectId ? projectId : null);
     setSelectedSkill(null);
   }, []);
 
