@@ -8,15 +8,7 @@
 import {
   fetchTickets,
   createTicket as apiCreateTicket,
-  updateTicketStatus as apiUpdateTicketStatus,
-  updateTicketTitle,
-  updateTicketType,
-  updateTicketProject,
-  updateTicketEpic,
-  updateTicketPriority,
-  updateTicketDescription,
-  scheduleTicket,
-  unscheduleTicket,
+  updateTicket as apiUpdateTicket,
   deleteTicket as apiDeleteTicket,
 } from "@/api/tickets";
 import type { SkillTicket, CreateTicketPayload, UpdateTicketPayload } from "./types";
@@ -69,45 +61,22 @@ export async function createTicket(payload: CreateTicketPayload): Promise<SkillT
 }
 
 /**
- * Update one or more fields of an existing ticket.
- * Only the fields provided in `updates` will be changed.
+ * Update one or more fields of an existing ticket in a single API call.
  *
  * @param ticketId - The ticket's unique id
  * @param updates  - Fields to update
  */
 export async function updateTicket(ticketId: string, updates: UpdateTicketPayload): Promise<void> {
-  const tasks: Promise<unknown>[] = [];
-
-  if (updates.title !== undefined) {
-    tasks.push(updateTicketTitle(ticketId, updates.title));
-  }
-  if (updates.ticketStatus !== undefined) {
-    tasks.push(apiUpdateTicketStatus(ticketId, updates.ticketStatus));
-  }
-  if (updates.ticketType !== undefined) {
-    tasks.push(updateTicketType(ticketId, updates.ticketType));
-  }
-  if (updates.priority !== undefined) {
-    tasks.push(updateTicketPriority(ticketId, updates.priority));
-  }
-  if (updates.description !== undefined) {
-    tasks.push(updateTicketDescription(ticketId, updates.description));
-  }
-  if (updates.epicId !== undefined) {
-    tasks.push(updateTicketEpic(ticketId, updates.epicId));
-  }
-  if (updates.projectId !== undefined) {
-    tasks.push(updateTicketProject(ticketId, updates.projectId));
-  }
-  if (updates.scheduledDate !== undefined) {
-    tasks.push(
-      updates.scheduledDate === null
-        ? unscheduleTicket(ticketId)
-        : scheduleTicket(ticketId, updates.scheduledDate),
-    );
-  }
-
-  await Promise.all(tasks);
+  await apiUpdateTicket(ticketId, {
+    title: updates.title,
+    description: updates.description,
+    ticketStatus: updates.ticketStatus,
+    ticketType: updates.ticketType,
+    priority: updates.priority,
+    epicId: updates.epicId,
+    projectId: updates.projectId,
+    scheduledDate: updates.scheduledDate,
+  });
 }
 
 /**
