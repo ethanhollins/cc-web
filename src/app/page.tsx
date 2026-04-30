@@ -439,6 +439,8 @@ export default function StagePlannerPage() {
     setCreationMode("ticket");
     setBreakEventId(null);
     setMarkerEventId(null);
+    // Clear calendar selection now that the hotbar flow is complete
+    calendarRef.current?.getApi().unselect();
   }, []);
 
   // Handle opening domain modal

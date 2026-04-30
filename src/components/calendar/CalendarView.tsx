@@ -117,7 +117,9 @@ export function CalendarView({
       const endMoment = parseInTimezone(selectInfo.endStr);
       onCreateEvent(startMoment.toDate(), endMoment.toDate());
     }
-    calendarRef.current?.getApi().unselect();
+    // Do not unselect here – the selection should remain visible while the hotbar
+    // is open. The caller is responsible for calling unselect() when the hotbar
+    // flow is completed (confirmed or cancelled).
   };
 
   // Default config with mobile optimizations

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Image, Plus, X } from "lucide-react";
+import { Check, Image, Loader2, Plus, X } from "lucide-react";
 import { createBreak, createEvent, createMarker, updateEvent } from "@/api/calendar";
 import { createProject } from "@/api/projects";
 import { DEFAULT_CALENDAR_ID, createTicket, searchTickets } from "@/api/tickets";
@@ -91,6 +91,7 @@ export function CreationHotbar({
   const [colour, setColour] = useState(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
   const [searchResults, setSearchResults] = useState<Ticket[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedExistingTicket, setSelectedExistingTicket] = useState<Ticket | null>(null);
   const hotbarRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -156,6 +157,7 @@ export function CreationHotbar({
         setColour(defaultMode === "marker" ? initialColour || DEFAULT_MARKER_COLOUR : "");
         setSearchResults([]);
         setIsSearching(false);
+        setIsSubmitting(false);
         setSelectedExistingTicket(null);
       }, 0);
       return () => clearTimeout(timer);
@@ -231,8 +233,9 @@ export function CreationHotbar({
 
   // Submit handler
   const handleSubmit = useCallback(async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       if (mode === "break") {
         if (!initialDateRange) {
@@ -420,8 +423,11 @@ export function CreationHotbar({
     } catch (error) {
       console.error("Failed to create:", error);
       // TODO: Show error toast
+    } finally {
+      setIsSubmitting(false);
     }
   }, [
+    isSubmitting,
     mode,
     title,
     description,
@@ -449,6 +455,17 @@ export function CreationHotbar({
   ]);
 
   if (!open) return null;
+
+  const isSubmitDisabled = !title.trim() || isSubmitting;
+  const submitButtonHoverClasses = "hover:border-green-500 hover:bg-green-500";
+  const submitButtonClassesByMode: Record<CreationMode, string> = {
+    ticket: `border-[var(--accent)] bg-[var(--accent)] text-white ${submitButtonHoverClasses}`,
+    focus: `border-purple-500 bg-purple-500 text-white ${submitButtonHoverClasses}`,
+    break: `border-gray-500 bg-gray-500 text-white ${submitButtonHoverClasses}`,
+    marker: `border-blue-500 bg-blue-500 text-white ${submitButtonHoverClasses}`,
+  };
+  const submitButtonDisabledClasses =
+    "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ pointerEvents: "none" }}>
@@ -524,22 +541,15 @@ export function CreationHotbar({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!title.trim()}
+            disabled={isSubmitDisabled}
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
-              title.trim()
-                ? mode === "focus"
-                  ? "border-purple-500 bg-purple-500 text-white hover:border-green-500 hover:bg-green-500"
-                  : mode === "break"
-                    ? "border-gray-500 bg-gray-500 text-white hover:border-green-500 hover:bg-green-500"
-                    : mode === "marker"
-                      ? "border-blue-500 bg-blue-500 text-white hover:border-green-500 hover:bg-green-500"
-                      : "border-[var(--accent)] bg-[var(--accent)] text-white hover:border-green-500 hover:bg-green-500"
-                : "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50",
+              isSubmitDisabled ? submitButtonDisabledClasses : submitButtonClassesByMode[mode],
             )}
-            title="Create"
+            style={{ cursor: isSubmitDisabled ? "not-allowed" : "pointer" }}
+            title={isSubmitting ? "Submitting…" : "Create"}
           >
-            <Check className="h-4 w-4" />
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           </button>
         </div>
 
