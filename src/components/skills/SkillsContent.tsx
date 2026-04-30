@@ -8,7 +8,7 @@ import { skillsRegistry } from "@/lib/skills-registry";
 import type { RegisteredSkill } from "@/types/skill";
 
 interface SkillsContentProps {
-  selectedFocusId: string | null;
+  selectedProjectId: string | null;
   selectedSkill: RegisteredSkill | null;
   onSkillSelect: (skill: RegisteredSkill) => void;
   onBack: () => void;
@@ -20,7 +20,7 @@ interface SkillsContentProps {
  * When no skill is selected: shows a grid of skill cards for the current focus.
  * When a skill is selected: renders the skill component with a back button.
  */
-export function SkillsContent({ selectedFocusId, selectedSkill, onSkillSelect, onBack }: SkillsContentProps) {
+export function SkillsContent({ selectedProjectId, selectedSkill, onSkillSelect, onBack }: SkillsContentProps) {
   // If a skill is selected, render it
   if (selectedSkill) {
     const SkillComponent: ComponentType = selectedSkill.component;
@@ -49,7 +49,9 @@ export function SkillsContent({ selectedFocusId, selectedSkill, onSkillSelect, o
   }
 
   // No skill selected — show grid of skill cards
-  const focus = skillsRegistry.find((f) => f.config.id === selectedFocusId) ?? skillsRegistry[0];
+  const focus = selectedProjectId
+    ? (skillsRegistry.find((f) => f.config.project_id === selectedProjectId) ?? skillsRegistry[0])
+    : skillsRegistry[0];
   const skills = focus?.skills ?? [];
 
   return (

@@ -23,7 +23,6 @@ import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
 import { SkillsSidebar } from "@/components/planner/SkillsSidebar";
 import { SkillsContent } from "@/components/skills/SkillsContent";
-import { skillsRegistry } from "@/lib/skills-registry";
 import type { RegisteredSkill } from "@/types/skill";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
@@ -63,7 +62,7 @@ export default function StagePlannerPage() {
   }, [selectedFocusIds]);
 
   // Skills state
-  const [selectedSkillFocusId, setSelectedSkillFocusId] = useState<string | null>(() => skillsRegistry[0]?.config.id ?? null);
+  const [selectedSkillProjectId, setSelectedSkillProjectId] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<RegisteredSkill | null>(null);
 
   // Event creation trigger state (for calendar time selection)
@@ -705,16 +704,17 @@ export default function StagePlannerPage() {
         skillsSidebar={
           <SkillsSidebar
             key="skills-sidebar"
-            selectedFocusId={selectedSkillFocusId}
+            projects={projects}
+            selectedProjectId={selectedSkillProjectId}
             selectedSkillId={selectedSkill?.config.id ?? null}
-            onFocusChange={setSelectedSkillFocusId}
+            onProjectChange={setSelectedSkillProjectId}
             onSkillSelect={(skill) => setSelectedSkill(skill)}
           />
         }
         skillsContent={
           <SkillsContent
             key="skills-content"
-            selectedFocusId={selectedSkillFocusId}
+            selectedProjectId={selectedSkillProjectId}
             selectedSkill={selectedSkill}
             onSkillSelect={(skill) => setSelectedSkill(skill)}
             onBack={() => setSelectedSkill(null)}

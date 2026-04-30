@@ -10,4 +10,5 @@ export const focusConfig: FocusConfig = {
   id: "example-focus",
   name: "Example Focus",
   description: "A sample focus area demonstrating the skills feature.",
+  project_id: "p-08d7818f-9557-4401-be9f-6e0a6e71f07a",
 };

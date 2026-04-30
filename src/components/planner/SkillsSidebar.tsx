@@ -3,26 +3,37 @@
 import { ChevronDown, Puzzle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { skillsRegistry } from "@/lib/skills-registry";
-import type { RegisteredFocus, RegisteredSkill } from "@/types/skill";
+import type { RegisteredSkill } from "@/types/skill";
+import type { Project } from "@/types/project";
 import { ScrollArea } from "@/ui/scroll-area";
 
 interface SkillsSidebarProps {
-  selectedFocusId: string | null;
+  projects: Project[];
+  selectedProjectId: string | null;
   selectedSkillId: string | null;
-  onFocusChange: (focusId: string) => void;
+  onProjectChange: (projectId: string) => void;
   onSkillSelect: (skill: RegisteredSkill) => void;
 }
 
 /**
  * Skills sidebar component.
  *
- * Displays a focus selector dropdown and a scrollable list of skill cards for
- * the selected focus. Mirrors the visual style of FocusesSidebar.
+ * Displays a focus selector dropdown (populated from the API projects list) and
+ * a scrollable list of skill cards for the selected focus. Each focus in the
+ * skills registry is linked to an API project via `FocusConfig.project_id`.
+ * Mirrors the visual style of TicketsSidebar.
  */
-export function SkillsSidebar({ selectedFocusId, selectedSkillId, onFocusChange, onSkillSelect }: SkillsSidebarProps) {
-  const selectedFocus: RegisteredFocus | undefined = selectedFocusId
-    ? skillsRegistry.find((f) => f.config.id === selectedFocusId)
-    : skillsRegistry[0];
+export function SkillsSidebar({ projects, selectedProjectId, selectedSkillId, onProjectChange, onSkillSelect }: SkillsSidebarProps) {
+  const activeProjects = projects
+    .filter((p) => p.project_status?.toLowerCase() === "in progress")
+    .sort((a, b) => a.project_key.localeCompare(b.project_key));
+
+  const effectiveProjectId = selectedProjectId ?? activeProjects[0]?.project_id ?? "";
+
+  // Find the registered focus whose project_id matches the selected project
+  const selectedFocus = effectiveProjectId
+    ? skillsRegistry.find((f) => f.config.project_id === effectiveProjectId)
+    : undefined;
 
   const currentSkills = selectedFocus?.skills ?? [];
 
@@ -36,19 +47,19 @@ export function SkillsSidebar({ selectedFocusId, selectedSkillId, onFocusChange,
         <h2 className="text-lg font-semibold text-[var(--text)]">Skills</h2>
       </div>
 
-      {/* Focus selector */}
+      {/* Focus (project) selector */}
       <div className="relative">
         <select
-          value={selectedFocus?.config.id ?? ""}
-          onChange={(e) => onFocusChange(e.target.value)}
+          value={effectiveProjectId}
+          onChange={(e) => onProjectChange(e.target.value)}
           className="w-full appearance-none truncate rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] py-2 pl-3 pr-9 text-sm font-medium text-[var(--text)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
         >
-          {skillsRegistry.length === 0 && (
+          {activeProjects.length === 0 && (
             <option value="">No focuses</option>
           )}
-          {skillsRegistry.map((f) => (
-            <option key={f.config.id} value={f.config.id}>
-              {f.config.name}
+          {activeProjects.map((p) => (
+            <option key={p.project_id} value={p.project_id}>
+              {p.project_key} — {p.title}
             </option>
           ))}
         </select>
@@ -60,7 +71,7 @@ export function SkillsSidebar({ selectedFocusId, selectedSkillId, onFocusChange,
         <div className="space-y-1.5 pr-1">
           {currentSkills.length === 0 ? (
             <div className="p-4 text-center text-sm text-[var(--text-muted)]">
-              {!selectedFocusId ? "Select a focus" : "No skills available"}
+              {!effectiveProjectId ? "Select a focus" : "No skills available"}
             </div>
           ) : (
             currentSkills.map((skill) => {
