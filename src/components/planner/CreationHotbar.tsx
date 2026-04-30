@@ -541,7 +541,7 @@ export function CreationHotbar({
                     : mode === "marker"
                       ? "border-blue-500 bg-blue-500 text-white hover:border-green-500 hover:bg-green-500"
                       : "border-[var(--accent)] bg-[var(--accent)] text-white hover:border-green-500 hover:bg-green-500"
-                : "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50",
+                : "cursor-not-allowed hover:cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50",
             )}
             title={isSubmitting ? "Submitting…" : "Create"}
           >
