@@ -456,6 +456,17 @@ export function CreationHotbar({
 
   if (!open) return null;
 
+  const isSubmitDisabled = !title.trim() || isSubmitting;
+  const submitButtonHoverClasses = "hover:border-green-500 hover:bg-green-500";
+  const submitButtonClassesByMode: Record<CreationMode, string> = {
+    ticket: `border-[var(--accent)] bg-[var(--accent)] text-white ${submitButtonHoverClasses}`,
+    focus: `border-purple-500 bg-purple-500 text-white ${submitButtonHoverClasses}`,
+    break: `border-gray-500 bg-gray-500 text-white ${submitButtonHoverClasses}`,
+    marker: `border-blue-500 bg-blue-500 text-white ${submitButtonHoverClasses}`,
+  };
+  const submitButtonDisabledClasses =
+    "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ pointerEvents: "none" }}>
       <div
@@ -530,19 +541,12 @@ export function CreationHotbar({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!title.trim() || isSubmitting}
+            disabled={isSubmitDisabled}
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
-              title.trim() && !isSubmitting
-                ? mode === "focus"
-                  ? "border-purple-500 bg-purple-500 text-white hover:border-green-500 hover:bg-green-500"
-                  : mode === "break"
-                    ? "border-gray-500 bg-gray-500 text-white hover:border-green-500 hover:bg-green-500"
-                    : mode === "marker"
-                      ? "border-blue-500 bg-blue-500 text-white hover:border-green-500 hover:bg-green-500"
-                      : "border-[var(--accent)] bg-[var(--accent)] text-white hover:border-green-500 hover:bg-green-500"
-                : "cursor-not-allowed hover:cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-disabled)] opacity-50",
+              isSubmitDisabled ? submitButtonDisabledClasses : submitButtonClassesByMode[mode],
             )}
+            style={{ cursor: isSubmitDisabled ? "not-allowed" : "pointer" }}
             title={isSubmitting ? "Submitting…" : "Create"}
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
