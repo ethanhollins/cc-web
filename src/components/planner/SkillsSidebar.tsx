@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { ChevronDown, Puzzle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { skillsRegistry } from "@/lib/skills-registry";
@@ -28,7 +29,16 @@ export function SkillsSidebar({ projects, selectedProjectId, selectedSkillId, on
     .filter((p) => p.project_status?.toLowerCase() === "in progress")
     .sort((a, b) => a.project_key.localeCompare(b.project_key));
 
-  const effectiveProjectId = selectedProjectId ?? activeProjects[0]?.project_id ?? "";
+  const projectIds = new Set(activeProjects.map((p) => p.project_id));
+  const preferredProjectId = skillsRegistry.map((focus) => focus.config.project_id).find((projectId): projectId is string => Boolean(projectId && projectIds.has(projectId)));
+  const fallbackProjectId = preferredProjectId ?? activeProjects[0]?.project_id ?? "";
+  const effectiveProjectId = selectedProjectId && projectIds.has(selectedProjectId) ? selectedProjectId : fallbackProjectId;
+
+  useEffect(() => {
+    if (effectiveProjectId !== selectedProjectId) {
+      onProjectChange(effectiveProjectId);
+    }
+  }, [effectiveProjectId, onProjectChange, selectedProjectId]);
 
   // Find the registered focus whose project_id matches the selected project
   const selectedFocus = effectiveProjectId

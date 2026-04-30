@@ -49,9 +49,7 @@ export function SkillsContent({ selectedProjectId, selectedSkill, onSkillSelect,
   }
 
   // No skill selected — show grid of skill cards
-  const focus = selectedProjectId
-    ? (skillsRegistry.find((f) => f.config.project_id === selectedProjectId) ?? skillsRegistry[0])
-    : skillsRegistry[0];
+  const focus = selectedProjectId ? skillsRegistry.find((f) => f.config.project_id === selectedProjectId) : undefined;
   const skills = focus?.skills ?? [];
 
   return (

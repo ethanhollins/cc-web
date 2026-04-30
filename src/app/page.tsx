@@ -644,6 +644,11 @@ export default function StagePlannerPage() {
     longPressHandlers.clearEditableEvent();
   }, [calendarRef, closeContextMenu, longPressHandlers]);
 
+  const handleSkillsProjectChange = useCallback((projectId: string) => {
+    setSelectedSkillProjectId(projectId || null);
+    setSelectedSkill(null);
+  }, []);
+
   // Handle clicks outside calendar
   useCallback(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -707,7 +712,7 @@ export default function StagePlannerPage() {
             projects={projects}
             selectedProjectId={selectedSkillProjectId}
             selectedSkillId={selectedSkill?.config.id ?? null}
-            onProjectChange={setSelectedSkillProjectId}
+            onProjectChange={handleSkillsProjectChange}
             onSkillSelect={(skill) => setSelectedSkill(skill)}
           />
         }
