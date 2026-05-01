@@ -14,6 +14,11 @@ interface ListSkillDataResponse {
   rows?: SkillDataRowResponse[];
 }
 
+interface WriteSkillDataPayload {
+  row_id: string;
+  data: Record<string, unknown>;
+}
+
 function buildApiError(message: string, status: number, statusText?: string): Error {
   return new Error(statusText ? `${message}: ${status} ${statusText}` : `${message}: ${status}`);
 }
@@ -43,10 +48,15 @@ function toWriteData(record: SkillDataRecord): Record<string, unknown> {
   return data;
 }
 
-function isNotFoundError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const maybeResponse = (error as { response?: { status?: number } }).response;
-  return maybeResponse?.status === 404;
+function toWritePayload(record: SkillDataRecord): WriteSkillDataPayload {
+  return {
+    row_id: record.id,
+    data: toWriteData(record),
+  };
+}
+
+function isSuccessfulStatus(status: number): boolean {
+  return status >= 200 && status < 300;
 }
 
 /**
@@ -57,9 +67,8 @@ export async function fetchSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   recordId: string,
-  userId: string,
 ): Promise<SkillDataRecord | null> {
-  const records = await listSkillDataRecords(scope, scopeId, userId);
+  const records = await listSkillDataRecords(scope, scopeId);
   return records.find((record) => record.id === recordId) ?? null;
 }
 
@@ -69,12 +78,9 @@ export async function fetchSkillDataRecord(
 export async function listSkillDataRecords(
   scope: SkillDataScope,
   scopeId: string,
-  userId: string,
 ): Promise<SkillDataRecord[]> {
-  const response = await apiClient.get(getScopePath(scope, scopeId), {
-    params: { user_id: userId },
-  });
-  if (response.status !== 200) {
+  const response = await apiClient.get(getScopePath(scope, scopeId));
+  if (!isSuccessfulStatus(response.status)) {
     throw buildApiError("Failed to list skill data records", response.status, response.statusText);
   }
 
@@ -84,22 +90,14 @@ export async function listSkillDataRecords(
 
 /**
  * Upsert (create or update) a skill data record.
- * Attempts PATCH first and falls back to POST when row does not exist.
+ * Backend POST replaces existing rows when `row_id` already exists.
  */
 export async function upsertSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   record: SkillDataRecord,
-  userId: string,
 ): Promise<void> {
-  try {
-    await updateSkillDataRecord(scope, scopeId, record, userId);
-  } catch (error: unknown) {
-    if (!isNotFoundError(error)) {
-      throw error;
-    }
-    await createSkillDataRecord(scope, scopeId, record, userId);
-  }
+  await createSkillDataRecord(scope, scopeId, record);
 }
 
 /**
@@ -109,13 +107,9 @@ export async function createSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   record: SkillDataRecord,
-  userId: string,
 ): Promise<void> {
-  const response = await apiClient.post(getRowPath(scope, scopeId, record.id), {
-    user_id: userId,
-    data: toWriteData(record),
-  });
-  if (response.status !== 200) {
+  const response = await apiClient.post(getScopePath(scope, scopeId), toWritePayload(record));
+  if (!isSuccessfulStatus(response.status)) {
     throw buildApiError("Failed to create skill data record", response.status, response.statusText);
   }
 }
@@ -127,13 +121,11 @@ export async function updateSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   record: SkillDataRecord,
-  userId: string,
 ): Promise<void> {
   const response = await apiClient.patch(getRowPath(scope, scopeId, record.id), {
-    user_id: userId,
     data: toWriteData(record),
   });
-  if (response.status !== 200) {
+  if (!isSuccessfulStatus(response.status)) {
     throw buildApiError("Failed to update skill data record", response.status, response.statusText);
   }
 }
@@ -145,12 +137,9 @@ export async function removeSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   recordId: string,
-  userId: string,
 ): Promise<void> {
-  const response = await apiClient.delete(getRowPath(scope, scopeId, recordId), {
-    params: { user_id: userId },
-  });
-  if (response.status !== 200) {
+  const response = await apiClient.delete(getRowPath(scope, scopeId, recordId));
+  if (!isSuccessfulStatus(response.status)) {
     throw buildApiError("Failed to delete skill data record", response.status, response.statusText);
   }
 }

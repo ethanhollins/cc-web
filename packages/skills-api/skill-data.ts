@@ -11,8 +11,7 @@
  *   - skill   : mapped to backend `skill/{skill_id}` scope
  *
  * Backend contract:
- *   - POST / PATCH body: { user_id, data: {...} }
- *   - DELETE query: ?user_id=
+ *   - POST body: { row_id, data: {...} }
  *   - GET response: { rows: [...] }
  */
 
@@ -26,44 +25,38 @@ import {
 } from "@/api/skill-data";
 import type { SkillDataRecord } from "./types";
 
-const DEFAULT_SKILL_DATA_USER_ID = "1";
-
-function resolveUserId(userId?: string): string {
-  return userId ?? DEFAULT_SKILL_DATA_USER_ID;
-}
-
 // ---------------------------------------------------------------------------
 // Global scope
 // ---------------------------------------------------------------------------
 
 /** Get a record from global storage. */
-export async function getGlobalData(recordId: string, userId?: string): Promise<SkillDataRecord | null> {
-  return fetchSkillDataRecord("global", "global", recordId, resolveUserId(userId));
+export async function getGlobalData(recordId: string): Promise<SkillDataRecord | null> {
+  return fetchSkillDataRecord("global", "global", recordId);
 }
 
 /** List all records in global storage. */
-export async function listGlobalData(userId?: string): Promise<SkillDataRecord[]> {
-  return listSkillDataRecords("global", "global", resolveUserId(userId));
+export async function listGlobalData(): Promise<SkillDataRecord[]> {
+  return listSkillDataRecords("global", "global");
 }
 
 /** Save (upsert) a record to global storage. */
-export async function setGlobalData(record: SkillDataRecord, userId?: string): Promise<void> {
-  await upsertSkillDataRecord("global", "global", record, resolveUserId(userId));
+export async function setGlobalData(record: SkillDataRecord): Promise<void> {
+  await upsertSkillDataRecord("global", "global", record);
 }
 
 /** Create a record in global storage. */
-export async function createGlobalData(record: SkillDataRecord, userId?: string): Promise<void> {
-  await createSkillDataRecord("global", "global", record, resolveUserId(userId));
+export async function createGlobalData(record: SkillDataRecord): Promise<void> {
+  await createSkillDataRecord("global", "global", record);
 }
 
 /** Update a record in global storage. */
-export async function updateGlobalData(record: SkillDataRecord, userId?: string): Promise<void> {
-  await updateSkillDataRecord("global", "global", record, resolveUserId(userId));
+export async function updateGlobalData(record: SkillDataRecord): Promise<void> {
+  await updateSkillDataRecord("global", "global", record);
 }
 
 /** Delete a record from global storage. */
-export async function deleteGlobalData(recordId: string, userId?: string): Promise<void> {
-  await removeSkillDataRecord("global", "global", recordId, resolveUserId(userId));
+export async function deleteGlobalData(recordId: string): Promise<void> {
+  await removeSkillDataRecord("global", "global", recordId);
 }
 
 // ---------------------------------------------------------------------------
@@ -71,33 +64,33 @@ export async function deleteGlobalData(recordId: string, userId?: string): Promi
 // ---------------------------------------------------------------------------
 
 /** Get a record from focus-scoped storage (maps to project-scoped backend data). */
-export async function getFocusData(projectId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
-  return fetchSkillDataRecord("focus", projectId, recordId, resolveUserId(userId));
+export async function getFocusData(projectId: string, recordId: string): Promise<SkillDataRecord | null> {
+  return fetchSkillDataRecord("focus", projectId, recordId);
 }
 
 /** List all records in focus-scoped storage. */
-export async function listFocusData(projectId: string, userId?: string): Promise<SkillDataRecord[]> {
-  return listSkillDataRecords("focus", projectId, resolveUserId(userId));
+export async function listFocusData(projectId: string): Promise<SkillDataRecord[]> {
+  return listSkillDataRecords("focus", projectId);
 }
 
 /** Save (upsert) a record to focus-scoped storage. */
-export async function setFocusData(projectId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await upsertSkillDataRecord("focus", projectId, record, resolveUserId(userId));
+export async function setFocusData(projectId: string, record: SkillDataRecord): Promise<void> {
+  await upsertSkillDataRecord("focus", projectId, record);
 }
 
 /** Create a record in focus-scoped storage. */
-export async function createFocusData(projectId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await createSkillDataRecord("focus", projectId, record, resolveUserId(userId));
+export async function createFocusData(projectId: string, record: SkillDataRecord): Promise<void> {
+  await createSkillDataRecord("focus", projectId, record);
 }
 
 /** Update a record in focus-scoped storage. */
-export async function updateFocusData(projectId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await updateSkillDataRecord("focus", projectId, record, resolveUserId(userId));
+export async function updateFocusData(projectId: string, record: SkillDataRecord): Promise<void> {
+  await updateSkillDataRecord("focus", projectId, record);
 }
 
 /** Delete a record from focus-scoped storage. */
-export async function deleteFocusData(projectId: string, recordId: string, userId?: string): Promise<void> {
-  await removeSkillDataRecord("focus", projectId, recordId, resolveUserId(userId));
+export async function deleteFocusData(projectId: string, recordId: string): Promise<void> {
+  await removeSkillDataRecord("focus", projectId, recordId);
 }
 
 // ---------------------------------------------------------------------------
@@ -105,31 +98,31 @@ export async function deleteFocusData(projectId: string, recordId: string, userI
 // ---------------------------------------------------------------------------
 
 /** Get a record from skill-scoped storage. */
-export async function getSkillData(skillId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
-  return fetchSkillDataRecord("skill", skillId, recordId, resolveUserId(userId));
+export async function getSkillData(skillId: string, recordId: string): Promise<SkillDataRecord | null> {
+  return fetchSkillDataRecord("skill", skillId, recordId);
 }
 
 /** List all records in skill-scoped storage. */
-export async function listSkillData(skillId: string, userId?: string): Promise<SkillDataRecord[]> {
-  return listSkillDataRecords("skill", skillId, resolveUserId(userId));
+export async function listSkillData(skillId: string): Promise<SkillDataRecord[]> {
+  return listSkillDataRecords("skill", skillId);
 }
 
 /** Save (upsert) a record to skill-scoped storage. */
-export async function setSkillData(skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await upsertSkillDataRecord("skill", skillId, record, resolveUserId(userId));
+export async function setSkillData(skillId: string, record: SkillDataRecord): Promise<void> {
+  await upsertSkillDataRecord("skill", skillId, record);
 }
 
 /** Create a record in skill-scoped storage. */
-export async function createSkillData(skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await createSkillDataRecord("skill", skillId, record, resolveUserId(userId));
+export async function createSkillData(skillId: string, record: SkillDataRecord): Promise<void> {
+  await createSkillDataRecord("skill", skillId, record);
 }
 
 /** Update a record in skill-scoped storage. */
-export async function updateSkillData(skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await updateSkillDataRecord("skill", skillId, record, resolveUserId(userId));
+export async function updateSkillData(skillId: string, record: SkillDataRecord): Promise<void> {
+  await updateSkillDataRecord("skill", skillId, record);
 }
 
 /** Delete a record from skill-scoped storage. */
-export async function deleteSkillData(skillId: string, recordId: string, userId?: string): Promise<void> {
-  await removeSkillDataRecord("skill", skillId, recordId, resolveUserId(userId));
+export async function deleteSkillData(skillId: string, recordId: string): Promise<void> {
+  await removeSkillDataRecord("skill", skillId, recordId);
 }

@@ -32,7 +32,6 @@ jobs:
             const name = getField('Skill Name', 'skill_name');
             const projectId = getField('Project ID', 'project_id');
             const description = getField('Description', 'description');
-            const userId = getField('User ID', 'user_id') || '1';
 
             if (!name || !projectId || !description) {
               core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID, Description).');
@@ -42,7 +41,6 @@ jobs:
             core.setOutput('name', name);
             core.setOutput('project_id', projectId);
             core.setOutput('description', description);
-            core.setOutput('user_id', userId);
 
       - name: Create micro skill
         env:
@@ -51,7 +49,6 @@ jobs:
           SKILL_NAME: ${{ steps.parse.outputs.name }}
           PROJECT_ID: ${{ steps.parse.outputs.project_id }}
           SKILL_DESCRIPTION: ${{ steps.parse.outputs.description }}
-          USER_ID: ${{ steps.parse.outputs.user_id }}
         run: |
           if [ -z "$API_BASE_URL" ]; then
             echo "NEXT_PUBLIC_API_BASE_URL repository variable is not set."
@@ -68,8 +65,7 @@ jobs:
               --arg name "$SKILL_NAME" \
               --arg description "$SKILL_DESCRIPTION" \
               --arg project_id "$PROJECT_ID" \
-              --arg user_id "$USER_ID" \
-              '{name: $name, description: $description, project_id: $project_id, user_id: $user_id}')"
+              '{name: $name, description: $description, project_id: $project_id}')"
           )
 
           if [ -n "$AUTH_TOKEN" ]; then
