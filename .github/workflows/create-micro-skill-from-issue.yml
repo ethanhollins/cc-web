@@ -32,8 +32,8 @@ jobs:
             const description = getField('Description');
             const userId = getField('User ID') || '1';
 
-            if (!name || !projectId || !description || !userId) {
-              core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID, Description, User ID).');
+            if (!name || !projectId || !description) {
+              core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID, Description).');
               return;
             }
 
