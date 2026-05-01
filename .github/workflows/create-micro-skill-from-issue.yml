@@ -42,7 +42,7 @@ jobs:
             const finalDescription = skillDisplayDescription || issueDescription;
 
             if (!name || !projectId || (!issueDescription && !skillDisplayDescription)) {
-              core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID, and at least one Description field).');
+              core.setFailed('Missing required issue form fields (Skill Name, Project ID, and at least one of: Description or Skill Display Description).');
               return;
             }
 
