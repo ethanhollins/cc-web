@@ -54,6 +54,11 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
   // No skill selected — show grid of skill cards
   const project = selectedProjectId ? projects.find((p) => p.project_id === selectedProjectId) : undefined;
   const skills = selectedProjectId ? skillsByProjectId[selectedProjectId] ?? [] : [];
+  const emptyStateMessage = !selectedProjectId
+    ? "Select a focus"
+    : isLoading
+      ? "Loading skills..."
+      : "No skills available for this focus.";
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -75,9 +80,7 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
         {skills.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <Puzzle className="h-10 w-10 text-[var(--text-muted)]" />
-            <p className="text-sm text-[var(--text-muted)]">
-              {!selectedProjectId ? "Select a focus" : isLoading ? "Loading skills..." : "No skills available for this focus."}
-            </p>
+            <p className="text-sm text-[var(--text-muted)]">{emptyStateMessage}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
