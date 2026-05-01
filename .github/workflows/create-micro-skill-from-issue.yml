@@ -2,7 +2,7 @@ name: Create Micro Skill From Issue
 
 on:
   issues:
-    types: [opened]
+    types: [opened, closed]
 
 permissions:
   contents: read
@@ -11,7 +11,8 @@ jobs:
   create-micro-skill:
     name: Create micro skill
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'micro-skill-request')
+    environment: ${{ github.event.action == 'closed' && 'dev' || 'feature' }}
+    if: contains(github.event.issue.labels.*.name, 'micro-skill-request') && (github.event.action == 'opened' || (github.event.action == 'closed' && github.event.issue.state_reason == 'completed'))
     steps:
       - name: Parse issue form values
         id: parse
@@ -31,10 +32,12 @@ jobs:
 
             const name = getField('Skill Name', 'skill_name');
             const projectId = getField('Project ID', 'project_id');
-            const description = getField('Description', 'description');
+            const requestDescription = getField('Description', 'description');
+            const skillDisplayDescription = getField('Skill Display Description (optional)', 'skill_description');
+            const description = skillDisplayDescription || requestDescription;
 
-            if (!name || !projectId || !description) {
-              core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID, Description).');
+            if (!name || !projectId) {
+              core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID).');
               return;
             }
 

@@ -37,6 +37,15 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: implementation_instructions
+    attributes:
+      label: Implementation Instructions
+      description: Instructions Copilot should use when implementing this skill
+      placeholder: Describe expected behavior, constraints, and acceptance criteria
+    validations:
+      required: false
+
   - type: input
     id: skill_name
     attributes:
@@ -54,3 +63,12 @@ body:
       placeholder: p-08d7818f-9557-4401-be9f-6e0a6e71f07a
     validations:
       required: true
+
+  - type: textarea
+    id: skill_description
+    attributes:
+      label: Skill Display Description (optional)
+      description: Optional user-facing description saved to the micro-skill record
+      placeholder: Optional short description shown for this skill
+    validations:
+      required: false
