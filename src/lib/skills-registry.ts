@@ -14,10 +14,12 @@ const localSkillMap: Record<string, Omit<RegisteredSkill, "id" | "projectId">> =
 };
 
 let cachedSkills: RegisteredSkill[] | null = null;
+let cachedSkillsAt = 0;
 let inFlightSkillsRequest: Promise<RegisteredSkill[]> | null = null;
+const SKILLS_CACHE_TTL_MS = 60_000;
 
 async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
-  if (cachedSkills) {
+  if (cachedSkills && Date.now() - cachedSkillsAt < SKILLS_CACHE_TTL_MS) {
     return cachedSkills;
   }
 
@@ -30,7 +32,10 @@ async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
       apiSkills
         .map((apiSkill) => {
           const localSkill = localSkillMap[apiSkill.skill_id];
-          if (!localSkill) return null;
+          if (!localSkill) {
+            console.warn(`Micro-skill "${apiSkill.skill_id}" has no local implementation folder`);
+            return null;
+          }
 
           return {
             id: apiSkill.skill_id,
@@ -48,6 +53,7 @@ async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
     )
     .then((registered) => {
       cachedSkills = registered;
+      cachedSkillsAt = Date.now();
       return registered;
     })
     .finally(() => {

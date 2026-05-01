@@ -15,7 +15,12 @@ function isMicroSkill(value: unknown): value is MicroSkill {
 
 function normalizeMicroSkillsArray(value: unknown): MicroSkill[] {
   if (!Array.isArray(value)) return [];
-  return value.filter(isMicroSkill);
+  const validSkills = value.filter(isMicroSkill);
+  const invalidCount = value.length - validSkills.length;
+  if (invalidCount > 0) {
+    console.warn(`Filtered ${invalidCount} invalid micro-skill record(s) from API response`);
+  }
+  return validSkills;
 }
 
 function normalizeMicroSkillsPayload(payload: unknown): MicroSkill[] {
