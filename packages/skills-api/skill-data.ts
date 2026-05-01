@@ -26,7 +26,7 @@ import {
 } from "@/api/skill-data";
 import type { SkillDataRecord } from "./types";
 
-const DEFAULT_SKILL_DATA_USER_ID = "current-user";
+const DEFAULT_SKILL_DATA_USER_ID = "1";
 
 function resolveUserId(userId?: string): string {
   return userId ?? DEFAULT_SKILL_DATA_USER_ID;
@@ -104,32 +104,32 @@ export async function deleteFocusData(projectId: string, recordId: string, userI
 // Skill scope
 // ---------------------------------------------------------------------------
 
-/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
-export async function getSkillData(_focusId: string, skillId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
+/** Get a record from skill-scoped storage. */
+export async function getSkillData(skillId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
   return fetchSkillDataRecord("skill", skillId, recordId, resolveUserId(userId));
 }
 
-/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
-export async function listSkillData(_focusId: string, skillId: string, userId?: string): Promise<SkillDataRecord[]> {
+/** List all records in skill-scoped storage. */
+export async function listSkillData(skillId: string, userId?: string): Promise<SkillDataRecord[]> {
   return listSkillDataRecords("skill", skillId, resolveUserId(userId));
 }
 
-/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
-export async function setSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
+/** Save (upsert) a record to skill-scoped storage. */
+export async function setSkillData(skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
   await upsertSkillDataRecord("skill", skillId, record, resolveUserId(userId));
 }
 
-/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
-export async function createSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
+/** Create a record in skill-scoped storage. */
+export async function createSkillData(skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
   await createSkillDataRecord("skill", skillId, record, resolveUserId(userId));
 }
 
-/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
-export async function updateSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
+/** Update a record in skill-scoped storage. */
+export async function updateSkillData(skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
   await updateSkillDataRecord("skill", skillId, record, resolveUserId(userId));
 }
 
-/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
-export async function deleteSkillData(_focusId: string, skillId: string, recordId: string, userId?: string): Promise<void> {
+/** Delete a record from skill-scoped storage. */
+export async function deleteSkillData(skillId: string, recordId: string, userId?: string): Promise<void> {
   await removeSkillDataRecord("skill", skillId, recordId, resolveUserId(userId));
 }

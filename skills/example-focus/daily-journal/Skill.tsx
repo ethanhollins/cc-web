@@ -7,11 +7,9 @@ import { Button } from "@/ui/button";
 import { ScrollArea } from "@/ui/scroll-area";
 
 interface DailyJournalSkillProps {
-  focusId?: string;
   skillId?: string;
 }
 
-const DEFAULT_FOCUS_ID = "example-focus";
 const DEFAULT_SKILL_ID = "daily-journal";
 
 function getTodayKey(): string {
@@ -29,10 +27,10 @@ function getTodayKey(): string {
  *  - Using skill-scoped persistent data (getSkillData / setSkillData)
  *  - Standard skill component structure (default export, no required props)
  *
- * `focusId` and `skillId` can be provided as props to override the defaults;
- * this lets the component be reused in a different focus/skill context.
+ * `skillId` can be provided as a prop to override the default;
+ * this lets the component be reused in a different skill context.
  */
-export default function DailyJournalSkill({ focusId = DEFAULT_FOCUS_ID, skillId = DEFAULT_SKILL_ID }: DailyJournalSkillProps) {
+export default function DailyJournalSkill({ skillId = DEFAULT_SKILL_ID }: DailyJournalSkillProps) {
   const todayKey = getTodayKey();
   const [entry, setEntry] = useState<string>("");
   const [savedEntry, setSavedEntry] = useState<string>("");
@@ -44,7 +42,7 @@ export default function DailyJournalSkill({ focusId = DEFAULT_FOCUS_ID, skillId 
     let cancelled = false;
 
     async function load() {
-      const record = await getSkillData(focusId, skillId, todayKey);
+      const record = await getSkillData(skillId, todayKey);
       if (!cancelled) {
         const text = typeof record?.text === "string" ? record.text : "";
         setEntry(text);
@@ -57,14 +55,14 @@ export default function DailyJournalSkill({ focusId = DEFAULT_FOCUS_ID, skillId 
     return () => {
       cancelled = true;
     };
-  }, [focusId, skillId, todayKey]);
+  }, [skillId, todayKey]);
 
   const isDirty = entry !== savedEntry;
 
   async function handleSave() {
     setIsSaving(true);
     try {
-      await setSkillData(focusId, skillId, { id: todayKey, text: entry });
+      await setSkillData(skillId, { id: todayKey, text: entry });
       setSavedEntry(entry);
     } finally {
       setIsSaving(false);
@@ -72,7 +70,7 @@ export default function DailyJournalSkill({ focusId = DEFAULT_FOCUS_ID, skillId 
   }
 
   async function handleDelete() {
-    await deleteSkillData(focusId, skillId, todayKey);
+    await deleteSkillData(skillId, todayKey);
     setEntry("");
     setSavedEntry("");
   }
