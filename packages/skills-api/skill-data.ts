@@ -26,104 +26,110 @@ import {
 } from "@/api/skill-data";
 import type { SkillDataRecord } from "./types";
 
+const DEFAULT_SKILL_DATA_USER_ID = "current-user";
+
+function resolveUserId(userId?: string): string {
+  return userId ?? DEFAULT_SKILL_DATA_USER_ID;
+}
+
 // ---------------------------------------------------------------------------
 // Global scope
 // ---------------------------------------------------------------------------
 
 /** Get a record from global storage. */
 export async function getGlobalData(recordId: string, userId?: string): Promise<SkillDataRecord | null> {
-  return fetchSkillDataRecord("global", "global", recordId, userId);
+  return fetchSkillDataRecord("global", "global", recordId, resolveUserId(userId));
 }
 
 /** List all records in global storage. */
 export async function listGlobalData(userId?: string): Promise<SkillDataRecord[]> {
-  return listSkillDataRecords("global", "global", userId);
+  return listSkillDataRecords("global", "global", resolveUserId(userId));
 }
 
 /** Save (upsert) a record to global storage. */
 export async function setGlobalData(record: SkillDataRecord, userId?: string): Promise<void> {
-  await upsertSkillDataRecord("global", "global", record, userId);
+  await upsertSkillDataRecord("global", "global", record, resolveUserId(userId));
 }
 
 /** Create a record in global storage. */
 export async function createGlobalData(record: SkillDataRecord, userId?: string): Promise<void> {
-  await createSkillDataRecord("global", "global", record, userId);
+  await createSkillDataRecord("global", "global", record, resolveUserId(userId));
 }
 
 /** Update a record in global storage. */
 export async function updateGlobalData(record: SkillDataRecord, userId?: string): Promise<void> {
-  await updateSkillDataRecord("global", "global", record, userId);
+  await updateSkillDataRecord("global", "global", record, resolveUserId(userId));
 }
 
 /** Delete a record from global storage. */
 export async function deleteGlobalData(recordId: string, userId?: string): Promise<void> {
-  await removeSkillDataRecord("global", "global", recordId, userId);
+  await removeSkillDataRecord("global", "global", recordId, resolveUserId(userId));
 }
 
 // ---------------------------------------------------------------------------
 // Focus scope
 // ---------------------------------------------------------------------------
 
-/** Get a record from focus-scoped storage. */
+/** Get a record from focus-scoped storage (maps to project-scoped backend data). */
 export async function getFocusData(projectId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
-  return fetchSkillDataRecord("focus", projectId, recordId, userId);
+  return fetchSkillDataRecord("focus", projectId, recordId, resolveUserId(userId));
 }
 
 /** List all records in focus-scoped storage. */
 export async function listFocusData(projectId: string, userId?: string): Promise<SkillDataRecord[]> {
-  return listSkillDataRecords("focus", projectId, userId);
+  return listSkillDataRecords("focus", projectId, resolveUserId(userId));
 }
 
 /** Save (upsert) a record to focus-scoped storage. */
 export async function setFocusData(projectId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await upsertSkillDataRecord("focus", projectId, record, userId);
+  await upsertSkillDataRecord("focus", projectId, record, resolveUserId(userId));
 }
 
 /** Create a record in focus-scoped storage. */
 export async function createFocusData(projectId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await createSkillDataRecord("focus", projectId, record, userId);
+  await createSkillDataRecord("focus", projectId, record, resolveUserId(userId));
 }
 
 /** Update a record in focus-scoped storage. */
 export async function updateFocusData(projectId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await updateSkillDataRecord("focus", projectId, record, userId);
+  await updateSkillDataRecord("focus", projectId, record, resolveUserId(userId));
 }
 
 /** Delete a record from focus-scoped storage. */
 export async function deleteFocusData(projectId: string, recordId: string, userId?: string): Promise<void> {
-  await removeSkillDataRecord("focus", projectId, recordId, userId);
+  await removeSkillDataRecord("focus", projectId, recordId, resolveUserId(userId));
 }
 
 // ---------------------------------------------------------------------------
 // Skill scope
 // ---------------------------------------------------------------------------
 
-/** Get a record from skill-scoped storage. Keeps `focusId` for backward compatibility. */
+/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
 export async function getSkillData(_focusId: string, skillId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
-  return fetchSkillDataRecord("skill", skillId, recordId, userId);
+  return fetchSkillDataRecord("skill", skillId, recordId, resolveUserId(userId));
 }
 
-/** List all records in skill-scoped storage. Keeps `focusId` for backward compatibility. */
+/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
 export async function listSkillData(_focusId: string, skillId: string, userId?: string): Promise<SkillDataRecord[]> {
-  return listSkillDataRecords("skill", skillId, userId);
+  return listSkillDataRecords("skill", skillId, resolveUserId(userId));
 }
 
-/** Save (upsert) a record to skill-scoped storage. Keeps `focusId` for backward compatibility. */
+/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
 export async function setSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await upsertSkillDataRecord("skill", skillId, record, userId);
+  await upsertSkillDataRecord("skill", skillId, record, resolveUserId(userId));
 }
 
-/** Create a record in skill-scoped storage. Keeps `focusId` for backward compatibility. */
+/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
 export async function createSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await createSkillDataRecord("skill", skillId, record, userId);
+  await createSkillDataRecord("skill", skillId, record, resolveUserId(userId));
 }
 
-/** Update a record in skill-scoped storage. Keeps `focusId` for backward compatibility. */
+/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
 export async function updateSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
-  await updateSkillDataRecord("skill", skillId, record, userId);
+  await updateSkillDataRecord("skill", skillId, record, resolveUserId(userId));
 }
 
-/** Delete a record from skill-scoped storage. Keeps `focusId` for backward compatibility. */
+/** @deprecated `focusId` is ignored and kept only for backward compatibility. */
 export async function deleteSkillData(_focusId: string, skillId: string, recordId: string, userId?: string): Promise<void> {
-  await removeSkillDataRecord("skill", skillId, recordId, userId);
+  await removeSkillDataRecord("skill", skillId, recordId, resolveUserId(userId));
 }

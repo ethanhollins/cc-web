@@ -14,6 +14,10 @@ interface ListSkillDataResponse {
   rows?: SkillDataRowResponse[];
 }
 
+function buildApiError(message: string, status: number, statusText?: string): Error {
+  return new Error(statusText ? `${message}: ${status} ${statusText}` : `${message}: ${status}`);
+}
+
 function getScopePath(scope: SkillDataScope, scopeId: string): string {
   switch (scope) {
     case "global":
@@ -53,7 +57,7 @@ export async function fetchSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   recordId: string,
-  userId: string = "current-user",
+  userId: string,
 ): Promise<SkillDataRecord | null> {
   const records = await listSkillDataRecords(scope, scopeId, userId);
   return records.find((record) => record.id === recordId) ?? null;
@@ -65,13 +69,13 @@ export async function fetchSkillDataRecord(
 export async function listSkillDataRecords(
   scope: SkillDataScope,
   scopeId: string,
-  userId: string = "current-user",
+  userId: string,
 ): Promise<SkillDataRecord[]> {
   const response = await apiClient.get(getScopePath(scope, scopeId), {
     params: { user_id: userId },
   });
   if (response.status !== 200) {
-    throw new Error(`Failed to list skill data records: ${response.status}`);
+    throw buildApiError("Failed to list skill data records", response.status, response.statusText);
   }
 
   const payload = response.data as ListSkillDataResponse;
@@ -86,7 +90,7 @@ export async function upsertSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   record: SkillDataRecord,
-  userId: string = "current-user",
+  userId: string,
 ): Promise<void> {
   try {
     await updateSkillDataRecord(scope, scopeId, record, userId);
@@ -105,14 +109,14 @@ export async function createSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   record: SkillDataRecord,
-  userId: string = "current-user",
+  userId: string,
 ): Promise<void> {
   const response = await apiClient.post(getRowPath(scope, scopeId, record.id), {
     user_id: userId,
     data: toWriteData(record),
   });
   if (response.status !== 200) {
-    throw new Error(`Failed to create skill data record: ${response.status}`);
+    throw buildApiError("Failed to create skill data record", response.status, response.statusText);
   }
 }
 
@@ -123,14 +127,14 @@ export async function updateSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   record: SkillDataRecord,
-  userId: string = "current-user",
+  userId: string,
 ): Promise<void> {
   const response = await apiClient.patch(getRowPath(scope, scopeId, record.id), {
     user_id: userId,
     data: toWriteData(record),
   });
   if (response.status !== 200) {
-    throw new Error(`Failed to update skill data record: ${response.status}`);
+    throw buildApiError("Failed to update skill data record", response.status, response.statusText);
   }
 }
 
@@ -141,12 +145,12 @@ export async function removeSkillDataRecord(
   scope: SkillDataScope,
   scopeId: string,
   recordId: string,
-  userId: string = "current-user",
+  userId: string,
 ): Promise<void> {
   const response = await apiClient.delete(getRowPath(scope, scopeId, recordId), {
     params: { user_id: userId },
   });
   if (response.status !== 200) {
-    throw new Error(`Failed to delete skill data record: ${response.status}`);
+    throw buildApiError("Failed to delete skill data record", response.status, response.statusText);
   }
 }
