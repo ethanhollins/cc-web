@@ -72,6 +72,7 @@ export function useSkillsRegistry() {
         setSkills(registered);
       } catch {
         if (!cancelled) {
+          console.error("Failed to load skills registry from /micro-skills");
           setSkills([]);
         }
       } finally {
