@@ -31,10 +31,10 @@ export { getEvents, createSkillEvent, updateSkillEvent, deleteSkillEvent } from 
 export { getTickets, createTicket, updateTicket, deleteTicket } from "./tickets";
 
 // Persistent data – global scope
-export { getGlobalData, listGlobalData, setGlobalData, deleteGlobalData } from "./skill-data";
+export { getGlobalData, listGlobalData, setGlobalData, createGlobalData, updateGlobalData, deleteGlobalData } from "./skill-data";
 
 // Persistent data – focus scope
-export { getFocusData, listFocusData, setFocusData, deleteFocusData } from "./skill-data";
+export { getFocusData, listFocusData, setFocusData, createFocusData, updateFocusData, deleteFocusData } from "./skill-data";
 
 // Persistent data – skill scope
-export { getSkillData, listSkillData, setSkillData, deleteSkillData } from "./skill-data";
+export { getSkillData, listSkillData, setSkillData, createSkillData, updateSkillData, deleteSkillData } from "./skill-data";
