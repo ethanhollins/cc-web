@@ -16,7 +16,7 @@ const localSkillMap: Record<string, Omit<RegisteredSkill, "id" | "projectId">> =
 let cachedSkills: RegisteredSkill[] | null = null;
 let cachedSkillsAt = 0;
 let inFlightSkillsRequest: Promise<RegisteredSkill[]> | null = null;
-const SKILLS_CACHE_TTL_MS = 60_000;
+const SKILLS_CACHE_TTL_MS = 60000;
 
 async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
   if (cachedSkills && Date.now() - cachedSkillsAt < SKILLS_CACHE_TTL_MS) {

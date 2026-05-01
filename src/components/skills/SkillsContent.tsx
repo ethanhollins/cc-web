@@ -16,6 +16,12 @@ interface SkillsContentProps {
   onBack: () => void;
 }
 
+function getEmptyStateMessage(selectedProjectId: string | null, isLoading: boolean): string {
+  if (!selectedProjectId) return "Select a focus";
+  if (isLoading) return "Loading skills...";
+  return "No skills available for this focus.";
+}
+
 /**
  * Skills content area.
  *
@@ -54,11 +60,7 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
   // No skill selected — show grid of skill cards
   const project = selectedProjectId ? projects.find((p) => p.project_id === selectedProjectId) : undefined;
   const skills = selectedProjectId ? skillsByProjectId[selectedProjectId] ?? [] : [];
-  const emptyStateMessage = !selectedProjectId
-    ? "Select a focus"
-    : isLoading
-      ? "Loading skills..."
-      : "No skills available for this focus.";
+  const emptyStateMessage = getEmptyStateMessage(selectedProjectId, isLoading);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
