@@ -20,17 +20,19 @@ jobs:
           script: |
             const body = context.payload.issue.body || '';
 
-            const getField = (fieldLabel) => {
-              const escaped = fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const extractByHeading = (heading) => {
+              const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const regex = new RegExp(`### ${escaped}\\n\\n([\\s\\S]*?)(?:\\n\\n### |$)`);
               const match = body.match(regex);
-              return match ? match[1].trim() : '';
+              return match?.[1]?.trim() || '';
             };
 
-            const name = getField('Skill Name');
-            const projectId = getField('Project ID');
-            const description = getField('Description');
-            const userId = getField('User ID') || '1';
+            const getField = (...headings) => headings.map(extractByHeading).find(Boolean) || '';
+
+            const name = getField('Skill Name', 'skill_name');
+            const projectId = getField('Project ID', 'project_id');
+            const description = getField('Description', 'description');
+            const userId = getField('User ID', 'user_id') || '1';
 
             if (!name || !projectId || !description) {
               core.setFailed('Missing one or more required fields from issue form (Skill Name, Project ID, Description).');
@@ -45,6 +47,7 @@ jobs:
       - name: Create micro skill
         env:
           API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          AUTH_TOKEN: ${{ secrets.MICRO_SKILLS_API_TOKEN }}
           SKILL_NAME: ${{ steps.parse.outputs.name }}
           PROJECT_ID: ${{ steps.parse.outputs.project_id }}
           SKILL_DESCRIPTION: ${{ steps.parse.outputs.description }}
@@ -55,12 +58,22 @@ jobs:
             exit 1
           fi
 
-          curl --fail --show-error --silent \
-            -X POST "${API_BASE_URL%/}/micro-skills" \
-            -H "Content-Type: application/json" \
+          CURL_ARGS=(
+            --fail
+            --show-error
+            -X POST
+            "${API_BASE_URL%/}/micro-skills"
+            -H "Content-Type: application/json"
             -d "$(jq -nc \
               --arg name "$SKILL_NAME" \
               --arg description "$SKILL_DESCRIPTION" \
               --arg project_id "$PROJECT_ID" \
               --arg user_id "$USER_ID" \
               '{name: $name, description: $description, project_id: $project_id, user_id: $user_id}')"
+          )
+
+          if [ -n "$AUTH_TOKEN" ]; then
+            CURL_ARGS+=(-H "Authorization: Bearer $AUTH_TOKEN")
+          fi
+
+          curl "${CURL_ARGS[@]}"
