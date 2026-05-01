@@ -65,9 +65,11 @@ export async function fetchSkillDataRecord(
 export async function listSkillDataRecords(
   scope: SkillDataScope,
   scopeId: string,
-  _userId: string = "current-user",
+  userId: string = "current-user",
 ): Promise<SkillDataRecord[]> {
-  const response = await apiClient.get(getScopePath(scope, scopeId));
+  const response = await apiClient.get(getScopePath(scope, scopeId), {
+    params: { user_id: userId },
+  });
   if (response.status !== 200) {
     throw new Error(`Failed to list skill data records: ${response.status}`);
   }

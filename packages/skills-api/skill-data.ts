@@ -98,32 +98,32 @@ export async function deleteFocusData(projectId: string, recordId: string, userI
 // Skill scope
 // ---------------------------------------------------------------------------
 
-/** Get a record from skill-scoped storage. */
+/** Get a record from skill-scoped storage. Keeps `focusId` for backward compatibility. */
 export async function getSkillData(_focusId: string, skillId: string, recordId: string, userId?: string): Promise<SkillDataRecord | null> {
   return fetchSkillDataRecord("skill", skillId, recordId, userId);
 }
 
-/** List all records in skill-scoped storage. */
+/** List all records in skill-scoped storage. Keeps `focusId` for backward compatibility. */
 export async function listSkillData(_focusId: string, skillId: string, userId?: string): Promise<SkillDataRecord[]> {
   return listSkillDataRecords("skill", skillId, userId);
 }
 
-/** Save (upsert) a record to skill-scoped storage. */
+/** Save (upsert) a record to skill-scoped storage. Keeps `focusId` for backward compatibility. */
 export async function setSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
   await upsertSkillDataRecord("skill", skillId, record, userId);
 }
 
-/** Create a record in skill-scoped storage. */
+/** Create a record in skill-scoped storage. Keeps `focusId` for backward compatibility. */
 export async function createSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
   await createSkillDataRecord("skill", skillId, record, userId);
 }
 
-/** Update a record in skill-scoped storage. */
+/** Update a record in skill-scoped storage. Keeps `focusId` for backward compatibility. */
 export async function updateSkillData(_focusId: string, skillId: string, record: SkillDataRecord, userId?: string): Promise<void> {
   await updateSkillDataRecord("skill", skillId, record, userId);
 }
 
-/** Delete a record from skill-scoped storage. */
+/** Delete a record from skill-scoped storage. Keeps `focusId` for backward compatibility. */
 export async function deleteSkillData(_focusId: string, skillId: string, recordId: string, userId?: string): Promise<void> {
   await removeSkillDataRecord("skill", skillId, recordId, userId);
 }
