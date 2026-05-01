@@ -1,22 +1,6 @@
 import type { ComponentType } from "react";
 
-/**
- * Skill type definitions
- */
-
-/** Configuration for a focus (group of related skills). Lives in /skills/<focus>/focus.config.ts */
-export interface FocusConfig {
-  /** Unique identifier for the focus (matches the folder name) */
-  id: string;
-  /** Display name for the focus */
-  name: string;
-  /** Associated project ID in the main application */
-  project_id?: string;
-  /** Optional description of this focus area */
-  description?: string;
-}
-
-/** Configuration for an individual skill. Lives in /skills/<focus>/<skill>/skill.config.ts */
+/** Configuration for an individual skill. Lives in /skills/<skill>/skill.config.ts */
 export interface SkillConfig {
   /** Unique identifier for the skill (matches the folder name) */
   id: string;
@@ -36,14 +20,18 @@ export interface SkillConfig {
 
 /** A skill registered in the skills registry */
 export interface RegisteredSkill {
+  id: string;
+  projectId: string;
   config: SkillConfig;
   component: ComponentType;
 }
 
-/** A focus registered in the skills registry */
-export interface RegisteredFocus {
-  config: FocusConfig;
-  skills: RegisteredSkill[];
+/** A micro-skill record returned by the backend */
+export interface MicroSkill {
+  skill_id: string;
+  project_id: string;
+  name: string;
+  description?: string;
 }
 
 /** Persistent data record stored by a skill */

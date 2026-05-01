@@ -4,10 +4,12 @@ import type { ComponentType } from "react";
 import { ArrowLeft, Puzzle } from "lucide-react";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { Button } from "@/ui/button";
-import { skillsRegistry } from "@/lib/skills-registry";
+import { useSkillsRegistry } from "@/lib/skills-registry";
 import type { RegisteredSkill } from "@/types/skill";
+import type { Project } from "@/types/project";
 
 interface SkillsContentProps {
+  projects: Project[];
   selectedProjectId: string | null;
   selectedSkill: RegisteredSkill | null;
   onSkillSelect: (skill: RegisteredSkill) => void;
@@ -20,7 +22,8 @@ interface SkillsContentProps {
  * When no skill is selected: shows a grid of skill cards for the current focus.
  * When a skill is selected: renders the skill component with a back button.
  */
-export function SkillsContent({ selectedProjectId, selectedSkill, onSkillSelect, onBack }: SkillsContentProps) {
+export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSkillSelect, onBack }: SkillsContentProps) {
+  const { skillsByProjectId, isLoading } = useSkillsRegistry();
   // If a skill is selected, render it
   if (selectedSkill) {
     const SkillComponent: ComponentType = selectedSkill.component;
@@ -49,8 +52,8 @@ export function SkillsContent({ selectedProjectId, selectedSkill, onSkillSelect,
   }
 
   // No skill selected — show grid of skill cards
-  const focus = selectedProjectId ? skillsRegistry.find((f) => f.config.project_id === selectedProjectId) : undefined;
-  const skills = focus?.skills ?? [];
+  const project = selectedProjectId ? projects.find((p) => p.project_id === selectedProjectId) : undefined;
+  const skills = selectedProjectId ? skillsByProjectId[selectedProjectId] ?? [] : [];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -59,10 +62,10 @@ export function SkillsContent({ selectedProjectId, selectedSkill, onSkillSelect,
         <Puzzle className="h-5 w-5 text-[var(--accent)]" />
         <div>
           <h1 className="text-lg font-semibold text-[var(--text)]">
-            {focus ? focus.config.name : "Skills"}
+            {project ? project.title : "Skills"}
           </h1>
-          {focus?.config.description && (
-            <p className="text-sm text-[var(--text-muted)]">{focus.config.description}</p>
+          {project?.description && (
+            <p className="text-sm text-[var(--text-muted)]">{project.description}</p>
           )}
         </div>
       </div>
@@ -72,7 +75,9 @@ export function SkillsContent({ selectedProjectId, selectedSkill, onSkillSelect,
         {skills.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <Puzzle className="h-10 w-10 text-[var(--text-muted)]" />
-            <p className="text-sm text-[var(--text-muted)]">No skills available for this focus.</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              {!selectedProjectId ? "Select a focus" : isLoading ? "Loading skills..." : "No skills available for this focus."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

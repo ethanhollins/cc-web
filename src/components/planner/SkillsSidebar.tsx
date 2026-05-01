@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { ChevronDown, Puzzle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { skillsRegistry } from "@/lib/skills-registry";
+import { useSkillsRegistry } from "@/lib/skills-registry";
 import type { RegisteredSkill } from "@/types/skill";
 import type { Project } from "@/types/project";
 import { ScrollArea } from "@/ui/scroll-area";
@@ -19,18 +19,17 @@ interface SkillsSidebarProps {
 /**
  * Skills sidebar component.
  *
- * Displays a focus selector dropdown (populated from the API projects list) and
- * a scrollable list of skill cards for the selected focus. Each focus in the
- * skills registry is linked to an API project via `FocusConfig.project_id`.
- * Mirrors the visual style of TicketsSidebar.
+ * Displays a focus selector dropdown (populated from API projects) and
+ * a scrollable list of available API-linked skills for the selected project.
  */
 export function SkillsSidebar({ projects, selectedProjectId, selectedSkillId, onProjectChange, onSkillSelect }: SkillsSidebarProps) {
+  const { skillsByProjectId, isLoading } = useSkillsRegistry();
   const activeProjects = projects
     .filter((p) => p.project_status?.toLowerCase() === "in progress")
     .sort((a, b) => a.project_key.localeCompare(b.project_key));
 
   const projectIds = new Set(activeProjects.map((p) => p.project_id));
-  const preferredProjectId = skillsRegistry.map((focus) => focus.config.project_id).find((projectId): projectId is string => Boolean(projectId && projectIds.has(projectId)));
+  const preferredProjectId = Object.keys(skillsByProjectId).find((projectId) => projectIds.has(projectId));
   const fallbackProjectId = preferredProjectId ?? activeProjects[0]?.project_id ?? "";
   const effectiveProjectId = selectedProjectId && projectIds.has(selectedProjectId) ? selectedProjectId : fallbackProjectId;
 
@@ -40,12 +39,7 @@ export function SkillsSidebar({ projects, selectedProjectId, selectedSkillId, on
     }
   }, [effectiveProjectId, onProjectChange, selectedProjectId]);
 
-  // Find the registered focus whose project_id matches the selected project
-  const selectedFocus = effectiveProjectId
-    ? skillsRegistry.find((f) => f.config.project_id === effectiveProjectId)
-    : undefined;
-
-  const currentSkills = selectedFocus?.skills ?? [];
+  const currentSkills = effectiveProjectId ? skillsByProjectId[effectiveProjectId] ?? [] : [];
 
   return (
     <div className="flex h-full flex-col gap-3 p-3">
@@ -81,7 +75,7 @@ export function SkillsSidebar({ projects, selectedProjectId, selectedSkillId, on
         <div className="space-y-1.5 pr-1">
           {currentSkills.length === 0 ? (
             <div className="p-4 text-center text-sm text-[var(--text-muted)]">
-              {!effectiveProjectId ? "Select a focus" : "No skills available"}
+              {!effectiveProjectId ? "Select a focus" : isLoading ? "Loading skills..." : "No skills available"}
             </div>
           ) : (
             currentSkills.map((skill) => {

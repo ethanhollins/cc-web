@@ -719,6 +719,7 @@ export default function StagePlannerPage() {
         skillsContent={
           <SkillsContent
             key="skills-content"
+            projects={projects}
             selectedProjectId={selectedSkillProjectId}
             selectedSkill={selectedSkill}
             onSkillSelect={(skill) => setSelectedSkill(skill)}
