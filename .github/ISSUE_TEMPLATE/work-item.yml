@@ -42,3 +42,9 @@ body:
       description: List related files or paths, one per line
       placeholder: |
         path/to/file.py
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        > **Instructions for Copilot:** When opening a Pull Request for this issue, you **must** use the PR template located at `.github/PULL_REQUEST_TEMPLATE.md`. Populate every section of that template (Ticket Key, Issue Type, Description, Changes, Action Items, Feature Environment, and Checklist) before submitting the PR.
