@@ -58,7 +58,7 @@ jobs:
           echo "Creating micro skill for skill_id: $SKILL_ID"
 
           CURL_ARGS=(
-            --fail
+            --fail-with-body
             --show-error
             -X POST
             "${API_BASE_URL%/}/micro-skills"
