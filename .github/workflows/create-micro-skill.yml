@@ -11,7 +11,7 @@ on:
           - feature
           - dev
       skill_id:
-        description: "Skill ID (matches the skill folder name under /skills)"
+        description: "Skill ID (matches the skill folder name under /skills, e.g. daily-journal)"
         required: true
         type: string
       name:
@@ -50,6 +50,11 @@ jobs:
             exit 1
           fi
 
+          if ! printf '%s' "$SKILL_ID" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+            echo "skill_id must be lowercase kebab-case (e.g. daily-journal)."
+            exit 1
+          fi
+
           echo "Creating micro skill for skill_id: $SKILL_ID"
 
           CURL_ARGS=(
@@ -70,3 +75,11 @@ jobs:
           fi
 
           curl "${CURL_ARGS[@]}"
+
+          {
+            echo "### Micro skill request metadata"
+            echo "- skill_id: \`$SKILL_ID\`"
+            echo "- name: \`$SKILL_NAME\`"
+            echo "- project_id: \`$PROJECT_ID\`"
+            echo "- environment: \`${{ inputs.environment }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
