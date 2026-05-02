@@ -44,6 +44,10 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
   // a dependency to every useCallback that needs to read it.
   const eventsRef = useRef<CalendarEvent[]>([]);
   eventsRef.current = events;
+
+  // Latest-ref access for cache/callback avoids adding them to the fetch effect
+  // deps, which would otherwise retrigger loads on every cache write or callback
+  // identity change.
   const eventsCacheRef = useRef(eventsCache);
   eventsCacheRef.current = eventsCache;
   const fetchTicketsForProjectRef = useRef(fetchTicketsForProject);
