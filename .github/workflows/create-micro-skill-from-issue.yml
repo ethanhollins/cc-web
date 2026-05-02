@@ -1,8 +1,31 @@
-name: Create Micro Skill From Issue
+name: Create Micro Skill
 
 on:
-  issues:
-    types: [opened, closed]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - feature
+          - dev
+      skill_id:
+        description: "Skill ID (matches the skill folder name under /skills)"
+        required: true
+        type: string
+      name:
+        description: "Skill name"
+        required: true
+        type: string
+      project_id:
+        description: "Project ID"
+        required: true
+        type: string
+      description:
+        description: "Skill description"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -11,57 +34,23 @@ jobs:
   create-micro-skill:
     name: Create micro skill
     runs-on: ubuntu-latest
-    environment: ${{ github.event.action == 'closed' && 'dev' || 'feature' }}
-    if: |
-      contains(github.event.issue.labels.*.name, 'micro-skill-request') &&
-      (
-        github.event.action == 'opened' ||
-        (github.event.action == 'closed' && github.event.issue.state_reason == 'completed')
-      )
+    environment: ${{ inputs.environment }}
     steps:
-      - name: Parse issue form values
-        id: parse
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = context.payload.issue.body || '';
-
-            const extractByHeading = (heading) => {
-              const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const regex = new RegExp(`### ${escaped}\\n\\n([\\s\\S]*?)(?:\\n\\n### |$)`);
-              const match = body.match(regex);
-              return match?.[1]?.trim() || '';
-            };
-
-            const getField = (...headings) => headings.map(extractByHeading).find(Boolean) || '';
-
-            const name = getField('Skill Name', 'skill_name');
-            const projectId = getField('Project ID', 'project_id');
-            const issueDescription = getField('Description', 'description');
-            const skillDisplayDescription = getField('Skill Display Description (optional)', 'skill_description');
-            const finalDescription = skillDisplayDescription || issueDescription;
-
-            if (!name || !projectId || (!issueDescription && !skillDisplayDescription)) {
-              core.setFailed('Missing required issue form fields (Skill Name, Project ID, and at least one of: Description or Skill Display Description).');
-              return;
-            }
-
-            core.setOutput('name', name);
-            core.setOutput('project_id', projectId);
-            core.setOutput('description', finalDescription);
-
       - name: Create micro skill
         env:
           API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
           AUTH_TOKEN: ${{ secrets.MICRO_SKILLS_API_TOKEN }}
-          SKILL_NAME: ${{ steps.parse.outputs.name }}
-          PROJECT_ID: ${{ steps.parse.outputs.project_id }}
-          SKILL_DESCRIPTION: ${{ steps.parse.outputs.description }}
+          SKILL_ID: ${{ inputs.skill_id }}
+          SKILL_NAME: ${{ inputs.name }}
+          PROJECT_ID: ${{ inputs.project_id }}
+          SKILL_DESCRIPTION: ${{ inputs.description }}
         run: |
           if [ -z "$API_BASE_URL" ]; then
             echo "NEXT_PUBLIC_API_BASE_URL repository variable is not set."
             exit 1
           fi
+
+          echo "Creating micro skill for skill_id: $SKILL_ID"
 
           CURL_ARGS=(
             --fail
