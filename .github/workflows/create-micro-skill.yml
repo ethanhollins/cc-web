@@ -1,0 +1,85 @@
+name: Create Micro Skill
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - feature
+          - dev
+      skill_id:
+        description: "Skill ID (matches the skill folder name under /skills, e.g. daily-journal)"
+        required: true
+        type: string
+      name:
+        description: "Skill name"
+        required: true
+        type: string
+      project_id:
+        description: "Project ID"
+        required: true
+        type: string
+      description:
+        description: "Skill description"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  create-micro-skill:
+    name: Create micro skill
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Create micro skill
+        env:
+          API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          AUTH_TOKEN: ${{ secrets.MICRO_SKILLS_API_TOKEN }}
+          SKILL_ID: ${{ inputs.skill_id }}
+          SKILL_NAME: ${{ inputs.name }}
+          PROJECT_ID: ${{ inputs.project_id }}
+          SKILL_DESCRIPTION: ${{ inputs.description }}
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "NEXT_PUBLIC_API_BASE_URL repository variable is not set."
+            exit 1
+          fi
+
+          if ! printf '%s' "$SKILL_ID" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+            echo "skill_id must be lowercase kebab-case (e.g. daily-journal)."
+            exit 1
+          fi
+
+          echo "Creating micro skill for skill_id: $SKILL_ID"
+
+          CURL_ARGS=(
+            --fail-with-body
+            --show-error
+            -X POST
+            "${API_BASE_URL%/}/micro-skills"
+            -H "Content-Type: application/json"
+            -d "$(jq -nc \
+              --arg name "$SKILL_NAME" \
+              --arg description "$SKILL_DESCRIPTION" \
+              --arg project_id "$PROJECT_ID" \
+              '{name: $name, description: $description, project_id: $project_id}')"
+          )
+
+          if [ -n "$AUTH_TOKEN" ]; then
+            CURL_ARGS+=(-H "Authorization: Bearer $AUTH_TOKEN")
+          fi
+
+          curl "${CURL_ARGS[@]}"
+
+          {
+            echo "### Micro skill request metadata"
+            echo "- skill_id: \`$SKILL_ID\`"
+            echo "- name: \`$SKILL_NAME\`"
+            echo "- project_id: \`$PROJECT_ID\`"
+            echo "- environment: \`${{ inputs.environment }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

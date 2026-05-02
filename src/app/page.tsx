@@ -21,6 +21,9 @@ import { CreationHotbar } from "@/components/planner/CreationHotbar";
 import { FocusesSidebar } from "@/components/planner/FocusesSidebar";
 import { PlannerLayout } from "@/components/planner/PlannerLayout";
 import { TicketsSidebar } from "@/components/planner/TicketsSidebar";
+import { SkillsSidebar } from "@/components/planner/SkillsSidebar";
+import { SkillsContent } from "@/components/skills/SkillsContent";
+import type { RegisteredSkill } from "@/types/skill";
 import { useCalendarDate } from "@/hooks/useCalendarDate";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useCalendarInteractions } from "@/hooks/useCalendarInteractions";
@@ -57,6 +60,10 @@ export default function StagePlannerPage() {
   useEffect(() => {
     saveFocusFilterPreferences(selectedFocusIds);
   }, [selectedFocusIds]);
+
+  // Skills state
+  const [selectedSkillProjectId, setSelectedSkillProjectId] = useState<string | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<RegisteredSkill | null>(null);
 
   // Event creation trigger state (for calendar time selection)
   const [eventCreationTrigger, setEventCreationTrigger] = useState<{ startDate: Date; endDate: Date } | null>(null);
@@ -637,6 +644,11 @@ export default function StagePlannerPage() {
     longPressHandlers.clearEditableEvent();
   }, [calendarRef, closeContextMenu, longPressHandlers]);
 
+  const handleSkillsProjectChange = useCallback((projectId: string) => {
+    setSelectedSkillProjectId(projectId ? projectId : null);
+    setSelectedSkill(null);
+  }, []);
+
   // Handle clicks outside calendar
   useCallback(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -692,6 +704,26 @@ export default function StagePlannerPage() {
             onTicketClick={handleTicketClick}
             onStatusChange={handleStatusChange}
             onProjectEdit={handleProjectEdit}
+          />
+        }
+        skillsSidebar={
+          <SkillsSidebar
+            key="skills-sidebar"
+            projects={projects}
+            selectedProjectId={selectedSkillProjectId}
+            selectedSkillId={selectedSkill?.config.id ?? null}
+            onProjectChange={handleSkillsProjectChange}
+            onSkillSelect={(skill) => setSelectedSkill(skill)}
+          />
+        }
+        skillsContent={
+          <SkillsContent
+            key="skills-content"
+            projects={projects}
+            selectedProjectId={selectedSkillProjectId}
+            selectedSkill={selectedSkill}
+            onSkillSelect={(skill) => setSelectedSkill(skill)}
+            onBack={() => setSelectedSkill(null)}
           />
         }
         calendar={

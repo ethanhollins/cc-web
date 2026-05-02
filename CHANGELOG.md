@@ -10,6 +10,20 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [In Progress]
 
+### Feature: Skills - CC-138 - TBD
+
+- Add `/skills/` root directory structure for logically separated skill components
+- Create `skills/example-focus/` with `focus.config.ts` and `daily-journal` example skill
+- Create `/packages/skills-api/` library (events, tickets, and persistent NoSQL-style data CRUD)
+- Add `src/types/skill.ts` with `FocusConfig`, `SkillConfig`, `RegisteredSkill`, `RegisteredFocus` types
+- Add `src/lib/skills-registry.ts` static registry importing all skills from `/skills/`
+- Add `@skills-api` TypeScript path alias pointing to `/packages/skills-api/`
+- Create `src/components/planner/SkillsSidebar.tsx` (focus selector + skill list)
+- Create `src/components/skills/SkillsContent.tsx` (skill card grid + selected skill renderer with back button)
+- Add "Skills" tab to `PlannerNavBar` (desktop) and `MobileTabMenu` (mobile) using `Puzzle` icon
+- Update `PlannerLayout` to accept `skillsSidebar` and `skillsContent` props; content area swaps to skills when skills panel is active
+- Wire up skills state in `src/app/page.tsx`
+
 ---
 
 ## [Completed]

@@ -109,6 +109,40 @@ export async function updateTicketStatus(ticketId: string, status: string, signa
   return response.data as Ticket;
 }
 
+export async function updateTicket(
+  ticketId: string,
+  data: {
+    title?: string;
+    description?: string;
+    ticketStatus?: string;
+    ticketType?: string;
+    priority?: string;
+    epicId?: string | null;
+    projectId?: string | null;
+    scheduledDate?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<Ticket> {
+  const payload = {
+    ...(data.title !== undefined && { title: data.title }),
+    ...(data.description !== undefined && { description: data.description }),
+    ...(data.ticketStatus !== undefined && { ticket_status: data.ticketStatus }),
+    ...(data.ticketType !== undefined && { ticket_type: data.ticketType }),
+    ...(data.priority !== undefined && { priority: data.priority }),
+    ...(data.epicId !== undefined && { epic_id: data.epicId }),
+    ...(data.projectId !== undefined && { project_id: data.projectId }),
+    ...(data.scheduledDate !== undefined && { scheduled_date: data.scheduledDate }),
+  };
+
+  const response = await apiClient.patch(`/tickets/${ticketId}`, payload, { signal });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update ticket: ${response.status}`);
+  }
+
+  return response.data as Ticket;
+}
+
 export async function updateTicketType(ticketId: string, type: string, signal?: AbortSignal): Promise<Ticket> {
   const response = await apiClient.patch(
     `/tickets/${ticketId}`,

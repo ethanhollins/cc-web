@@ -27,7 +27,9 @@
       "@/types/*": ["./src/types/*"],
       "@/utils/*": ["./src/utils/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/old/*": ["./src/old/*"]
+      "@/old/*": ["./src/old/*"],
+      "@skills-api": ["./packages/skills-api/index.ts"],
+      "@skills-api/*": ["./packages/skills-api/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", "next.config.mjs", ".next/types/**/*.ts"],
