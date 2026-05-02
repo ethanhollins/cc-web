@@ -28,16 +28,16 @@ async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
   }
 
   inFlightSkillsRequest = fetchMicroSkills()
-    .then((apiSkills) =>
-      apiSkills
-        .map((apiSkill) => {
-          const localSkill = localSkillMap[apiSkill.skill_id];
-          if (!localSkill) {
-            console.warn(`Micro-skill "${apiSkill.skill_id}" has no local implementation folder`);
-            return null;
-          }
+    .then((apiSkills): RegisteredSkill[] =>
+      apiSkills.flatMap((apiSkill) => {
+        const localSkill = localSkillMap[apiSkill.skill_id];
+        if (!localSkill) {
+          console.warn(`Micro-skill "${apiSkill.skill_id}" has no local implementation folder`);
+          return [];
+        }
 
-          return {
+        return [
+          {
             id: apiSkill.skill_id,
             projectId: apiSkill.project_id,
             component: localSkill.component,
@@ -47,9 +47,9 @@ async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
               name: apiSkill.name || localSkill.config.name,
               description: apiSkill.description ?? localSkill.config.description,
             },
-          } satisfies RegisteredSkill;
-        })
-        .filter((skill): skill is RegisteredSkill => skill !== null),
+          } satisfies RegisteredSkill,
+        ];
+      }),
     )
     .then((registered) => {
       cachedSkills = registered;

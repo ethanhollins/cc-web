@@ -44,6 +44,10 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
   // a dependency to every useCallback that needs to read it.
   const eventsRef = useRef<CalendarEvent[]>([]);
   eventsRef.current = events;
+  const eventsCacheRef = useRef(eventsCache);
+  eventsCacheRef.current = eventsCache;
+  const fetchTicketsForProjectRef = useRef(fetchTicketsForProject);
+  fetchTicketsForProjectRef.current = fetchTicketsForProject;
 
   // WebSocket integration - will need migration later
   const { lastMessage } = useWebSocketMessages((message) => {
@@ -192,9 +196,9 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
         let items: CalendarEvent[] = [];
 
         // Check cache first, unless this is a WebSocket update
-        if (!isWebSocketUpdate && eventsCache.has(weekKey)) {
+        if (!isWebSocketUpdate && eventsCacheRef.current.has(weekKey)) {
           console.log("Using cached events for week:", weekKey);
-          const cachedEvents = eventsCache.get(weekKey) || [];
+          const cachedEvents = eventsCacheRef.current.get(weekKey) || [];
           setEvents(cachedEvents);
           items = cachedEvents;
         } else {
@@ -220,7 +224,8 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
         // TODO: Implement a batch project ticket fetcher
         // Fetch tickets for any projects that haven't been fetched yet
         // This runs for both cached and newly fetched events
-        if (fetchTicketsForProject) {
+        const fetchTicketsForProjectFn = fetchTicketsForProjectRef.current;
+        if (fetchTicketsForProjectFn) {
           // Extract unique project IDs from events
           const projectIds = new Set<string>();
           for (const event of items) {
@@ -236,7 +241,7 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
             // Fetch all projects in parallel
             const fetchPromises = Array.from(projectIds).map(async (projectId) => {
               try {
-                const fetched = await fetchTicketsForProject(projectId, ac.signal);
+                const fetched = await fetchTicketsForProjectFn(projectId, ac.signal);
                 if (fetched) {
                   fetchedProjectsRef.current.add(projectId);
                   console.debug(`Successfully fetched tickets for project: ${projectId}`);
