@@ -42,37 +42,38 @@ export function SkillsSidebar({ projects, selectedProjectId, selectedSkillId, on
   const currentSkills = effectiveProjectId ? skillsByProjectId[effectiveProjectId] ?? [] : [];
 
   return (
-    <div className="flex h-full flex-col gap-3 p-3">
-      {/* Header */}
-      <div className="flex items-center gap-2 py-1">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--accent-soft)]">
-          <Puzzle className="h-4 w-4 text-[var(--accent)]" />
+    <div className="flex h-full flex-col">
+      <div className="flex-shrink-0 space-y-3 px-4 pb-4 sm:pt-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--planner-sidebar-icon-bg)] text-[var(--accent)] shadow-[var(--planner-sidebar-icon-shadow)]">
+            <Puzzle className="h-4 w-4" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text)]">Skills</h3>
         </div>
-        <h2 className="text-lg font-semibold text-[var(--text)]">Skills</h2>
-      </div>
 
-      {/* Focus (project) selector */}
-      <div className="relative">
-        <select
-          value={effectiveProjectId}
-          onChange={(e) => onProjectChange(e.target.value)}
-          className="w-full appearance-none truncate rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] py-2 pl-3 pr-9 text-sm font-medium text-[var(--text)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
-        >
-          {activeProjects.length === 0 && (
-            <option value="">No focuses</option>
-          )}
-          {activeProjects.map((p) => (
-            <option key={p.project_id} value={p.project_id}>
-              {p.project_key} — {p.title}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+        {/* Focus (project) selector */}
+        <div className="relative">
+          <select
+            value={effectiveProjectId}
+            onChange={(e) => onProjectChange(e.target.value)}
+            className="w-full appearance-none truncate rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] py-2 pl-3 pr-9 text-sm font-medium text-[var(--text)] shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
+          >
+            {activeProjects.length === 0 && (
+              <option value="">No focuses</option>
+            )}
+            {activeProjects.map((p) => (
+              <option key={p.project_id} value={p.project_id}>
+                {p.project_key} — {p.title}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+        </div>
       </div>
 
       {/* Skill list */}
       <ScrollArea className="flex-1">
-        <div className="space-y-1.5 pr-1">
+        <div className="space-y-1.5 p-2">
           {currentSkills.length === 0 ? (
             <div className="p-4 text-center text-sm text-[var(--text-muted)]">
               {!effectiveProjectId ? "Select a focus" : isLoading ? "Loading skills..." : "No skills available"}
