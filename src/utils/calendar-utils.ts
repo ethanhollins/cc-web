@@ -55,6 +55,17 @@ export function getWeekRangeTitle(date: Date): string {
 }
 
 /**
+ * Format hours and minutes as a compact 12-hour time string for the hover label.
+ * Examples: "9am", "9:30am", "2:05pm"
+ */
+export function formatHoverTime(hours: number, minutes: number): string {
+  const period = hours >= 12 ? "pm" : "am";
+  const h = hours % 12 || 12;
+  if (minutes === 0) return `${h}${period}`;
+  return `${h}:${minutes.toString().padStart(2, "0")}${period}`;
+}
+
+/**
  * Calculate the appropriate scroll time for calendar (current time minus 1 hour, minimum 00:00:00)
  */
 export function calculateScrollTime(now: Date = new Date()): string {

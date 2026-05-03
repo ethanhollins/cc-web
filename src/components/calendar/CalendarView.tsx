@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
 import { ContextMenuButton } from "@/ui/context-menu-button";
-import { calculateScrollTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
+import { calculateScrollTime, formatHoverTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
 import { parseInTimezone } from "@/utils/date-utils";
 import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
@@ -99,6 +99,7 @@ export function CalendarView({
 }: CalendarViewProps) {
   const internalRef = useRef<FullCalendar | null>(null);
   const calendarRef = externalRef || internalRef;
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Marker hover tooltip state
   const [markerTooltip, setMarkerTooltip] = useState<MarkerTooltip | null>(null);
@@ -106,6 +107,13 @@ export function CalendarView({
   // WeakMap to track MutationObservers attached to marker harness elements so
   // they can be disconnected when the event is unmounted.
   const markerHarnessObservers = useRef(new WeakMap<HTMLElement, MutationObserver>()).current;
+
+  // Hover time label: tracks the time being hovered (grid or event start)
+  const [hoverTime, setHoverTime] = useState<{ label: string; y: number } | null>(null);
+  // true while the pointer is over a calendar event (suppresses grid-tracking)
+  const isHoveringEventRef = useRef(false);
+  // Cached time-axis column bounds so we don't query the DOM on every render
+  const axisRectRef = useRef<{ left: number; width: number } | null>(null);
 
   const scrollTime = calculateScrollTime();
 
@@ -136,6 +144,74 @@ export function CalendarView({
 
   const config = { ...defaultConfig, ...viewConfig };
 
+  // --- Hover time label helpers ---
+
+  /** Parse an HH:MM:SS time string into total minutes. */
+  const parseMins = (t: string): number => {
+    const [h = 0, m = 0] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  /**
+   * Given a viewport clientY, returns the snapped (5-min) time label and y
+   * coordinate, or null if the cursor is outside the timegrid body.
+   */
+  const getTimeLabelFromClientY = (clientY: number): { label: string; y: number } | null => {
+    const bodyEl = wrapperRef.current?.querySelector(".fc-timegrid-body") as HTMLElement | null;
+    if (!bodyEl) return null;
+
+    const rect = bodyEl.getBoundingClientRect();
+    const relativeY = clientY - rect.top;
+    if (relativeY < 0 || relativeY > rect.height) return null;
+
+    const startMins = parseMins(config.slotMinTime ?? "00:00:00");
+    const endMins = parseMins(config.slotMaxTime ?? "24:00:00");
+    const rawMins = startMins + (relativeY / rect.height) * (endMins - startMins);
+    const snapped = Math.round(rawMins / 5) * 5;
+    const clamped = Math.max(startMins, Math.min(endMins - 5, snapped));
+
+    return {
+      label: formatHoverTime(Math.floor(clamped / 60) % 24, clamped % 60),
+      y: clientY,
+    };
+  };
+
+  /**
+   * Returns the viewport clientY that corresponds to a specific Date's time
+   * within the timegrid body, or null if not computable.
+   */
+  const getClientYFromEventStart = (start: Date): number | null => {
+    const bodyEl = wrapperRef.current?.querySelector(".fc-timegrid-body") as HTMLElement | null;
+    if (!bodyEl) return null;
+
+    const rect = bodyEl.getBoundingClientRect();
+    const startMins = parseMins(config.slotMinTime ?? "00:00:00");
+    const endMins = parseMins(config.slotMaxTime ?? "24:00:00");
+    const timeMins = start.getHours() * 60 + start.getMinutes();
+    const fraction = (timeMins - startMins) / (endMins - startMins);
+    return rect.top + fraction * rect.height;
+  };
+
+  /** Lazily populate the cached axis column rect. */
+  const refreshAxisRect = () => {
+    const el = wrapperRef.current?.querySelector(".fc-timegrid-slot-label") as HTMLElement | null;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      axisRectRef.current = { left: r.left, width: r.width };
+    }
+  };
+
+  const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isHoveringEventRef.current) return;
+    if (!axisRectRef.current) refreshAxisRect();
+    setHoverTime(getTimeLabelFromClientY(e.clientY));
+  };
+
+  const handleCalendarMouseLeave = () => {
+    isHoveringEventRef.current = false;
+    setHoverTime(null);
+  };
+
   // Set initial view based on screen size
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -146,7 +222,27 @@ export function CalendarView({
   }, [calendarRef]);
 
   return (
-    <div className={cn("h-full w-full", className)}>
+    <div
+      ref={wrapperRef}
+      className={cn("h-full w-full", className)}
+      onMouseMove={handleCalendarMouseMove}
+      onMouseLeave={handleCalendarMouseLeave}
+    >
+      {/* Hover time label – floats over the time-axis column */}
+      {hoverTime && axisRectRef.current && (
+        <div
+          className="pointer-events-none fixed z-40 flex items-center justify-center rounded-full bg-[var(--accent,#2563eb)] text-[11px] font-semibold text-white shadow-sm"
+          style={{
+            left: axisRectRef.current.left,
+            width: axisRectRef.current.width,
+            top: hoverTime.y - 9,
+            height: 18,
+          }}
+        >
+          {hoverTime.label}
+        </div>
+      )}
+
       {/* Marker hover tooltip */}
       {markerTooltip && (
         <div
@@ -313,6 +409,16 @@ export function CalendarView({
         dropAccept=".draggable-ticket"
         // Marker hover tooltip
         eventMouseEnter={(info) => {
+          // For non-marker events show the event's start time on the axis
+          if (!info.event.extendedProps?.is_marker && info.event.start) {
+            isHoveringEventRef.current = true;
+            if (!axisRectRef.current) refreshAxisRect();
+            const y = getClientYFromEventStart(info.event.start) ?? info.el.getBoundingClientRect().top;
+            setHoverTime({
+              label: formatHoverTime(info.event.start.getHours(), info.event.start.getMinutes()),
+              y,
+            });
+          }
           if (info.event.extendedProps?.is_marker) {
             const rect = info.el.getBoundingClientRect();
             setMarkerTooltip({
@@ -323,6 +429,10 @@ export function CalendarView({
           }
         }}
         eventMouseLeave={(info) => {
+          if (!info.event.extendedProps?.is_marker) {
+            isHoveringEventRef.current = false;
+            setHoverTime(null);
+          }
           if (info.event.extendedProps?.is_marker) {
             setMarkerTooltip(null);
           }
