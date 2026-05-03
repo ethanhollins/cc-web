@@ -16,6 +16,9 @@ import { parseInTimezone } from "@/utils/date-utils";
 import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
 
+/** Height of the floating hover-time pill in pixels. Used for vertical centring. */
+const HOVER_LABEL_HEIGHT = 18;
+
 interface CalendarViewProps {
   events: EventInput[];
   viewConfig?: CalendarViewConfig;
@@ -231,12 +234,12 @@ export function CalendarView({
       {/* Hover time label – floats over the time-axis column */}
       {hoverTime && axisRectRef.current && (
         <div
-          className="pointer-events-none fixed z-40 flex items-center justify-center rounded-full bg-[var(--accent,#2563eb)] text-[11px] font-semibold text-white shadow-sm"
+          className="pointer-events-none fixed z-40 flex items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-semibold text-white shadow-sm"
           style={{
             left: axisRectRef.current.left,
             width: axisRectRef.current.width,
-            top: hoverTime.y - 9,
-            height: 18,
+            height: HOVER_LABEL_HEIGHT,
+            top: hoverTime.y - HOVER_LABEL_HEIGHT / 2,
           }}
         >
           {hoverTime.label}
