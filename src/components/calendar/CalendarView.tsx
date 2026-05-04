@@ -433,8 +433,8 @@ export function CalendarView({
         }}
         eventMouseLeave={(info) => {
           if (!info.event.extendedProps?.is_marker) {
+            // Re-enable grid tracking; keep the label visible until onMouseMove takes over
             isHoveringEventRef.current = false;
-            setHoverTime(null);
           }
           if (info.event.extendedProps?.is_marker) {
             setMarkerTooltip(null);
