@@ -115,8 +115,8 @@ export function CalendarView({
   const [hoverTime, setHoverTime] = useState<{ label: string; y: number } | null>(null);
   // true while the pointer is over a calendar event (suppresses grid-tracking)
   const isHoveringEventRef = useRef(false);
-  // Cached time-axis column bounds so we don't query the DOM on every render
-  const axisRectRef = useRef<{ left: number; width: number } | null>(null);
+  // Time-axis column bounds stored in state so they can be read safely during render
+  const [axisRect, setAxisRect] = useState<{ left: number; width: number } | null>(null);
 
   const scrollTime = calculateScrollTime();
 
@@ -195,18 +195,18 @@ export function CalendarView({
     return rect.top + fraction * rect.height;
   };
 
-  /** Lazily populate the cached axis column rect. */
+  /** Lazily populate the axis column rect (stored in state). */
   const refreshAxisRect = () => {
     const el = wrapperRef.current?.querySelector(".fc-timegrid-slot-label") as HTMLElement | null;
     if (el) {
       const r = el.getBoundingClientRect();
-      axisRectRef.current = { left: r.left, width: r.width };
+      setAxisRect({ left: r.left, width: r.width });
     }
   };
 
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isHoveringEventRef.current) return;
-    if (!axisRectRef.current) refreshAxisRect();
+    if (!axisRect) refreshAxisRect();
     setHoverTime(getTimeLabelFromClientY(e.clientY));
   };
 
@@ -232,12 +232,12 @@ export function CalendarView({
       onMouseLeave={handleCalendarMouseLeave}
     >
       {/* Hover time label – floats over the time-axis column */}
-      {hoverTime && axisRectRef.current && (
+      {hoverTime && axisRect && (
         <div
           className="pointer-events-none fixed z-40 flex items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-semibold text-white shadow-sm"
           style={{
-            left: axisRectRef.current.left,
-            width: axisRectRef.current.width,
+            left: axisRect.left,
+            width: axisRect.width,
             height: HOVER_LABEL_HEIGHT,
             top: hoverTime.y - HOVER_LABEL_HEIGHT / 2,
           }}
@@ -415,7 +415,7 @@ export function CalendarView({
           // For non-marker events show the event's start time on the axis
           if (!info.event.extendedProps?.is_marker && info.event.start) {
             isHoveringEventRef.current = true;
-            if (!axisRectRef.current) refreshAxisRect();
+            if (!axisRect) refreshAxisRect();
             const y = getClientYFromEventStart(info.event.start) ?? info.el.getBoundingClientRect().top;
             setHoverTime({
               label: formatHoverTime(info.event.start.getHours(), info.event.start.getMinutes()),
