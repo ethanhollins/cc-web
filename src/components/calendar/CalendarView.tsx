@@ -170,7 +170,7 @@ export function CalendarView({
     const startMins = parseMins(config.slotMinTime ?? "00:00:00");
     const endMins = parseMins(config.slotMaxTime ?? "24:00:00");
     const rawMins = startMins + (relativeY / rect.height) * (endMins - startMins);
-    const snapped = Math.round(rawMins / 5) * 5;
+    const snapped = Math.floor(rawMins / 5) * 5;
     const clamped = Math.max(startMins, Math.min(endMins - 5, snapped));
 
     return {
@@ -234,7 +234,7 @@ export function CalendarView({
       {/* Hover time label – floats over the time-axis column */}
       {hoverTime && axisRect && (
         <div
-          className="pointer-events-none fixed z-40 flex items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-semibold text-white shadow-sm"
+          className="pointer-events-none fixed z-40 flex items-center justify-center rounded bg-[var(--accent)] text-[10px] font-semibold text-white"
           style={{
             left: axisRect.left,
             width: axisRect.width,
