@@ -113,8 +113,6 @@ export function CalendarView({
 
   // Hover time label: tracks the time being hovered (grid or event start)
   const [hoverTime, setHoverTime] = useState<{ label: string; y: number } | null>(null);
-  // true while the pointer is over a calendar event (suppresses grid-tracking)
-  const isHoveringEventRef = useRef(false);
   // Time-axis column bounds stored in state so they can be read safely during render
   const [axisRect, setAxisRect] = useState<{ left: number; width: number } | null>(null);
 
@@ -179,22 +177,6 @@ export function CalendarView({
     };
   };
 
-  /**
-   * Returns the viewport clientY that corresponds to a specific Date's time
-   * within the timegrid body, or null if not computable.
-   */
-  const getClientYFromEventStart = (start: Date): number | null => {
-    const bodyEl = wrapperRef.current?.querySelector(".fc-timegrid-body") as HTMLElement | null;
-    if (!bodyEl) return null;
-
-    const rect = bodyEl.getBoundingClientRect();
-    const startMins = parseMins(config.slotMinTime ?? "00:00:00");
-    const endMins = parseMins(config.slotMaxTime ?? "24:00:00");
-    const timeMins = start.getHours() * 60 + start.getMinutes();
-    const fraction = (timeMins - startMins) / (endMins - startMins);
-    return rect.top + fraction * rect.height;
-  };
-
   /** Lazily populate the axis column rect (stored in state). */
   const refreshAxisRect = () => {
     const el = wrapperRef.current?.querySelector(".fc-timegrid-slot-label") as HTMLElement | null;
@@ -205,13 +187,26 @@ export function CalendarView({
   };
 
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isHoveringEventRef.current) return;
     if (!axisRect) refreshAxisRect();
+
+    // If the cursor is over a non-marker event, snap the label to the event's
+    // start position (the top edge of the event element).
+    const eventEl = (e.target as HTMLElement).closest<HTMLElement>(
+      ".fc-timegrid-event:not(.event-marker)",
+    );
+    if (eventEl) {
+      const eventTop = eventEl.getBoundingClientRect().top;
+      const timeInfo = getTimeLabelFromClientY(eventTop);
+      if (timeInfo) {
+        setHoverTime({ label: timeInfo.label, y: eventTop });
+      }
+      return;
+    }
+
     setHoverTime(getTimeLabelFromClientY(e.clientY));
   };
 
   const handleCalendarMouseLeave = () => {
-    isHoveringEventRef.current = false;
     setHoverTime(null);
   };
 
@@ -412,16 +407,6 @@ export function CalendarView({
         dropAccept=".draggable-ticket"
         // Marker hover tooltip
         eventMouseEnter={(info) => {
-          // For non-marker events show the event's start time on the axis
-          if (!info.event.extendedProps?.is_marker && info.event.start) {
-            isHoveringEventRef.current = true;
-            if (!axisRect) refreshAxisRect();
-            const y = getClientYFromEventStart(info.event.start) ?? info.el.getBoundingClientRect().top;
-            setHoverTime({
-              label: formatHoverTime(info.event.start.getHours(), info.event.start.getMinutes()),
-              y,
-            });
-          }
           if (info.event.extendedProps?.is_marker) {
             const rect = info.el.getBoundingClientRect();
             setMarkerTooltip({
@@ -432,10 +417,6 @@ export function CalendarView({
           }
         }}
         eventMouseLeave={(info) => {
-          if (!info.event.extendedProps?.is_marker) {
-            // Re-enable grid tracking; keep the label visible until onMouseMove takes over
-            isHoveringEventRef.current = false;
-          }
           if (info.event.extendedProps?.is_marker) {
             setMarkerTooltip(null);
           }
