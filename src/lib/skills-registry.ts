@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchMicroSkills } from "@/api/micro-skills";
 import type { RegisteredSkill } from "@/types/skill";
-import { skillConfig as dailyJournalConfig } from "../../skills/daily-journal/skill.config";
 import DailyJournalSkill from "../../skills/daily-journal/Skill";
+import { skillConfig as dailyJournalConfig } from "../../skills/daily-journal/skill.config";
+import { poolTrainingSkillMap } from "../../skills/pool-training.registry";
 
 const localSkillMap: Record<string, Omit<RegisteredSkill, "id" | "projectId">> = {
   "daily-journal": {
     config: dailyJournalConfig,
     component: DailyJournalSkill,
   },
+  ...poolTrainingSkillMap,
 };
 
 let cachedSkills: RegisteredSkill[] | null = null;
