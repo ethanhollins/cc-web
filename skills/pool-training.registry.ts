@@ -18,6 +18,7 @@ import { skillConfig as runOutsConfig } from "./run-outs/skill.config";
 import SafetyPlaySkill from "./safety-play/Skill";
 import { skillConfig as safetyPlayConfig } from "./safety-play/skill.config";
 
+// Keys in this map intentionally match backend micro-skill `skill_id` values.
 export const poolTrainingSkillMap: Record<string, Omit<RegisteredSkill, "id" | "projectId">> = {
   potting_accuracy: {
     config: pottingAccuracyConfig,

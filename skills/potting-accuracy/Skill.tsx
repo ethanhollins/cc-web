@@ -46,7 +46,7 @@ type FocusSessionRecord = SkillDataRecord & {
 const DEFAULT_SKILL_ID = "potting_accuracy";
 const DEFAULT_PLAYER_ELO = 1200;
 
-function getTimestampId() {
+function generateAttemptId() {
   return `attempt:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -70,6 +70,10 @@ function getRelativeTime(timestamp: string): string {
 
   const days = Math.floor(hours / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function getIsoDate(timestamp: string): string {
+  return new Date(timestamp).toISOString().split("T")[0];
 }
 
 function isAttemptRecord(row: SkillDataRecord, skillId: string, drillKey: string): row is AttemptRecord {
@@ -159,7 +163,7 @@ export default function PottingAccuracySkill({ skillId = DEFAULT_SKILL_ID, proje
     const elo = calculateElo(playerElo, effectiveDrillElo, score, attemptCount);
 
     const attempt: AttemptRecord = {
-      id: getTimestampId(),
+      id: generateAttemptId(),
       skill_key: skillId,
       drill_key: pottingAccuracyDrillConfig.drillKey,
       timestamp,
@@ -186,7 +190,7 @@ export default function PottingAccuracySkill({ skillId = DEFAULT_SKILL_ID, proje
       await Promise.all([setSkillData(skillId, attempt), setSkillData(skillId, summary)]);
 
       if (projectId) {
-        const date = timestamp.slice(0, 10);
+        const date = getIsoDate(timestamp);
         const sessionId = `focus-session:${date}`;
         const existingSession = await getFocusData(projectId, sessionId);
 
