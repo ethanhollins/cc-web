@@ -11,6 +11,8 @@ import LongPottingSkill from "./long-potting/Skill";
 import { skillConfig as longPottingConfig } from "./long-potting/skill.config";
 import MentalComposureSkill from "./mental-composure/Skill";
 import { skillConfig as mentalComposureConfig } from "./mental-composure/skill.config";
+import PoolTrainingSharedSkill from "./pool-training-shared/Skill";
+import { skillConfig as poolTrainingSharedConfig } from "./pool-training-shared/skill.config";
 import PottingAccuracySkill from "./potting-accuracy/Skill";
 import { skillConfig as pottingAccuracyConfig } from "./potting-accuracy/skill.config";
 import RunOutsSkill from "./run-outs/Skill";
@@ -55,5 +57,9 @@ export const poolTrainingSkillMap: Record<string, Omit<RegisteredSkill, "id" | "
   mental_composure: {
     config: mentalComposureConfig,
     component: MentalComposureSkill,
+  },
+  pool_training_shared: {
+    config: poolTrainingSharedConfig,
+    component: PoolTrainingSharedSkill,
   },
 };
