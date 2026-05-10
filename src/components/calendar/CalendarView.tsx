@@ -115,6 +115,8 @@ export function CalendarView({
   const [hoverTime, setHoverTime] = useState<{ label: string; y: number } | null>(null);
   // Time-axis column bounds stored in state so they can be read safely during render
   const [axisRect, setAxisRect] = useState<{ left: number; width: number } | null>(null);
+  // True while the user is actively dragging the bottom (end-time) resize handle
+  const isResizingEndRef = useRef(false);
 
   const scrollTime = calculateScrollTime();
 
@@ -189,7 +191,14 @@ export function CalendarView({
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!axisRect) refreshAxisRect();
 
-    // When dragging the bottom resize handle, show the end time at the cursor.
+    // While the end-time resize handle is being dragged, always track cursor Y
+    // as the new end time – even if the mouse drifts outside the event element.
+    if (isResizingEndRef.current) {
+      setHoverTime(getTimeLabelFromClientY(e.clientY));
+      return;
+    }
+
+    // When hovering (not yet dragging) the bottom resize handle, show end time.
     const resizerEnd = (e.target as HTMLElement).closest(".fc-event-resizer-end");
     if (resizerEnd) {
       setHoverTime(getTimeLabelFromClientY(e.clientY));
@@ -213,6 +222,12 @@ export function CalendarView({
     setHoverTime(getTimeLabelFromClientY(e.clientY));
   };
 
+  const handleCalendarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest(".fc-event-resizer-end")) {
+      isResizingEndRef.current = true;
+    }
+  };
+
   const handleCalendarMouseLeave = () => {
     setHoverTime(null);
   };
@@ -226,10 +241,20 @@ export function CalendarView({
     }
   }, [calendarRef]);
 
+  // Clear the end-resize lock whenever the mouse button is released anywhere.
+  useEffect(() => {
+    const handleMouseUp = () => {
+      isResizingEndRef.current = false;
+    };
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => document.removeEventListener("mouseup", handleMouseUp);
+  }, []);
+
   return (
     <div
       ref={wrapperRef}
       className={cn("h-full w-full", className)}
+      onMouseDown={handleCalendarMouseDown}
       onMouseMove={handleCalendarMouseMove}
       onMouseLeave={handleCalendarMouseLeave}
     >
