@@ -189,6 +189,13 @@ export function CalendarView({
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!axisRect) refreshAxisRect();
 
+    // When dragging the bottom resize handle, show the end time at the cursor.
+    const resizerEnd = (e.target as HTMLElement).closest(".fc-event-resizer-end");
+    if (resizerEnd) {
+      setHoverTime(getTimeLabelFromClientY(e.clientY));
+      return;
+    }
+
     // If the cursor is over a non-marker event, snap the label to the event's
     // start position (the top edge of the event element).
     const eventEl = (e.target as HTMLElement).closest<HTMLElement>(
