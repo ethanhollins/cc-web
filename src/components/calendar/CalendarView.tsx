@@ -117,6 +117,9 @@ export function CalendarView({
   const [axisRect, setAxisRect] = useState<{ left: number; width: number } | null>(null);
   // True while the user is actively dragging the bottom (end-time) resize handle
   const isResizingEndRef = useRef(false);
+  // Tracks the event harness element being bottom-resized so we can read its
+  // bottom edge (which FullCalendar keeps snapped) rather than the raw cursor Y.
+  const resizingEventHarnessRef = useRef<HTMLElement | null>(null);
 
   const scrollTime = calculateScrollTime();
 
@@ -156,10 +159,17 @@ export function CalendarView({
   };
 
   /**
-   * Given a viewport clientY, returns the snapped (5-min) time label and y
-   * coordinate, or null if the cursor is outside the timegrid body.
+   * Given a viewport clientY, returns the snapped time label and y coordinate,
+   * or null if the cursor is outside the timegrid body.
+   *
+   * @param snap  "floor" (default) → matches FullCalendar's selection snapping.
+   *              "round" → nearest 5-min boundary (float-point safe for harness edges).
+   *              "ceil"  → next 5-min boundary (matches FC resize pre-drag hover).
    */
-  const getTimeLabelFromClientY = (clientY: number): { label: string; y: number } | null => {
+  const getTimeLabelFromClientY = (
+    clientY: number,
+    snap: "floor" | "round" | "ceil" = "floor",
+  ): { label: string; y: number } | null => {
     const bodyEl = wrapperRef.current?.querySelector(".fc-timegrid-body") as HTMLElement | null;
     if (!bodyEl) return null;
 
@@ -170,7 +180,8 @@ export function CalendarView({
     const startMins = parseMins(config.slotMinTime ?? "00:00:00");
     const endMins = parseMins(config.slotMaxTime ?? "24:00:00");
     const rawMins = startMins + (relativeY / rect.height) * (endMins - startMins);
-    const snapped = Math.floor(rawMins / 5) * 5;
+    const snapper = snap === "ceil" ? Math.ceil : snap === "round" ? Math.round : Math.floor;
+    const snapped = snapper(rawMins / 5) * 5;
     const clamped = Math.max(startMins, Math.min(endMins - 5, snapped));
 
     return {
@@ -191,30 +202,37 @@ export function CalendarView({
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!axisRect) refreshAxisRect();
 
-    // While the end-time resize handle is being dragged, always track cursor Y
-    // as the new end time – even if the mouse drifts outside the event element.
+    // While the end-time resize handle is being dragged, read the harness's
+    // current bottom edge – FullCalendar keeps it snapped to the correct end
+    // time, so this is more accurate than using the raw cursor Y.
     if (isResizingEndRef.current) {
-      setHoverTime(getTimeLabelFromClientY(e.clientY));
+      const harness = resizingEventHarnessRef.current;
+      const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+      setHoverTime(getTimeLabelFromClientY(bottomY, "round"));
       return;
     }
 
-    // When hovering (not yet dragging) the bottom resize handle, show end time.
+    // When hovering (not yet dragging) the bottom resize handle, FullCalendar
+    // will snap to the NEXT 5-min boundary from cursor, so use ceil.
     const resizerEnd = (e.target as HTMLElement).closest(".fc-event-resizer-end");
     if (resizerEnd) {
-      setHoverTime(getTimeLabelFromClientY(e.clientY));
+      setHoverTime(getTimeLabelFromClientY(e.clientY, "ceil"));
       return;
     }
 
     // If the cursor is over a non-marker event, snap the label to the event's
-    // start position (the top edge of the event element).
+    // start position. Use the harness top (FullCalendar's reference element)
+    // and round to handle floating-point pixel→time conversion.
     const eventEl = (e.target as HTMLElement).closest<HTMLElement>(
       ".fc-timegrid-event:not(.event-marker)",
     );
     if (eventEl) {
-      const eventTop = eventEl.getBoundingClientRect().top;
-      const timeInfo = getTimeLabelFromClientY(eventTop);
+      const harness =
+        eventEl.closest<HTMLElement>(".fc-timegrid-event-harness") ?? eventEl;
+      const harnessTop = harness.getBoundingClientRect().top;
+      const timeInfo = getTimeLabelFromClientY(harnessTop, "round");
       if (timeInfo) {
-        setHoverTime({ label: timeInfo.label, y: eventTop });
+        setHoverTime({ label: timeInfo.label, y: harnessTop });
       }
       return;
     }
@@ -223,8 +241,11 @@ export function CalendarView({
   };
 
   const handleCalendarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest(".fc-event-resizer-end")) {
+    const resizerEl = (e.target as HTMLElement).closest(".fc-event-resizer-end");
+    if (resizerEl) {
       isResizingEndRef.current = true;
+      resizingEventHarnessRef.current =
+        resizerEl.closest<HTMLElement>(".fc-timegrid-event-harness") ?? null;
     }
   };
 
@@ -245,6 +266,7 @@ export function CalendarView({
   useEffect(() => {
     const handleMouseUp = () => {
       isResizingEndRef.current = false;
+      resizingEventHarnessRef.current = null;
     };
     document.addEventListener("mouseup", handleMouseUp);
     return () => document.removeEventListener("mouseup", handleMouseUp);
