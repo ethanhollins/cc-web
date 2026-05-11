@@ -155,6 +155,9 @@ export function CalendarView({
 
   // --- Hover time label helpers ---
 
+  /** CSS selector for the live-updating mirror harness FullCalendar creates during resize drags. */
+  const FC_MIRROR_HARNESS_SEL = ".fc-event-mirror .fc-timegrid-event-harness";
+
   /** Parse an HH:MM:SS time string into total minutes. */
   const parseMins = (t: string): number => {
     const [h = 0, m = 0] = t.split(":").map(Number);
@@ -216,7 +219,7 @@ export function CalendarView({
     // harness bottom (FullCalendar ghost) over the original harness.
     if (isResizingEndRef.current) {
       const mirrorHarness = wrapperRef.current?.querySelector<HTMLElement>(
-        ".fc-event-mirror .fc-timegrid-event-harness",
+        FC_MIRROR_HARNESS_SEL,
       ) ?? null;
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
@@ -290,7 +293,7 @@ export function CalendarView({
       // tracks the live snapped end time.  The original harness stays at its initial
       // size, so prefer the mirror's harness bottom when it exists.
       const mirrorHarness = wrapperRef.current?.querySelector<HTMLElement>(
-        ".fc-event-mirror .fc-timegrid-event-harness",
+        FC_MIRROR_HARNESS_SEL,
       ) ?? null;
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
