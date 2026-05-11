@@ -212,11 +212,13 @@ export function CalendarView({
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!axisRect) refreshAxisRect();
 
-    // While the end-time resize handle is being dragged, read the harness's
-    // current bottom edge – FullCalendar keeps it snapped to the correct end
-    // time, so this is more accurate than using the raw cursor Y.
+    // While the end-time resize handle is being dragged, prefer the live mirror
+    // harness bottom (FullCalendar ghost) over the original harness.
     if (isResizingEndRef.current) {
-      const harness = resizingEventHarnessRef.current;
+      const mirrorHarness = wrapperRef.current?.querySelector<HTMLElement>(
+        ".fc-event-mirror .fc-timegrid-event-harness",
+      ) ?? null;
+      const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
       setHoverTime(getTimeLabelFromClientY(bottomY, "round"));
       return;
@@ -284,7 +286,13 @@ export function CalendarView({
 
     const handleDocumentMouseMove = (e: MouseEvent) => {
       if (!isResizingEndRef.current) return;
-      const harness = resizingEventHarnessRef.current;
+      // During FC resize drag, FullCalendar creates a .fc-event-mirror ghost that
+      // tracks the live snapped end time.  The original harness stays at its initial
+      // size, so prefer the mirror's harness bottom when it exists.
+      const mirrorHarness = wrapperRef.current?.querySelector<HTMLElement>(
+        ".fc-event-mirror .fc-timegrid-event-harness",
+      ) ?? null;
+      const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
       setHoverTime(getTimeLabelFromClientYRef.current?.(bottomY, "round") ?? null);
     };
