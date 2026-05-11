@@ -461,13 +461,17 @@ export default function StagePlannerPage() {
   // Handle creating event from time selection
   const handleCreateEventFromSelection = useCallback(
     (startDate: Date, endDate: Date) => {
-      // If the hotbar is already open, ignore the new select — don't reopen it.
-      if (showCreateModal) return;
+      // If the hotbar is already open, cancel the new selection so the highlight
+      // is cleared; the hotbar will close on its own (clicking outside dismisses it).
+      if (showCreateModal) {
+        calendarRef.current?.getApi().unselect();
+        return;
+      }
       setEventCreationTrigger({ startDate, endDate });
       setCreationMode("ticket");
       setShowCreateModal(true);
     },
-    [showCreateModal],
+    [showCreateModal, calendarRef],
   );
 
   // Handle scheduling break from time selection
