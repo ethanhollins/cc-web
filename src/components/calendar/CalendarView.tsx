@@ -120,6 +120,9 @@ export function CalendarView({
   // Tracks the event harness element being bottom-resized so we can read its
   // bottom edge (which FullCalendar keeps snapped) rather than the raw cursor Y.
   const resizingEventHarnessRef = useRef<HTMLElement | null>(null);
+  // Always-current ref to getTimeLabelFromClientY so it can be called from the
+  // document-level mousemove handler without stale-closure issues.
+  const getTimeLabelFromClientYRef = useRef<typeof getTimeLabelFromClientY | null>(null);
 
   const scrollTime = calculateScrollTime();
 
@@ -199,6 +202,10 @@ export function CalendarView({
     }
   };
 
+  // Keep the ref in sync so the document-level mousemove can call it without
+  // stale-closure issues (config, wrapperRef, etc. are always current via the ref).
+  getTimeLabelFromClientYRef.current = getTimeLabelFromClientY;
+
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!axisRect) refreshAxisRect();
 
@@ -263,13 +270,28 @@ export function CalendarView({
   }, [calendarRef]);
 
   // Clear the end-resize lock whenever the mouse button is released anywhere.
+  // Also track mousemove at the document level so the label updates even when
+  // FullCalendar's drag system captures pointer events (preventing our wrapper
+  // div's React onMouseMove from firing consistently during a resize drag).
   useEffect(() => {
     const handleMouseUp = () => {
       isResizingEndRef.current = false;
       resizingEventHarnessRef.current = null;
     };
+
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      if (!isResizingEndRef.current) return;
+      const harness = resizingEventHarnessRef.current;
+      const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+      setHoverTime(getTimeLabelFromClientYRef.current?.(bottomY, "round") ?? null);
+    };
+
     document.addEventListener("mouseup", handleMouseUp);
-    return () => document.removeEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mousemove", handleDocumentMouseMove);
+    return () => {
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
+    };
   }, []);
 
   return (
