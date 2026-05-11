@@ -74,11 +74,14 @@ export default function StagePlannerPage() {
 
   // Always-current snapshot of showCreateModal for use in stable callbacks/effects.
   const showCreateModalRef = useRef(showCreateModal);
-  showCreateModalRef.current = showCreateModal;
   // Set to true on mousedown when the hotbar is open, so the subsequent FullCalendar
   // select callback (which fires on mouseup, AFTER the hotbar may have already closed)
   // can still suppress itself and avoid reopening the hotbar.
   const suppressNextSelectRef = useRef(false);
+
+  useEffect(() => {
+    showCreateModalRef.current = showCreateModal;
+  }, [showCreateModal]);
 
   useEffect(() => {
     const onMouseDown = () => {

@@ -202,9 +202,12 @@ export function CalendarView({
     }
   };
 
-  // Keep the ref in sync so the document-level mousemove can call it without
-  // stale-closure issues (config, wrapperRef, etc. are always current via the ref).
-  getTimeLabelFromClientYRef.current = getTimeLabelFromClientY;
+  // Keep the ref in sync after every render so the document-level mousemove can
+  // call it without stale-closure issues (config, wrapperRef, etc. are always
+  // current via the ref). Must be done in useEffect, not during render.
+  useEffect(() => {
+    getTimeLabelFromClientYRef.current = getTimeLabelFromClientY;
+  });
 
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!axisRect) refreshAxisRect();
