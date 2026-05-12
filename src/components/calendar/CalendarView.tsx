@@ -223,6 +223,7 @@ export function CalendarView({
       ) ?? null;
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+      console.log("[resize-react-move] mirrorHarness:", mirrorHarness, "bottomY:", bottomY);
       setHoverTime(getTimeLabelFromClientY(bottomY, "round"));
       return;
     }
@@ -261,6 +262,7 @@ export function CalendarView({
       isResizingEndRef.current = true;
       resizingEventHarnessRef.current =
         resizerEl.closest<HTMLElement>(".fc-timegrid-event-harness") ?? null;
+      console.log("[resize-start] isResizingEndRef set to true, harness:", resizingEventHarnessRef.current);
     }
   };
 
@@ -283,6 +285,7 @@ export function CalendarView({
   // div's React onMouseMove from firing consistently during a resize drag).
   useEffect(() => {
     const handleMouseUp = () => {
+      console.log("[resize-end] mouseup, clearing isResizingEndRef");
       isResizingEndRef.current = false;
       resizingEventHarnessRef.current = null;
     };
@@ -297,6 +300,7 @@ export function CalendarView({
       ) ?? null;
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+      console.log("[resize-move] mirrorHarness:", mirrorHarness, "originalHarness:", resizingEventHarnessRef.current, "bottomY:", bottomY, "clientY:", e.clientY);
       setHoverTime(getTimeLabelFromClientYRef.current?.(bottomY, "round") ?? null);
     };
 
