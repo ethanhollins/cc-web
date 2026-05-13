@@ -123,6 +123,8 @@ export function CalendarView({
   // Always-current ref to getTimeLabelFromClientY so it can be called from the
   // document-level mousemove handler without stale-closure issues.
   const getTimeLabelFromClientYRef = useRef<typeof getTimeLabelFromClientY | null>(null);
+  // Always-current ref to getMirrorHarness for the same reason.
+  const getMirrorHarnessRef = useRef<(() => HTMLElement | null) | null>(null);
 
   const scrollTime = calculateScrollTime();
 
@@ -155,8 +157,32 @@ export function CalendarView({
 
   // --- Hover time label helpers ---
 
-  /** CSS selector for the live-updating mirror harness FullCalendar creates during resize drags. */
-  const FC_MIRROR_HARNESS_SEL = ".fc-event-mirror .fc-timegrid-event-harness";
+  /**
+   * Find the mirror harness that FullCalendar creates/resizes during a drag.
+   * In FC 6.x the `fc-event-mirror` class is on the event element INSIDE the
+   * harness (not on a parent container), so we find the event then climb up.
+   * Also handles older FC layouts where fc-event-mirror is a container.
+   */
+  const getMirrorHarness = (): HTMLElement | null => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return null;
+    // Strategy 1: fc-event-mirror class is on the inner event element
+    const mirrorEvent = wrapper.querySelector<HTMLElement>(
+      ".fc-timegrid-event.fc-event-mirror, .fc-timegrid-event-harness .fc-event-mirror",
+    );
+    if (mirrorEvent) {
+      return mirrorEvent.closest<HTMLElement>(".fc-timegrid-event-harness") ?? null;
+    }
+    // Strategy 2: fc-event-mirror class is directly on the harness itself
+    const mirrorHarness = wrapper.querySelector<HTMLElement>(".fc-timegrid-event-harness.fc-event-mirror");
+    if (mirrorHarness) return mirrorHarness;
+    // Strategy 3: any element with fc-event-mirror in the wrapper (broadest fallback)
+    const anyMirror = wrapper.querySelector<HTMLElement>("[class*='fc-event-mirror']");
+    if (anyMirror) {
+      return anyMirror.closest<HTMLElement>(".fc-timegrid-event-harness") ?? anyMirror;
+    }
+    return null;
+  };
 
   /** Parse an HH:MM:SS time string into total minutes. */
   const parseMins = (t: string): number => {
@@ -205,11 +231,11 @@ export function CalendarView({
     }
   };
 
-  // Keep the ref in sync after every render so the document-level mousemove can
-  // call it without stale-closure issues (config, wrapperRef, etc. are always
-  // current via the ref). Must be done in useEffect, not during render.
+  // Keep refs in sync after every render so document-level handlers can call
+  // them without stale-closure issues. Must be done in useEffect, not during render.
   useEffect(() => {
     getTimeLabelFromClientYRef.current = getTimeLabelFromClientY;
+    getMirrorHarnessRef.current = getMirrorHarness;
   });
 
   const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -218,9 +244,7 @@ export function CalendarView({
     // While the end-time resize handle is being dragged, prefer the live mirror
     // harness bottom (FullCalendar ghost) over the original harness.
     if (isResizingEndRef.current) {
-      const mirrorHarness = wrapperRef.current?.querySelector<HTMLElement>(
-        FC_MIRROR_HARNESS_SEL,
-      ) ?? null;
+      const mirrorHarness = getMirrorHarness();
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
       console.log("[resize-react-move] mirrorHarness:", mirrorHarness, "bottomY:", bottomY);
@@ -292,15 +316,23 @@ export function CalendarView({
 
     const handleDocumentMouseMove = (e: MouseEvent) => {
       if (!isResizingEndRef.current) return;
-      // During FC resize drag, FullCalendar creates a .fc-event-mirror ghost that
-      // tracks the live snapped end time.  The original harness stays at its initial
-      // size, so prefer the mirror's harness bottom when it exists.
-      const mirrorHarness = wrapperRef.current?.querySelector<HTMLElement>(
-        FC_MIRROR_HARNESS_SEL,
-      ) ?? null;
+      // During FC resize drag, FullCalendar creates a mirror event that tracks
+      // the live snapped end time. Prefer the mirror's harness bottom when found.
+      const mirrorHarness = getMirrorHarnessRef.current?.() ?? null;
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+
+      // Dump all harness bottoms to help diagnose which element is changing
+      const allHarnesses = wrapperRef.current?.querySelectorAll<HTMLElement>(".fc-timegrid-event-harness");
+      const harnessBounds = Array.from(allHarnesses ?? []).map(h => ({
+        cls: h.className,
+        bottom: Math.round(h.getBoundingClientRect().bottom),
+      }));
+      // Also look for any element whose class contains "mirror"
+      const allMirrors = wrapperRef.current?.querySelectorAll<HTMLElement>("[class*='mirror']");
+      const mirrorClasses = Array.from(allMirrors ?? []).map(m => m.className.split(" ").filter(c => c.includes("mirror")).join(" "));
       console.log("[resize-move] mirrorHarness:", mirrorHarness, "originalHarness:", resizingEventHarnessRef.current, "bottomY:", bottomY, "clientY:", e.clientY);
+      console.log("[resize-move-dom] harnesses:", harnessBounds, "mirrorClasses:", mirrorClasses);
       setHoverTime(getTimeLabelFromClientYRef.current?.(bottomY, "round") ?? null);
     };
 
