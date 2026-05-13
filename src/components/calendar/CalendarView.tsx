@@ -11,10 +11,13 @@ import { cn } from "@/lib/utils";
 import "@/styles/calendar.css";
 import type { CalendarResizeArg, CalendarViewConfig } from "@/types/calendar";
 import { ContextMenuButton } from "@/ui/context-menu-button";
-import { calculateScrollTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
+import { calculateScrollTime, formatHoverTime, lightenColor, observeMarkerHarness } from "@/utils/calendar-utils";
 import { parseInTimezone } from "@/utils/date-utils";
 import { CalendarContextMenu, type CalendarContextMenuState } from "./CalendarContextMenu";
 import { CalendarEvent } from "./CalendarEvent";
+
+/** Height of the floating hover-time pill in pixels. Used for vertical centring. */
+const HOVER_LABEL_HEIGHT = 18;
 
 interface CalendarViewProps {
   events: EventInput[];
@@ -99,6 +102,7 @@ export function CalendarView({
 }: CalendarViewProps) {
   const internalRef = useRef<FullCalendar | null>(null);
   const calendarRef = externalRef || internalRef;
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Marker hover tooltip state
   const [markerTooltip, setMarkerTooltip] = useState<MarkerTooltip | null>(null);
@@ -106,6 +110,21 @@ export function CalendarView({
   // WeakMap to track MutationObservers attached to marker harness elements so
   // they can be disconnected when the event is unmounted.
   const markerHarnessObservers = useRef(new WeakMap<HTMLElement, MutationObserver>()).current;
+
+  // Hover time label: tracks the time being hovered (grid or event start)
+  const [hoverTime, setHoverTime] = useState<{ label: string; y: number } | null>(null);
+  // Time-axis column bounds stored in state so they can be read safely during render
+  const [axisRect, setAxisRect] = useState<{ left: number; width: number } | null>(null);
+  // True while the user is actively dragging the bottom (end-time) resize handle
+  const isResizingEndRef = useRef(false);
+  // Tracks the event harness element being bottom-resized so we can read its
+  // bottom edge (which FullCalendar keeps snapped) rather than the raw cursor Y.
+  const resizingEventHarnessRef = useRef<HTMLElement | null>(null);
+  // Always-current ref to getTimeLabelFromClientY so it can be called from the
+  // document-level mousemove handler without stale-closure issues.
+  const getTimeLabelFromClientYRef = useRef<typeof getTimeLabelFromClientY | null>(null);
+  // Always-current ref to getMirrorHarness for the same reason.
+  const getMirrorHarnessRef = useRef<(() => HTMLElement | null) | null>(null);
 
   const scrollTime = calculateScrollTime();
 
@@ -136,6 +155,143 @@ export function CalendarView({
 
   const config = { ...defaultConfig, ...viewConfig };
 
+  // --- Hover time label helpers ---
+
+  /**
+   * Find the mirror harness that FullCalendar creates/resizes during a drag.
+   * In FC 6.x the `fc-event-mirror` class is on the event element INSIDE the
+   * harness (not on a parent container), so we find the event then climb up.
+   * Also handles older FC layouts where fc-event-mirror is a container.
+   */
+  const getMirrorHarness = (): HTMLElement | null => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return null;
+    // Strategy 1: fc-event-mirror class is on the inner event element
+    const mirrorEvent = wrapper.querySelector<HTMLElement>(
+      ".fc-timegrid-event.fc-event-mirror, .fc-timegrid-event-harness .fc-event-mirror",
+    );
+    if (mirrorEvent) {
+      return mirrorEvent.closest<HTMLElement>(".fc-timegrid-event-harness") ?? null;
+    }
+    // Strategy 2: fc-event-mirror class is directly on the harness itself
+    const mirrorHarness = wrapper.querySelector<HTMLElement>(".fc-timegrid-event-harness.fc-event-mirror");
+    if (mirrorHarness) return mirrorHarness;
+    // Strategy 3: any element with fc-event-mirror in the wrapper (broadest fallback)
+    const anyMirror = wrapper.querySelector<HTMLElement>("[class*='fc-event-mirror']");
+    if (anyMirror) {
+      return anyMirror.closest<HTMLElement>(".fc-timegrid-event-harness") ?? anyMirror;
+    }
+    return null;
+  };
+
+  /** Parse an HH:MM:SS time string into total minutes. */
+  const parseMins = (t: string): number => {
+    const [h = 0, m = 0] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  /**
+   * Given a viewport clientY, returns the snapped time label and y coordinate,
+   * or null if the cursor is outside the timegrid body.
+   *
+   * @param snap  "floor" (default) → matches FullCalendar's selection snapping.
+   *              "round" → nearest 5-min boundary (float-point safe for harness edges).
+   *              "ceil"  → next 5-min boundary (matches FC resize pre-drag hover).
+   */
+  const getTimeLabelFromClientY = (
+    clientY: number,
+    snap: "floor" | "round" | "ceil" = "floor",
+  ): { label: string; y: number } | null => {
+    const bodyEl = wrapperRef.current?.querySelector(".fc-timegrid-body") as HTMLElement | null;
+    if (!bodyEl) return null;
+
+    const rect = bodyEl.getBoundingClientRect();
+    const relativeY = clientY - rect.top;
+    if (relativeY < 0 || relativeY > rect.height) return null;
+
+    const startMins = parseMins(config.slotMinTime ?? "00:00:00");
+    const endMins = parseMins(config.slotMaxTime ?? "24:00:00");
+    const rawMins = startMins + (relativeY / rect.height) * (endMins - startMins);
+    const snapper = snap === "ceil" ? Math.ceil : snap === "round" ? Math.round : Math.floor;
+    const snapped = snapper(rawMins / 5) * 5;
+    const clamped = Math.max(startMins, Math.min(endMins - 5, snapped));
+
+    return {
+      label: formatHoverTime(Math.floor(clamped / 60) % 24, clamped % 60),
+      y: clientY,
+    };
+  };
+
+  /** Lazily populate the axis column rect (stored in state). */
+  const refreshAxisRect = () => {
+    const el = wrapperRef.current?.querySelector(".fc-timegrid-slot-label") as HTMLElement | null;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setAxisRect({ left: r.left, width: r.width });
+    }
+  };
+
+  // Keep refs in sync after every render so document-level handlers can call
+  // them without stale-closure issues. Must be done in useEffect, not during render.
+  useEffect(() => {
+    getTimeLabelFromClientYRef.current = getTimeLabelFromClientY;
+    getMirrorHarnessRef.current = getMirrorHarness;
+  });
+
+  const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!axisRect) refreshAxisRect();
+
+    // While the end-time resize handle is being dragged, prefer the live mirror
+    // harness bottom (FullCalendar ghost) over the original harness.
+    if (isResizingEndRef.current) {
+      const mirrorHarness = getMirrorHarness();
+      const harness = mirrorHarness ?? resizingEventHarnessRef.current;
+      const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+      setHoverTime(getTimeLabelFromClientY(bottomY, "round"));
+      return;
+    }
+
+    // When hovering (not yet dragging) the bottom resize handle, FullCalendar
+    // will snap to the NEXT 5-min boundary from cursor, so use ceil.
+    const resizerEnd = (e.target as HTMLElement).closest(".fc-event-resizer-end");
+    if (resizerEnd) {
+      setHoverTime(getTimeLabelFromClientY(e.clientY, "ceil"));
+      return;
+    }
+
+    // If the cursor is over a non-marker event, snap the label to the event's
+    // start position. Use the harness top (FullCalendar's reference element)
+    // and round to handle floating-point pixel→time conversion.
+    const eventEl = (e.target as HTMLElement).closest<HTMLElement>(
+      ".fc-timegrid-event:not(.event-marker)",
+    );
+    if (eventEl) {
+      const harness =
+        eventEl.closest<HTMLElement>(".fc-timegrid-event-harness") ?? eventEl;
+      const harnessTop = harness.getBoundingClientRect().top;
+      const timeInfo = getTimeLabelFromClientY(harnessTop, "round");
+      if (timeInfo) {
+        setHoverTime({ label: timeInfo.label, y: harnessTop });
+      }
+      return;
+    }
+
+    setHoverTime(getTimeLabelFromClientY(e.clientY));
+  };
+
+  const handleCalendarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const resizerEl = (e.target as HTMLElement).closest(".fc-event-resizer-end");
+    if (resizerEl) {
+      isResizingEndRef.current = true;
+      resizingEventHarnessRef.current =
+        resizerEl.closest<HTMLElement>(".fc-timegrid-event-harness") ?? null;
+    }
+  };
+
+  const handleCalendarMouseLeave = () => {
+    setHoverTime(null);
+  };
+
   // Set initial view based on screen size
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -145,8 +301,58 @@ export function CalendarView({
     }
   }, [calendarRef]);
 
+  // Clear the end-resize lock whenever the mouse button is released anywhere.
+  // Also track mousemove at the document level so the label updates even when
+  // FullCalendar's drag system captures pointer events (preventing our wrapper
+  // div's React onMouseMove from firing consistently during a resize drag).
+  useEffect(() => {
+    const handleMouseUp = () => {
+      isResizingEndRef.current = false;
+      resizingEventHarnessRef.current = null;
+    };
+
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      if (!isResizingEndRef.current) return;
+      // During FC resize drag, FullCalendar creates a mirror event that tracks
+      // the live snapped end time. Prefer the mirror's harness bottom when found.
+      const mirrorHarness = getMirrorHarnessRef.current?.() ?? null;
+      const harness = mirrorHarness ?? resizingEventHarnessRef.current;
+      const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
+
+      setHoverTime(getTimeLabelFromClientYRef.current?.(bottomY, "round") ?? null);
+    };
+
+    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mousemove", handleDocumentMouseMove);
+    return () => {
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
+    };
+  }, []);
+
   return (
-    <div className={cn("h-full w-full", className)}>
+    <div
+      ref={wrapperRef}
+      className={cn("h-full w-full", className)}
+      onMouseDown={handleCalendarMouseDown}
+      onMouseMove={handleCalendarMouseMove}
+      onMouseLeave={handleCalendarMouseLeave}
+    >
+      {/* Hover time label – floats over the time-axis column */}
+      {hoverTime && axisRect && (
+        <div
+          className="pointer-events-none fixed z-40 flex items-center justify-center rounded bg-[var(--accent)] text-[10px] font-semibold text-white"
+          style={{
+            left: axisRect.left,
+            width: axisRect.width,
+            height: HOVER_LABEL_HEIGHT,
+            top: hoverTime.y - HOVER_LABEL_HEIGHT / 2,
+          }}
+        >
+          {hoverTime.label}
+        </div>
+      )}
+
       {/* Marker hover tooltip */}
       {markerTooltip && (
         <div

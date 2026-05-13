@@ -72,6 +72,25 @@ export default function StagePlannerPage() {
   const [markerEventId, setMarkerEventId] = useState<string | null>(null);
   const [creationMode, setCreationMode] = useState<"ticket" | "focus" | "break" | "marker">("ticket");
 
+  // Always-current snapshot of showCreateModal for use in stable callbacks/effects.
+  const showCreateModalRef = useRef(showCreateModal);
+  // Set to true on mousedown when the hotbar is open, so the subsequent FullCalendar
+  // select callback (which fires on mouseup, AFTER the hotbar may have already closed)
+  // can still suppress itself and avoid reopening the hotbar.
+  const suppressNextSelectRef = useRef(false);
+
+  useEffect(() => {
+    showCreateModalRef.current = showCreateModal;
+  }, [showCreateModal]);
+
+  useEffect(() => {
+    const onMouseDown = () => {
+      suppressNextSelectRef.current = showCreateModalRef.current;
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
   // Projects and tickets
   const { projects, selectedProjectKey, selectProject, updateProject } = useProjects();
   const { tickets, updateTickets, fetchTicketsForProject } = useTickets(selectedProjectKey, projects);
@@ -459,11 +478,22 @@ export default function StagePlannerPage() {
   );
 
   // Handle creating event from time selection
-  const handleCreateEventFromSelection = useCallback((startDate: Date, endDate: Date) => {
-    setEventCreationTrigger({ startDate, endDate });
-    setCreationMode("ticket");
-    setShowCreateModal(true);
-  }, []);
+  const handleCreateEventFromSelection = useCallback(
+    (startDate: Date, endDate: Date) => {
+      // If the hotbar was open when the user clicked (mousedown), suppress this
+      // select so the hotbar isn't reopened. The flag is set at mousedown time
+      // (before React may have re-rendered the callback with showCreateModal=false).
+      if (suppressNextSelectRef.current) {
+        suppressNextSelectRef.current = false;
+        calendarRef.current?.getApi().unselect();
+        return;
+      }
+      setEventCreationTrigger({ startDate, endDate });
+      setCreationMode("ticket");
+      setShowCreateModal(true);
+    },
+    [calendarRef],
+  );
 
   // Handle scheduling break from time selection
   const handleScheduleBreak = useCallback(
