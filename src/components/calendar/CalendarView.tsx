@@ -247,7 +247,6 @@ export function CalendarView({
       const mirrorHarness = getMirrorHarness();
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
-      console.log("[resize-react-move] mirrorHarness:", mirrorHarness, "bottomY:", bottomY);
       setHoverTime(getTimeLabelFromClientY(bottomY, "round"));
       return;
     }
@@ -286,7 +285,6 @@ export function CalendarView({
       isResizingEndRef.current = true;
       resizingEventHarnessRef.current =
         resizerEl.closest<HTMLElement>(".fc-timegrid-event-harness") ?? null;
-      console.log("[resize-start] isResizingEndRef set to true, harness:", resizingEventHarnessRef.current);
     }
   };
 
@@ -309,7 +307,6 @@ export function CalendarView({
   // div's React onMouseMove from firing consistently during a resize drag).
   useEffect(() => {
     const handleMouseUp = () => {
-      console.log("[resize-end] mouseup, clearing isResizingEndRef");
       isResizingEndRef.current = false;
       resizingEventHarnessRef.current = null;
     };
@@ -322,17 +319,6 @@ export function CalendarView({
       const harness = mirrorHarness ?? resizingEventHarnessRef.current;
       const bottomY = harness ? harness.getBoundingClientRect().bottom : e.clientY;
 
-      // Dump all harness bottoms to help diagnose which element is changing
-      const allHarnesses = wrapperRef.current?.querySelectorAll<HTMLElement>(".fc-timegrid-event-harness");
-      const harnessBounds = Array.from(allHarnesses ?? []).map(h => ({
-        cls: h.className,
-        bottom: Math.round(h.getBoundingClientRect().bottom),
-      }));
-      // Also look for any element whose class contains "mirror"
-      const allMirrors = wrapperRef.current?.querySelectorAll<HTMLElement>("[class*='mirror']");
-      const mirrorClasses = Array.from(allMirrors ?? []).map(m => m.className.split(" ").filter(c => c.includes("mirror")).join(" "));
-      console.log("[resize-move] mirrorHarness:", mirrorHarness, "originalHarness:", resizingEventHarnessRef.current, "bottomY:", bottomY, "clientY:", e.clientY);
-      console.log("[resize-move-dom] harnesses:", harnessBounds, "mirrorClasses:", mirrorClasses);
       setHoverTime(getTimeLabelFromClientYRef.current?.(bottomY, "round") ?? null);
     };
 
