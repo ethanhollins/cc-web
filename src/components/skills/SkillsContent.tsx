@@ -3,10 +3,10 @@
 import type { ComponentType } from "react";
 import { ArrowLeft, Puzzle } from "lucide-react";
 import { SkillCard } from "@/components/skills/SkillCard";
-import { Button } from "@/ui/button";
 import { useSkillsRegistry } from "@/lib/skills-registry";
-import type { RegisteredSkill } from "@/types/skill";
 import type { Project } from "@/types/project";
+import type { RegisteredSkill, SkillComponentProps } from "@/types/skill";
+import { Button } from "@/ui/button";
 
 interface SkillsContentProps {
   projects: Project[];
@@ -32,17 +32,12 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
   const { skillsByProjectId, isLoading } = useSkillsRegistry();
   // If a skill is selected, render it
   if (selectedSkill) {
-    const SkillComponent: ComponentType = selectedSkill.component;
+    const SkillComponent: ComponentType<SkillComponentProps> = selectedSkill.component;
     return (
       <div className="flex h-full flex-col overflow-hidden">
         {/* Back button header */}
         <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-[var(--text-muted)] hover:text-[var(--text)]"
-            onClick={onBack}
-          >
+          <Button variant="ghost" size="sm" className="gap-1.5 text-[var(--text-muted)] hover:text-[var(--text)]" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
@@ -51,7 +46,7 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
 
         {/* Skill component */}
         <div className="flex-1 overflow-auto">
-          <SkillComponent />
+          <SkillComponent skillId={selectedSkill.id} projectId={selectedSkill.projectId} />
         </div>
       </div>
     );
@@ -59,7 +54,7 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
 
   // No skill selected — show grid of skill cards
   const project = selectedProjectId ? projects.find((p) => p.project_id === selectedProjectId) : undefined;
-  const skills = selectedProjectId ? skillsByProjectId[selectedProjectId] ?? [] : [];
+  const skills = selectedProjectId ? (skillsByProjectId[selectedProjectId] ?? []) : [];
   const emptyStateMessage = getEmptyStateMessage(selectedProjectId, isLoading);
 
   return (
@@ -68,12 +63,8 @@ export function SkillsContent({ projects, selectedProjectId, selectedSkill, onSk
       <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-6 py-4">
         <Puzzle className="h-5 w-5 text-[var(--accent)]" />
         <div>
-          <h1 className="text-lg font-semibold text-[var(--text)]">
-            {project ? project.title : "Skills"}
-          </h1>
-          {project?.description && (
-            <p className="text-sm text-[var(--text-muted)]">{project.description}</p>
-          )}
+          <h1 className="text-lg font-semibold text-[var(--text)]">{project ? project.title : "Skills"}</h1>
+          {project?.description && <p className="text-sm text-[var(--text-muted)]">{project.description}</p>}
         </div>
       </div>
 

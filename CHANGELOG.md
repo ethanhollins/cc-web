@@ -28,6 +28,15 @@ This is a living document maintained to track feature additions, bug fixes, and 
 
 ## [Completed]
 
+### Feature: Pool Training Skill - CC-140 - 2026-05-06
+
+- Register all pool training skill keys in the local skills registry (`potting_accuracy`, `long_potting`, `cut_shots`, `cue_ball_control`, `break_shot`, `safety_play`, `run_outs`, `bank_and_kick`, `mental_composure`)
+- Add Potting Accuracy skill with a drill home screen, setup instructions, settings-based effective drill ELO preview, and attempt controls (`Pot Ball`, `Miss — End Attempt`, `Cleared!`)
+- Add shared ELO utility for drills: `calculateElo(playerElo, effectiveDrillElo, score, totalAttemptCount)` with score clamping and attempt-count K-factor decay
+- Persist skill-level attempt rows (with drill key, timestamp, stats payload, score, and ELO delta), maintain skill summary ELO, and render recent attempts (latest 10) in descending timestamp order
+- Persist focus-level daily session aggregation (`total_elo_earned`, `attempt_count`) when a project ID is available
+- Add placeholder skill components/configs for the non-implemented pool training skills so they are discoverable while drills are built incrementally
+
 ### Fix: Marker Maintains Full Width When Overlapping Events - CC-102 - 2026-04-27
 
 - Target `.fc-timegrid-event-harness:has(.event-marker)` in CSS to force the FullCalendar harness wrapper (which receives inline `left`/`right`/`width` overlap-avoidance styles) to always be full column width with z-index above other events, so markers no longer shrink to half-width when placed on top of another event

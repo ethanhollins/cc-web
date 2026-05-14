@@ -3,15 +3,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchMicroSkills } from "@/api/micro-skills";
 import type { RegisteredSkill } from "@/types/skill";
-import { skillConfig as dailyJournalConfig } from "../../skills/daily-journal/skill.config";
 import DailyJournalSkill from "../../skills/daily-journal/Skill";
+import { skillConfig as dailyJournalConfig } from "../../skills/daily-journal/skill.config";
+import { poolTrainingSkillMap } from "../../skills/pool-training.registry";
 
 const localSkillMap: Record<string, Omit<RegisteredSkill, "id" | "projectId">> = {
   "daily-journal": {
     config: dailyJournalConfig,
     component: DailyJournalSkill,
   },
+  ...poolTrainingSkillMap,
 };
+
+function getLocalSkill(skillId: string): Omit<RegisteredSkill, "id" | "projectId"> | undefined {
+  return localSkillMap[skillId] ?? localSkillMap[skillId.replaceAll("-", "_")] ?? localSkillMap[skillId.replaceAll("_", "-")];
+}
 
 let cachedSkills: RegisteredSkill[] | null = null;
 let cachedSkillsAt = 0;
@@ -30,7 +36,7 @@ async function loadRegisteredSkills(): Promise<RegisteredSkill[]> {
   inFlightSkillsRequest = fetchMicroSkills()
     .then((apiSkills): RegisteredSkill[] =>
       apiSkills.flatMap((apiSkill) => {
-        const localSkill = localSkillMap[apiSkill.skill_id];
+        const localSkill = getLocalSkill(apiSkill.skill_id);
         if (!localSkill) {
           console.warn(`Micro-skill "${apiSkill.skill_id}" has no local implementation folder`);
           return [];

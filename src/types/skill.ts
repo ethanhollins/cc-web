@@ -1,5 +1,10 @@
 import type { ComponentType } from "react";
 
+export interface SkillComponentProps {
+  skillId?: string;
+  projectId?: string;
+}
+
 /** Configuration for an individual skill. Lives in /skills/<skill>/skill.config.ts */
 export interface SkillConfig {
   /** Unique identifier for the skill (matches the folder name) */
@@ -23,7 +28,7 @@ export interface RegisteredSkill {
   id: string;
   projectId: string;
   config: SkillConfig;
-  component: ComponentType;
+  component: ComponentType<SkillComponentProps>;
 }
 
 /** A micro-skill record returned by the backend */

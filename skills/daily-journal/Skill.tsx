@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { deleteSkillData, getSkillData, setSkillData } from "@skills-api";
 import { BookOpen, Save, Trash2 } from "lucide-react";
-import { getSkillData, setSkillData, deleteSkillData } from "@skills-api";
 import { Button } from "@/ui/button";
 import { ScrollArea } from "@/ui/scroll-area";
 
 interface DailyJournalSkillProps {
   skillId?: string;
+  projectId?: string;
 }
 
 const DEFAULT_SKILL_ID = "daily-journal";
@@ -97,12 +98,7 @@ export default function DailyJournalSkill({ skillId = DEFAULT_SKILL_ID }: DailyJ
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            size="sm"
-            className="gap-1.5"
-            disabled={!isDirty || isSaving}
-            onClick={handleSave}
-          >
+          <Button size="sm" className="gap-1.5" disabled={!isDirty || isSaving} onClick={handleSave}>
             <Save className="h-3.5 w-3.5" />
             {isSaving ? "Saving…" : "Save"}
           </Button>
@@ -123,9 +119,7 @@ export default function DailyJournalSkill({ skillId = DEFAULT_SKILL_ID }: DailyJ
         )}
       </ScrollArea>
 
-      {isDirty && (
-        <p className="text-xs text-[var(--text-muted)]">Unsaved changes — press Save to persist.</p>
-      )}
+      {isDirty && <p className="text-xs text-[var(--text-muted)]">Unsaved changes — press Save to persist.</p>}
     </div>
   );
 }
