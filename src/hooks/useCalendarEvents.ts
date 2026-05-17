@@ -80,7 +80,7 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
     prevLastMessageRef.current = lastMessage;
 
     if (isNewWSMessage) {
-      // Extract received_time from the WS message payload sent by the backend.
+      // Extract backend event time from the WS payload sent by the backend.
       // If the FE made a mutating API call more recently than the backend received
       // this event, the message is stale and should be ignored to prevent the
       // optimistic UI from rolling back to an intermediate server state.
@@ -89,14 +89,17 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
       // timestamp (ms).  We intentionally cast via `unknown` so TypeScript
       // reminds us that the shape is not guaranteed at compile time.
       const messageData = (lastMessage.data as unknown) as Record<string, unknown> | null | undefined;
-      const receivedTime = messageData?.received_time;
+      const payload = (messageData?.payload as Record<string, unknown> | undefined) ?? undefined;
+      const receivedTime = messageData?.received_time ?? messageData?.time ?? payload?.received_time ?? payload?.time;
 
       if (receivedTime !== undefined) {
         const receivedTimestamp =
           typeof receivedTime === "string"
             ? new Date(receivedTime).getTime()
             : typeof receivedTime === "number"
-              ? receivedTime
+              ? receivedTime < 1_000_000_000_000
+                ? receivedTime * 1000
+                : receivedTime
               : NaN;
 
         // Only apply the staleness check when we have a valid numeric timestamp.
