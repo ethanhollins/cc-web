@@ -80,7 +80,7 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
     prevLastMessageRef.current = lastMessage;
 
     if (isNewWSMessage) {
-      // Extract received_time from the WS message payload sent by the backend.
+      // Extract backend event time from the WS payload sent by the backend.
       // If the FE made a mutating API call more recently than the backend received
       // this event, the message is stale and should be ignored to prevent the
       // optimistic UI from rolling back to an intermediate server state.
