@@ -8,7 +8,6 @@ import { getWeekCacheKey, getWeekStart } from "@/utils/calendar-utils";
 import { isAbortError } from "@/utils/error-utils";
 
 const VALID_EVENT_TYPES: EventType[] = ["standard", "break", "marker"];
-const TIMESTAMP_MS_THRESHOLD = 1_000_000_000_000;
 
 /**
  * Normalizes API event_type values to lowercase and drops unknown values.
@@ -90,17 +89,14 @@ export function useCalendarEvents(selectedDate: Date, fetchTicketsForProject?: (
       // timestamp (ms).  We intentionally cast via `unknown` so TypeScript
       // reminds us that the shape is not guaranteed at compile time.
       const messageData = (lastMessage.data as unknown) as Record<string, unknown> | null | undefined;
-      const payload = messageData?.payload as Record<string, unknown> | undefined;
-      const receivedTime = messageData?.received_time ?? messageData?.time ?? payload?.received_time ?? payload?.time;
+      const receivedTime = messageData?.received_time;
 
       if (receivedTime !== undefined) {
         const receivedTimestamp =
           typeof receivedTime === "string"
             ? new Date(receivedTime).getTime()
             : typeof receivedTime === "number"
-              ? receivedTime < TIMESTAMP_MS_THRESHOLD
-                ? receivedTime * 1000
-                : receivedTime
+              ? receivedTime
               : NaN;
 
         // Only apply the staleness check when we have a valid numeric timestamp.
